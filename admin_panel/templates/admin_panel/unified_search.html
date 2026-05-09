@@ -1,0 +1,507 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% block title %}البحث الموحد{% endblock %}
+{% block page_title %}🔍 البحث الموحد{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ══ صندوق البحث ══ */
+.search-hero {
+    background: linear-gradient(135deg, #7c3aed, #5b21b6);
+    border-radius: 20px;
+    padding: 32px 28px;
+    margin-bottom: 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+.search-hero::before {
+    content: '🔍';
+    position: absolute;
+    font-size: 8rem;
+    opacity: 0.06;
+    top: -10px;
+    left: 20px;
+    transform: rotate(-15deg);
+    pointer-events: none;
+}
+.search-hero h2 {
+    font-family: 'Tajawal', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: #fff;
+    margin-bottom: 6px;
+}
+.search-hero p {
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.75);
+    margin-bottom: 20px;
+}
+.search-wrap {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border-radius: 14px;
+    padding: 6px 6px 6px 16px;
+    max-width: 620px;
+    margin: 0 auto;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    gap: 8px;
+}
+.search-wrap input {
+    border: none;
+    outline: none;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 1rem;
+    color: #1a1a2e;
+    flex: 1;
+    background: transparent;
+    direction: rtl;
+}
+.search-wrap input::placeholder { color: #9ca3af; }
+.search-wrap button {
+    background: var(--adm);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 22px;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.search-wrap button:hover { opacity: 0.9; transform: scale(1.02); }
+
+/* فلاتر النوع */
+.type-filters {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 14px;
+    flex-wrap: wrap;
+}
+.type-chip {
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1.5px solid rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+}
+.type-chip.active {
+    background: #fff;
+    color: var(--adm);
+    border-color: #fff;
+}
+.type-chip:hover { background: rgba(255,255,255,0.22); }
+.type-chip.active:hover { background: #fff; }
+
+/* ══ النتائج ══ */
+.results-wrap { display: flex; flex-direction: column; gap: 16px; }
+
+.result-section {
+    background: #fff;
+    border: 1px solid #ede9fe;
+    border-radius: 16px;
+    overflow: hidden;
+    animation: fadeUp 0.3s ease;
+}
+body.dark-mode .result-section { background: #0f0b1e; border-color: rgba(139,92,246,0.12); }
+@keyframes fadeUp { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.result-section-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    border-bottom: 1px solid #f0ebff;
+    background: linear-gradient(135deg, rgba(124,58,237,0.05), transparent);
+}
+body.dark-mode .result-section-hdr { border-color: rgba(139,92,246,0.1); }
+.result-section-title {
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+body.dark-mode .result-section-title { color: #e8f5ee; }
+.result-count {
+    background: var(--adm);
+    color: #fff;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+/* بطاقة النتيجة */
+.result-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 18px;
+    border-bottom: 1px solid rgba(124,58,237,0.05);
+    cursor: pointer;
+    transition: background 0.18s;
+}
+.result-card:last-child { border-bottom: none; }
+.result-card:hover { background: rgba(124,58,237,0.03); }
+body.dark-mode .result-card:hover { background: rgba(124,58,237,0.06); }
+
+.result-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #ede9fe;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    background: #f3f0ff;
+}
+.result-avatar img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; }
+
+.result-info { flex: 1; min-width: 0; }
+.result-name {
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+body.dark-mode .result-name { color: #e8f5ee; }
+.result-meta {
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.75rem;
+    color: #9ca3af;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.result-badges { display: flex; gap: 5px; align-items: center; flex-shrink: 0; }
+.rbadge {
+    padding: 2px 9px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    font-family: 'Tajawal', sans-serif;
+}
+.rbadge-green  { background: rgba(26,122,74,0.1);  color: #1a7a4a; }
+.rbadge-purple { background: rgba(124,58,237,0.1); color: var(--adm); }
+.rbadge-orange { background: rgba(245,158,11,0.1); color: #b45309; }
+.rbadge-red    { background: rgba(229,62,62,0.1);  color: #c53030; }
+.rbadge-blue   { background: rgba(43,108,176,0.1); color: #2b6cb0; }
+.rbadge-gray   { background: rgba(107,114,128,0.1);color: #6b7280; }
+
+.result-arrow {
+    color: #c4b5fd;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+/* ══ حالات خاصة ══ */
+.search-empty {
+    text-align: center;
+    padding: 48px 24px;
+    color: #9ca3af;
+    font-family: 'Tajawal', sans-serif;
+}
+.search-empty .icon { font-size: 3.5rem; margin-bottom: 12px; }
+.search-empty h3 { font-size: 1rem; font-weight: 700; margin-bottom: 5px; color: #6b7280; }
+.search-empty p { font-size: 0.84rem; }
+
+.search-initial {
+    text-align: center;
+    padding: 56px 24px;
+    color: #c4b5fd;
+    font-family: 'Tajawal', sans-serif;
+}
+.search-initial .icon { font-size: 4rem; margin-bottom: 14px; opacity: 0.5; }
+.search-initial p { font-size: 0.86rem; color: #9ca3af; }
+
+.search-loading {
+    text-align: center;
+    padding: 40px;
+    font-family: 'Tajawal', sans-serif;
+    color: #9ca3af;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+.spinner {
+    width: 38px;
+    height: 38px;
+    border: 3px solid #ede9fe;
+    border-top-color: var(--adm);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ══ إحصائيات البحث ══ */
+.search-stats {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    background: #f8f7ff;
+    border-radius: 12px;
+    border: 1px solid #ede9fe;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.82rem;
+}
+body.dark-mode .search-stats { background: #130f24; border-color: rgba(139,92,246,0.15); }
+.search-stat-item { display: flex; align-items: center; gap: 5px; font-weight: 600; color: #6b7280; }
+.search-stat-item strong { color: var(--adm); }
+
+/* هايلايت النص المطابق */
+mark {
+    background: rgba(124,58,237,0.15);
+    color: var(--adm);
+    border-radius: 3px;
+    padding: 0 2px;
+    font-weight: 700;
+}
+
+/* ══ Responsive ══ */
+@media(max-width:768px) {
+    .search-hero { padding: 22px 16px; }
+    .search-wrap { flex-direction: column; padding: 10px; }
+    .search-wrap input { width: 100%; text-align: center; }
+    .search-wrap button { width: 100%; }
+    .result-card { flex-wrap: wrap; gap: 10px; }
+    .result-badges { width: 100%; justify-content: flex-start; }
+}
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<!-- ══ Hero البحث ══ -->
+<div class="search-hero fade-in">
+    <h2>🔍 البحث الموحد في النظام</h2>
+    <p>ابحث في جميع الأنواع دفعة واحدة — الأيتام، الأسر، ذوو الاحتياجات، الكفلاء</p>
+    <div class="search-wrap">
+        <input type="text" id="searchInput"
+               placeholder="ابحث بالاسم أو رقم الهوية أو رقم الاستمارة أو البريد..."
+               onkeyup="onKeyUp(event)">
+        <button onclick="doSearch()">🔍 بحث</button>
+    </div>
+    <div class="type-filters">
+        <span class="type-chip active" data-type="all"     onclick="toggleType(this)">🌐 الكل</span>
+        <span class="type-chip active" data-type="orphan"  onclick="toggleType(this)">👦 الأيتام</span>
+        <span class="type-chip active" data-type="family"  onclick="toggleType(this)">👨‍👩‍👧 الأسر</span>
+        <span class="type-chip active" data-type="special" onclick="toggleType(this)">♿ ذوو احتياجات</span>
+        <span class="type-chip active" data-type="sponsor" onclick="toggleType(this)">🤝 الكفلاء</span>
+    </div>
+</div>
+
+<!-- ══ منطقة النتائج ══ -->
+<div id="resultsArea">
+    <div class="search-initial">
+        <div class="icon">🔎</div>
+        <p>اكتب كلمة بحث للبدء — ادنى 2 حرف</p>
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+'use strict';
+
+const CSRF = document.cookie.split(';').find(c=>c.trim().startsWith('csrftoken='))?.split('=')[1]||'';
+let activeTypes = new Set(['orphan','family','special','sponsor']);
+let searchTimer = null;
+let lastQuery   = '';
+
+/* ══ فلاتر النوع ══ */
+function toggleType(chip) {
+    const type = chip.dataset.type;
+
+    if (type === 'all') {
+        const allActive = activeTypes.size === 4;
+        if (allActive) {
+            activeTypes.clear();
+            document.querySelectorAll('.type-chip:not([data-type="all"])').forEach(c => c.classList.remove('active'));
+            chip.classList.remove('active');
+        } else {
+            activeTypes = new Set(['orphan','family','special','sponsor']);
+            document.querySelectorAll('.type-chip').forEach(c => c.classList.add('active'));
+        }
+    } else {
+        if (activeTypes.has(type)) {
+            activeTypes.delete(type);
+            chip.classList.remove('active');
+        } else {
+            activeTypes.add(type);
+            chip.classList.add('active');
+        }
+        // زر الكل
+        const allChip = document.querySelector('.type-chip[data-type="all"]');
+        allChip.classList.toggle('active', activeTypes.size === 4);
+    }
+
+    if (lastQuery.length >= 2) doSearch();
+}
+
+/* ══ البحث ══ */
+function onKeyUp(e) {
+    const q = document.getElementById('searchInput').value.trim();
+    if (e.key === 'Enter') { doSearch(); return; }
+    if (q.length < 2) {
+        document.getElementById('resultsArea').innerHTML = `
+            <div class="search-initial"><div class="icon">🔎</div><p>اكتب كلمة بحث — ادنى 2 حرف</p></div>`;
+        return;
+    }
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(doSearch, 400);
+}
+
+async function doSearch() {
+    const q = document.getElementById('searchInput').value.trim();
+    if (q.length < 2) return;
+    lastQuery = q;
+
+    const types = [...activeTypes].join(',');
+    if (!types) {
+        document.getElementById('resultsArea').innerHTML = `
+            <div class="search-empty"><div class="icon">⚠️</div><h3>اختر نوعاً واحداً على الأقل</h3></div>`;
+        return;
+    }
+
+    document.getElementById('resultsArea').innerHTML = `
+        <div class="search-loading"><div class="spinner"></div><span>جار البحث...</span></div>`;
+
+    try {
+        const r    = await fetch(
+            `/admin-panel/search/data/?q=${encodeURIComponent(q)}&types=${types}`,
+            { headers: {'X-Requested-With': 'XMLHttpRequest'} }
+        );
+        const data = await r.json();
+        renderResults(data, q);
+    } catch {
+        document.getElementById('resultsArea').innerHTML = `
+            <div class="search-empty"><div class="icon">⚠️</div><h3>خطأ في البحث</h3><p>حاول مرة أخرى</p></div>`;
+    }
+}
+
+/* ══ عرض النتائج ══ */
+function renderResults(data, q) {
+    const total = (data.orphans?.length||0) + (data.families?.length||0) +
+                  (data.specials?.length||0) + (data.sponsors?.length||0);
+
+    if (total === 0) {
+        document.getElementById('resultsArea').innerHTML = `
+            <div class="search-empty">
+                <div class="icon">😔</div>
+                <h3>لا توجد نتائج</h3>
+                <p>لم يتم العثور على نتائج لـ "<strong>${_esc(q)}</strong>"</p>
+            </div>`;
+        return;
+    }
+
+    let html = `
+    <div class="search-stats">
+        <span class="search-stat-item">🔍 نتائج لـ "<strong>${_esc(q)}</strong>"</span>
+        <span class="search-stat-item">📊 إجمالي: <strong>${total}</strong> نتيجة</span>
+        ${data.orphans?.length  ? `<span class="search-stat-item">👦 أيتام: <strong>${data.orphans.length}</strong></span>` : ''}
+        ${data.families?.length ? `<span class="search-stat-item">👨‍👩‍👧 أسر: <strong>${data.families.length}</strong></span>` : ''}
+        ${data.specials?.length ? `<span class="search-stat-item">♿ ذوو احتياجات: <strong>${data.specials.length}</strong></span>` : ''}
+        ${data.sponsors?.length ? `<span class="search-stat-item">🤝 كفلاء: <strong>${data.sponsors.length}</strong></span>` : ''}
+    </div>
+    <div class="results-wrap">`;
+
+    if (data.orphans?.length)  html += _section('👦 الأيتام',             data.orphans,  q, 'orphan',  'rbadge-green');
+    if (data.families?.length) html += _section('👨‍👩‍👧 الأسر',              data.families, q, 'family',  'rbadge-orange');
+    if (data.specials?.length) html += _section('♿ ذوو الاحتياجات الخاصة',data.specials, q, 'special', 'rbadge-red');
+    if (data.sponsors?.length) html += _section('🤝 الكفلاء',             data.sponsors, q, 'sponsor', 'rbadge-blue');
+
+    html += '</div>';
+    document.getElementById('resultsArea').innerHTML = html;
+}
+
+function _section(title, items, q, type, badgeClass) {
+    const TYPE_URLS = {
+        orphan:  '/admin-panel/orphans/',
+        family:  '/admin-panel/families/',
+        special: '/admin-panel/specials/',
+        sponsor: '/admin-panel/sponsors/',
+    };
+    return `
+    <div class="result-section">
+        <div class="result-section-hdr">
+            <div class="result-section-title">${title}</div>
+            <span class="result-count">${items.length}</span>
+        </div>
+        ${items.map(u => `
+        <div class="result-card" onclick="goToUser('${u.id}','${type}')">
+            <div class="result-avatar">
+                ${u.photo ? `<img src="${u.photo}" alt="">` : _typeIcon(type)}
+            </div>
+            <div class="result-info">
+                <div class="result-name">${_highlight(u.full_name, q)}</div>
+                <div class="result-meta">
+                    ${u.reg_number ? `<span>📋 ${_highlight(u.reg_number, q)}</span>` : ''}
+                    ${u.id_number  ? `<span>🪪 ${_highlight(u.id_number, q)}</span>`  : ''}
+                    ${u.email      ? `<span>✉️ ${_highlight(u.email, q)}</span>`      : ''}
+                    ${u.phone      ? `<span>📞 ${u.phone}</span>`                    : ''}
+                </div>
+            </div>
+            <div class="result-badges">
+                <span class="rbadge ${u.is_active ? 'rbadge-green' : 'rbadge-gray'}">${u.is_active ? 'نشط' : 'معطّل'}</span>
+                ${u.sponsor_name ? `<span class="rbadge rbadge-blue">🤝 ${u.sponsor_name}</span>` : ''}
+                ${u.status       ? `<span class="rbadge ${badgeClass}">${u.status}</span>` : ''}
+            </div>
+<span class="rbadge ${u.is_approved ? 'rbadge-green' : 'rbadge-gray'}">${u.is_approved ? '✅ معتمد' : '⏳ قيد المراجعة'}</span>
+            <div class="result-arrow">←</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function goToUser(userId, type) {
+    const URLS = {
+        orphan:  '/admin-panel/orphans/',
+        family:  '/admin-panel/families/',
+        special: '/admin-panel/specials/',
+        sponsor: '/admin-panel/sponsors/',
+    };
+    // نفتح الصفحة مع تمرير الـ ID لفتح مودل التفاصيل تلقائياً
+    window.location.href = `${URLS[type]}?open=${userId}`;
+}
+
+function _typeIcon(type) {
+    const icons = { orphan:'👦', family:'👨‍👩‍👧', special:'♿', sponsor:'🤝' };
+    return icons[type] || '👤';
+}
+
+function _highlight(text, q) {
+    if (!text || !q) return text || '';
+    const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return String(text).replace(new RegExp(`(${escaped})`, 'gi'), '<mark>$1</mark>');
+}
+
+function _esc(s) { return (s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+{% endblock %}

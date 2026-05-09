@@ -1,0 +1,448 @@
+{% extends 'beneficiary/base.html' %}
+{% load static %}
+{% block title %}المساعدات{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+    --card:#fff; --border:rgba(0,0,0,0.08);
+    --text:#1a1a2e; --bg2:#f4f9f6;
+}
+body.dark-mode {
+    --card:#111e16; --border:rgba(46,204,113,0.12);
+    --text:#e8f5ee; --bg2:#0d1a12;
+}
+* { box-sizing:border-box; }
+.aid-wrap { max-width:1200px; margin:0 auto; padding:0; }
+
+/* ── Stats ── */
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:18px; }
+.stat-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 18px; box-shadow:0 4px 16px rgba(26,122,74,0.05); display:flex; align-items:center; gap:12px; transition:all 0.25s; }
+.stat-card:hover { transform:translateY(-3px); box-shadow:0 8px 22px rgba(26,122,74,0.12); }
+.stat-icon { width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.5rem; flex-shrink:0; }
+.si-green  { background:linear-gradient(135deg,rgba(26,122,74,0.15),rgba(46,204,113,0.08)); }
+.si-blue   { background:linear-gradient(135deg,rgba(43,108,176,0.15),rgba(99,179,237,0.08)); }
+.si-purple { background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(167,139,250,0.08)); }
+.si-orange { background:linear-gradient(135deg,rgba(245,158,11,0.15),rgba(251,191,36,0.08)); }
+.si-red    { background:linear-gradient(135deg,rgba(229,62,62,0.15),rgba(252,129,74,0.08)); }
+.si-teal   { background:linear-gradient(135deg,rgba(20,184,166,0.15),rgba(94,234,212,0.08)); }
+.stat-val  { font:700 1.25rem 'Cairo',sans-serif; color:var(--text); margin-bottom:2px; }
+.stat-lbl  { font:600 0.76rem 'Tajawal',sans-serif; color:#6b7280; }
+
+/* ── Card container ── */
+.aid-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:18px 20px; box-shadow:0 6px 20px rgba(26,122,74,0.05); margin-bottom:16px; }
+
+/* ── Toolbar ── */
+.aid-toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; }
+.filters-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; flex:1; min-width:0; }
+.aid-filter { background:var(--bg2); border:1.5px solid rgba(26,122,74,0.15); border-radius:10px; padding:8px 12px; font:600 0.84rem 'Tajawal',sans-serif; color:var(--text); width:100%; transition:all 0.2s; }
+.aid-filter:focus { border-color:#1a7a4a; box-shadow:0 0 0 3px rgba(26,122,74,0.12); outline:none; }
+.aid-actions { display:flex; gap:8px; flex-wrap:wrap; flex-shrink:0; }
+.aid-btn { padding:9px 14px; border-radius:11px; font:700 0.82rem 'Tajawal',sans-serif; cursor:pointer; border:1.5px solid transparent; display:inline-flex; align-items:center; gap:5px; transition:all 0.2s; white-space:nowrap; }
+.aid-btn:hover { transform:translateY(-2px); }
+.btn-excel  { background:rgba(26,122,74,0.1);  color:#1a7a4a; border-color:rgba(26,122,74,0.2); }
+.btn-dl-pdf { background:rgba(124,58,237,0.1); color:#7c3aed; border-color:rgba(124,58,237,0.2); }
+.btn-print  { background:rgba(229,62,62,0.1);  color:#c53030; border-color:rgba(229,62,62,0.2); }
+.btn-clear  { background:rgba(107,114,128,0.1);color:#6b7280; border-color:rgba(107,114,128,0.2); }
+
+/* ── Cards Grid ── */
+.cards-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:8px; }
+.cards-count  { font:600 0.84rem 'Tajawal',sans-serif; color:#6b7280; }
+.cards-count strong { color:#1a7a4a; font-family:'Cairo',sans-serif; }
+.cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:14px; }
+
+/* ── Single Card ── */
+@keyframes cardIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+.aid-pcard { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px; cursor:pointer; transition:all 0.22s; box-shadow:0 2px 10px rgba(26,122,74,0.04); position:relative; overflow:hidden; animation:cardIn 0.28s ease both; }
+.aid-pcard::before { content:''; position:absolute; top:0; right:0; width:4px; height:100%; background:linear-gradient(180deg,#1a7a4a,#2ecc71); border-radius:0 16px 16px 0; opacity:0; transition:opacity 0.2s; }
+.aid-pcard:hover { transform:translateY(-4px); box-shadow:0 10px 28px rgba(26,122,74,0.12); border-color:rgba(26,122,74,0.2); }
+.aid-pcard:hover::before { opacity:1; }
+
+.pcard-top  { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; gap:6px; }
+.pcard-num  { width:30px; height:30px; border-radius:50%; background:rgba(26,122,74,0.1); color:#1a7a4a; font:700 0.78rem 'Cairo',sans-serif; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.pcard-date { font:600 0.8rem 'Tajawal',sans-serif; color:#6b7280; }
+.pcard-name { font:700 0.92rem 'Tajawal',sans-serif; color:var(--text); margin-bottom:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pcard-meta { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.pcard-qty  { font:700 0.82rem 'Cairo',sans-serif; color:#1a7a4a; background:rgba(26,122,74,0.08); padding:3px 10px; border-radius:50px; }
+.pcard-provider { font:500 0.8rem 'Tajawal',sans-serif; color:#6b7280; display:flex; align-items:center; gap:4px; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pcard-sep  { width:100%; height:1px; background:var(--border); margin:10px 0; }
+.pcard-note { font:500 0.78rem 'Tajawal',sans-serif; color:#9ca3af; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* ── Badges ── */
+.type-badge { display:inline-block; padding:3px 10px; border-radius:50px; font:700 0.72rem 'Tajawal',sans-serif; white-space:nowrap; }
+.type-food      { background:rgba(245,158,11,0.12); color:#b45309; }
+.type-medical   { background:rgba(229,62,62,0.12);  color:#c53030; }
+.type-financial { background:rgba(26,122,74,0.12);  color:#1a7a4a; }
+.type-clothing  { background:rgba(124,58,237,0.12); color:#7c3aed; }
+.type-furniture { background:rgba(43,108,176,0.12); color:#2b6cb0; }
+.type-education { background:rgba(20,184,166,0.12); color:#0f766e; }
+.type-other     { background:rgba(107,114,128,0.12);color:#6b7280; }
+
+/* ── Pagination ── */
+.pg-wrap { display:flex; align-items:center; justify-content:center; gap:6px; margin-top:24px; flex-wrap:wrap; }
+.pg-btn  { min-width:38px; height:38px; border-radius:10px; border:1.5px solid var(--border); background:var(--card); color:var(--text); font:600 0.84rem 'Cairo',sans-serif; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0 10px; transition:all 0.18s; }
+.pg-btn:hover:not(:disabled) { border-color:#1a7a4a; color:#1a7a4a; background:rgba(26,122,74,0.06); }
+.pg-btn.active { background:linear-gradient(135deg,#1a7a4a,#2ecc71); color:#fff; border-color:transparent; box-shadow:0 4px 12px rgba(26,122,74,0.3); }
+.pg-btn:disabled { opacity:0.35; cursor:not-allowed; }
+.pg-dots { font:600 0.9rem 'Cairo',sans-serif; color:#9ca3af; padding:0 4px; }
+.pg-info { font:600 0.8rem 'Tajawal',sans-serif; color:#9ca3af; text-align:center; margin-top:10px; }
+
+/* ── Empty ── */
+.empty-state { text-align:center; padding:50px 20px; background:rgba(26,122,74,0.02); border:2px dashed rgba(26,122,74,0.15); border-radius:14px; }
+.empty-icon  { font-size:3rem; margin-bottom:8px; }
+.empty-text  { font:700 0.95rem 'Tajawal',sans-serif; color:#6b7280; }
+
+/* ── Modal ── */
+.aid-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9999; align-items:center; justify-content:center; padding:16px; }
+.aid-modal.show { display:flex; animation:modalIn 0.25s ease; }
+@keyframes modalIn { from{opacity:0} to{opacity:1} }
+.modal-box  { background:#fff; border-radius:16px; max-width:600px; width:100%; max-height:92vh; display:flex; flex-direction:column; animation:boxIn 0.3s ease; }
+@keyframes boxIn { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+body.dark-mode .modal-box { background:#111e16; }
+.modal-hdr  { padding:14px 18px; border-bottom:1px solid rgba(0,0,0,0.08); display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.modal-title{ font:700 1rem 'Tajawal',sans-serif; color:#1a7a4a; flex:1; }
+.modal-close{ background:none; border:none; font-size:1.4rem; cursor:pointer; color:#9ca3af; }
+.modal-close:hover { color:#c53030; }
+.modal-body { padding:18px; flex:1; overflow:auto; }
+.detail-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; }
+.detail-item { background:var(--bg2); border-radius:10px; padding:10px 14px; }
+.detail-lbl  { font:600 0.72rem 'Tajawal',sans-serif; color:#6b7280; margin-bottom:4px; }
+.detail-val  { font:700 0.88rem 'Tajawal',sans-serif; color:var(--text); word-break:break-word; }
+
+/* ── Progress ── */
+.prog-box   { max-width:380px; text-align:center; padding:30px 24px; }
+.prog-icon  { font-size:3rem; margin-bottom:12px; }
+.prog-title { font:700 1rem 'Tajawal',sans-serif; color:#1a7a4a; margin-bottom:6px; }
+.prog-sub   { font:500 0.84rem 'Tajawal',sans-serif; color:#6b7280; margin-bottom:14px; }
+.prog-bar-wrap { background:rgba(26,122,74,0.1); border-radius:50px; height:6px; overflow:hidden; }
+.prog-bar   { height:100%; background:linear-gradient(90deg,#1a7a4a,#2ecc71); border-radius:50px; width:0%; transition:width 0.3s ease; }
+.prog-pct   { margin-top:8px; font:600 0.78rem 'Tajawal',sans-serif; color:#6b7280; }
+
+/* ── PWD Modal ── */
+.pwd-modal-box { max-width:420px; padding:28px; text-align:center; }
+.pwd-display   { background:linear-gradient(135deg,rgba(26,122,74,0.1),rgba(46,204,113,0.05)); border:2px dashed rgba(26,122,74,0.3); border-radius:12px; padding:14px; font:700 1.6rem 'Cairo',monospace; color:#1a7a4a; margin:12px 0; letter-spacing:4px; }
+
+/* ── Toast ── */
+.toast-wrap { position:fixed; top:80px; left:50%; transform:translateX(-50%); z-index:10000; display:flex; flex-direction:column; gap:8px; max-width:calc(100vw - 32px); }
+.toast-msg  { padding:11px 18px; border-radius:11px; font:600 0.84rem 'Tajawal',sans-serif; box-shadow:0 8px 22px rgba(0,0,0,0.12); animation:toastIn 0.3s ease; }
+.toast-msg.success { background:#1a7a4a; color:#fff; }
+.toast-msg.error   { background:#c53030; color:#fff; }
+.toast-msg.info    { background:#2b6cb0; color:#fff; }
+@keyframes toastIn { from{opacity:0;transform:translateY(-12px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── Skeleton ── */
+.skel { background:linear-gradient(90deg,rgba(26,122,74,0.05) 25%,rgba(26,122,74,0.12) 50%,rgba(26,122,74,0.05) 75%); background-size:200% 100%; animation:skelMove 1.4s infinite; border-radius:8px; }
+@keyframes skelMove { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* ── Responsive ── */
+@media(max-width:767px){
+    .stats-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
+    .aid-card   { padding:14px; }
+    .aid-toolbar { flex-direction:column; align-items:stretch; }
+    .filters-row { grid-template-columns:1fr 1fr; }
+    .aid-actions { width:100%; }
+    .aid-actions .aid-btn { flex:1; justify-content:center; }
+    .cards-grid { grid-template-columns:1fr; gap:10px; }
+}
+@media(max-width:480px){
+    .stats-grid { grid-template-columns:1fr 1fr; }
+    .filters-row { grid-template-columns:1fr; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="aid-wrap">
+
+    <!-- Stats -->
+    <div class="stats-grid" id="statsGrid">
+        {% for i in "123456" %}
+        <div class="stat-card"><div class="skel" style="width:48px;height:48px;border-radius:12px"></div><div style="flex:1"><div class="skel" style="width:70px;height:22px;margin-bottom:6px"></div><div class="skel" style="width:110px;height:13px"></div></div></div>
+        {% endfor %}
+    </div>
+
+    <!-- Filters -->
+    <div class="aid-card">
+        <div class="aid-toolbar">
+            <div class="filters-row">
+                <input type="text"  class="aid-filter" id="fQ"       placeholder="🔍 بحث باسم المساعدة..." oninput="onFilter()">
+                <select             class="aid-filter" id="fType"     onchange="onFilter()"><option value="">— جميع الأنواع —</option></select>
+                <select             class="aid-filter" id="fProvider" onchange="onFilter()"><option value="">— جميع الجهات —</option></select>
+                <input type="date"  class="aid-filter" id="fFrom"     onchange="onFilter()" title="من تاريخ">
+                <input type="date"  class="aid-filter" id="fTo"       onchange="onFilter()" title="إلى تاريخ">
+            </div>
+            <div class="aid-actions">
+                <button class="aid-btn btn-clear"  onclick="clearFilters()">🔄 إعادة</button>
+                <button class="aid-btn btn-excel"  onclick="exportExcel()">📊 Excel</button>
+                <button class="aid-btn btn-dl-pdf" onclick="downloadPdf()">⬇️ تحميل PDF</button>
+                <button class="aid-btn btn-print"  onclick="openPrintPage()">🖨️ طباعة PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards -->
+    <div class="aid-card">
+        <div id="cardsWrap">
+            <div class="cards-grid">
+                {% for i in "123456" %}
+                <div class="skel" style="height:140px;border-radius:16px"></div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Detail Modal -->
+<div class="aid-modal" id="detailModal" onclick="if(event.target===this)closeDetail()">
+    <div class="modal-box">
+        <div class="modal-hdr">
+            <span class="modal-title">🎁 تفاصيل المساعدة</span>
+            <button class="modal-close" onclick="closeDetail()">✕</button>
+        </div>
+        <div class="modal-body" id="detailBody"></div>
+    </div>
+</div>
+
+<!-- Progress Modal -->
+<div class="aid-modal" id="progressModal">
+    <div class="modal-box prog-box">
+        <div class="prog-icon"  id="progIcon">📋</div>
+        <div class="prog-title" id="progTitle">جار التصدير...</div>
+        <div class="prog-sub"   id="progSub">يرجى الانتظار</div>
+        <div class="prog-bar-wrap"><div class="prog-bar" id="progBar"></div></div>
+        <div class="prog-pct"   id="progPct">0%</div>
+    </div>
+</div>
+
+<!-- PWD Modal -->
+<div class="aid-modal" id="pwdModal" onclick="if(event.target===this)closePwd()">
+    <div class="modal-box pwd-modal-box">
+        <div style="font-size:2.6rem;margin-bottom:10px">🔒</div>
+        <div style="font:700 1.05rem 'Tajawal',sans-serif;color:#1a7a4a;margin-bottom:6px">كلمة مرور الملف</div>
+        <div style="font:500 0.86rem 'Tajawal',sans-serif;color:#6b7280;margin-bottom:14px;line-height:1.6">
+            الملف محمي بكلمة مرور.<br>استخدم كلمة المرور التالية لفتحه:
+        </div>
+        <div class="pwd-display" id="pwdDisplay">0000</div>
+        <div style="font:500 0.78rem 'Tajawal',sans-serif;color:#6b7280;margin-top:8px">(آخر 4 أرقام من رقم هويتك)</div>
+        <button class="aid-btn btn-excel" onclick="closePwd()" style="margin-top:14px;padding:9px 28px">✅ فهمت</button>
+    </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+{% csrf_token %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+'use strict';
+const CSRF = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+let allData = null;
+let filters = { q:'', aid_type:'', provider:'', date_from:'', date_to:'' };
+let _ft = null;
+const PAGE_SIZE = 20;
+let currentPage = 1;
+
+/* ── Load ── */
+async function loadData() {
+    try {
+        const r = await fetch(`/beneficiary/aids/data/?${new URLSearchParams(filters)}`, {
+            headers:{'X-Requested-With':'XMLHttpRequest'}
+        });
+        const d = await r.json();
+        if (d.status !== 'success') return showToast(d.message || 'خطأ', 'error');
+        allData = d.data;
+        currentPage = 1;
+        renderStats();
+        renderFilters();
+        renderCards();
+    } catch { showToast('فشل الاتصال', 'error'); }
+}
+
+/* ── Stats ── */
+const TYPE_ICONS = {food:'🍱',medical:'🏥',financial:'💰',clothing:'👕',furniture:'🛋️',education:'📚',other:'📦'};
+function renderStats() {
+    const d = allData;
+    document.getElementById('statsGrid').innerHTML = `
+        <div class="stat-card"><div class="stat-icon si-green">🎁</div><div><div class="stat-val">${d.count}</div><div class="stat-lbl">إجمالي المساعدات</div></div></div>
+        <div class="stat-card"><div class="stat-icon si-blue">📦</div><div><div class="stat-val">${_fmt(d.total_quantity)}</div><div class="stat-lbl">إجمالي الكميات</div></div></div>
+        <div class="stat-card"><div class="stat-icon si-purple">📅</div><div><div class="stat-val">${d.month_count}</div><div class="stat-lbl">هذا الشهر</div></div></div>
+        <div class="stat-card"><div class="stat-icon si-orange">🍱</div><div><div class="stat-val">${d.type_counts.food||0}</div><div class="stat-lbl">غذائية</div></div></div>
+        <div class="stat-card"><div class="stat-icon si-red">🏥</div><div><div class="stat-val">${d.type_counts.medical||0}</div><div class="stat-lbl">طبية</div></div></div>
+        <div class="stat-card"><div class="stat-icon si-teal">📚</div><div><div class="stat-val">${d.type_counts.education||0}</div><div class="stat-lbl">تعليمية</div></div></div>`;
+}
+
+/* ── Filters ── */
+let _finit = false;
+function renderFilters() {
+    if (_finit) return; _finit = true;
+    const ts = document.getElementById('fType');
+    const ps = document.getElementById('fProvider');
+    allData.type_choices.forEach(c => ts.insertAdjacentHTML('beforeend',`<option value="${c.value}">${_esc(c.label)}</option>`));
+    allData.providers.forEach(p => ps.insertAdjacentHTML('beforeend',`<option value="${_esc(p)}">${_esc(p)}</option>`));
+}
+
+/* ── Cards ── */
+function renderCards() {
+    const aids = allData.aids;
+    const wrap = document.getElementById('cardsWrap');
+    if (!aids.length) {
+        wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">🎁</div><div class="empty-text">لا توجد مساعدات تطابق الفلاتر</div></div>`;
+        return;
+    }
+    const total = aids.length, pages = Math.ceil(total/PAGE_SIZE);
+    currentPage = Math.min(currentPage, pages);
+    const start = (currentPage-1)*PAGE_SIZE;
+    const page  = aids.slice(start, start+PAGE_SIZE);
+
+    const cards = page.map((a,i) => `
+        <div class="aid-pcard" onclick="openDetail(${a.id})" style="animation-delay:${i*0.03}s">
+            <div class="pcard-top">
+                <div class="pcard-num">${start+i+1}</div>
+                <div class="pcard-date">📅 ${_esc(a.date)}</div>
+                <span class="type-badge type-${a.aid_type}">${TYPE_ICONS[a.aid_type]||'📦'} ${_esc(a.aid_type_label)}</span>
+            </div>
+            <div class="pcard-name">🎁 ${_esc(a.name)}</div>
+            <div class="pcard-meta">
+                <span class="pcard-qty">× ${_fmt(a.quantity)}</span>
+                <span class="pcard-provider">🏢 ${_esc(a.provider)}</span>
+            </div>
+            ${a.note ? `<div class="pcard-sep"></div><div class="pcard-note">📝 ${_esc(a.note)}</div>` : ''}
+        </div>`).join('');
+
+    wrap.innerHTML = `
+        <div class="cards-header">
+            <div class="cards-count">عرض <strong>${start+1}–${Math.min(start+PAGE_SIZE,total)}</strong> من <strong>${total}</strong> مساعدة</div>
+        </div>
+        <div class="cards-grid">${cards}</div>
+        ${buildPagination(currentPage,pages,total)}`;
+}
+
+/* ── Pagination ── */
+function buildPagination(page,pages,total) {
+    if (pages<=1) return '';
+    const vis = new Set([1,pages]);
+    for(let i=Math.max(1,page-2);i<=Math.min(pages,page+2);i++) vis.add(i);
+    const nums = [...vis].sort((a,b)=>a-b);
+    let btns = `<button class="pg-btn" onclick="goPage(${page-1})" ${page===1?'disabled':''}>&#8594;</button>`;
+    let prev=0;
+    for(const n of nums){
+        if(n-prev>1) btns+=`<span class="pg-dots">…</span>`;
+        btns+=`<button class="pg-btn ${n===page?'active':''}" onclick="goPage(${n})">${n}</button>`;
+        prev=n;
+    }
+    btns+=`<button class="pg-btn" onclick="goPage(${page+1})" ${page===pages?'disabled':''}>&#8592;</button>`;
+    return `<div class="pg-wrap">${btns}</div>
+            <div class="pg-info">صفحة ${page} من ${pages} | المساعدات ${(page-1)*PAGE_SIZE+1}–${Math.min(page*PAGE_SIZE,total)}</div>`;
+}
+function goPage(n){
+    const pages=Math.ceil(allData.aids.length/PAGE_SIZE);
+    if(n<1||n>pages) return;
+    currentPage=n;
+    renderCards();
+    document.getElementById('cardsWrap').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ── Filters ── */
+function onFilter(){
+    filters.q        = document.getElementById('fQ').value;
+    filters.aid_type = document.getElementById('fType').value;
+    filters.provider = document.getElementById('fProvider').value;
+    filters.date_from= document.getElementById('fFrom').value;
+    filters.date_to  = document.getElementById('fTo').value;
+    clearTimeout(_ft); _ft=setTimeout(loadData,300);
+}
+function clearFilters(){
+    filters={q:'',aid_type:'',provider:'',date_from:'',date_to:''};
+    ['fQ','fType','fProvider','fFrom','fTo'].forEach(id=>document.getElementById(id).value='');
+    loadData();
+}
+
+/* ── Detail ── */
+async function openDetail(id){
+    try{
+        const r=await fetch(`/beneficiary/aids/detail/?id=${id}`);
+        const d=await r.json();
+        if(d.status!=='success') return showToast(d.message,'error');
+        const a=d.data;
+        document.getElementById('detailBody').innerHTML=`
+            <div class="detail-grid">
+                <div class="detail-item"><div class="detail-lbl">🎁 اسم المساعدة</div><div class="detail-val">${_esc(a.name)}</div></div>
+                <div class="detail-item"><div class="detail-lbl">🏷️ النوع</div><div class="detail-val"><span class="type-badge type-${a.aid_type}">${_esc(a.aid_type_label)}</span></div></div>
+                <div class="detail-item"><div class="detail-lbl">📦 الكمية</div><div class="detail-val" style="color:#1a7a4a">× ${_fmt(a.quantity)}</div></div>
+                <div class="detail-item"><div class="detail-lbl">🏢 الجهة المقدمة</div><div class="detail-val">${_esc(a.provider)}</div></div>
+                <div class="detail-item"><div class="detail-lbl">📅 التاريخ</div><div class="detail-val">${_esc(a.date)}</div></div>
+                ${a.created_by?`<div class="detail-item"><div class="detail-lbl">👤 أضافها</div><div class="detail-val">${_esc(a.created_by)}</div></div>`:''}
+                ${a.created_at?`<div class="detail-item"><div class="detail-lbl">⏰ وقت الإضافة</div><div class="detail-val" style="font-size:0.78rem">${_esc(a.created_at.replace('T',' ').slice(0,16))}</div></div>`:''}
+            </div>
+            ${a.note?`<div class="detail-item" style="margin-top:12px"><div class="detail-lbl">📝 الملاحظة</div><div class="detail-val">${_esc(a.note)}</div></div>`:''}`;
+        document.getElementById('detailModal').classList.add('show');
+    } catch { showToast('فشل التحميل','error'); }
+}
+function closeDetail(){ document.getElementById('detailModal').classList.remove('show'); }
+
+/* ── Export ── */
+async function exportExcel(){
+    await _export(`/beneficiary/aids/export-excel/?${new URLSearchParams(filters)}`,'Excel','📊','xlsx');
+}
+async function downloadPdf(){
+    await _export(`/beneficiary/aids/download-pdf/?${new URLSearchParams(filters)}`,'PDF','📋','pdf');
+}
+function openPrintPage(){
+    window.open(`/beneficiary/aids/print/?${new URLSearchParams(filters)}`,'_blank');
+}
+
+async function _export(url,type,icon,ext){
+    const m=document.getElementById('progressModal');
+    const bar=document.getElementById('progBar'),pct=document.getElementById('progPct');
+    document.getElementById('progIcon').textContent=icon;
+    document.getElementById('progTitle').textContent=`جار تجهيز ${type}...`;
+    document.getElementById('progSub').textContent='يرجى الانتظار';
+    bar.style.width='0%'; bar.style.background='linear-gradient(90deg,#1a7a4a,#2ecc71)';
+    pct.textContent='0%'; m.classList.add('show');
+    let p=0;
+    const t=setInterval(()=>{
+        if(p<90){p+=Math.random()*8+2; if(p>90)p=90; bar.style.width=p+'%'; pct.textContent=Math.floor(p)+'%';}
+    },200);
+    try{
+        const r=await fetch(url,{headers:{'X-Requested-With':'XMLHttpRequest'}});
+        if(!r.ok) throw new Error();
+        const blob=await r.blob(), pwd=r.headers.get('X-PDF-Password');
+        clearInterval(t); bar.style.width='100%'; pct.textContent='100%';
+        document.getElementById('progIcon').textContent='✅';
+        document.getElementById('progTitle').textContent='تم!';
+        const cd=r.headers.get('Content-Disposition')||'';
+        const mt=cd.match(/filename\*?=(?:UTF-8'')?["']?([^"';\n]+)/i);
+        const fn=mt?decodeURIComponent(mt[1]):`aids_${Date.now()}.${ext}`;
+        const u=URL.createObjectURL(blob), a=document.createElement('a');
+        a.href=u; a.download=fn; document.body.appendChild(a); a.click();
+        document.body.removeChild(a); URL.revokeObjectURL(u);
+        setTimeout(()=>{
+            m.classList.remove('show');
+            if(type==='PDF'&&pwd){
+                document.getElementById('pwdDisplay').textContent=pwd;
+                setTimeout(()=>document.getElementById('pwdModal').classList.add('show'),200);
+            }
+        },1500);
+    } catch {
+        clearInterval(t);
+        document.getElementById('progIcon').textContent='❌';
+        document.getElementById('progTitle').textContent='فشل التصدير';
+        bar.style.background='#c53030'; bar.style.width='100%';
+        setTimeout(()=>m.classList.remove('show'),2500);
+    }
+}
+function closePwd(){ document.getElementById('pwdModal').classList.remove('show'); }
+
+/* ── Helpers ── */
+function showToast(msg,type='info'){
+    const w=document.getElementById('toastWrap'),t=document.createElement('div');
+    t.className=`toast-msg ${type}`; t.textContent=msg; w.appendChild(t);
+    setTimeout(()=>{t.style.opacity='0'; setTimeout(()=>t.remove(),300);},2800);
+}
+function _esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function _fmt(v){ const n=parseFloat(v); return isNaN(n)?'0':n.toLocaleString('en-US'); }
+
+document.addEventListener('DOMContentLoaded', loadData);
+</script>
+{% endblock %}

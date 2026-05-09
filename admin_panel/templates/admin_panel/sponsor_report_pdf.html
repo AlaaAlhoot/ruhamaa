@@ -1,0 +1,434 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>تقرير الكافل — {{ sponsor.get_full_name }} — {{ period_label }}</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Arial', sans-serif; background: #fff; color: #1a1a2e; font-size: 10pt; direction: rtl; }
+
+/* ══ Header ══ */
+.hdr {
+    background-color: #7c3aed;
+    padding: 16px 22px;
+    border-radius: 10px;
+    margin-bottom: 18px;
+    display: table;
+    width: 100%;
+}
+.hdr-right { display: table-cell; vertical-align: middle; width: 55%; }
+.hdr-left  { display: table-cell; vertical-align: middle; text-align: left; width: 45%; }
+.org-name  { font-size: 20pt; font-weight: 900; color: #fff; font-family: 'Arial', serif; }
+.org-sub   { font-size: 8pt; color: #e0d4ff; margin-top: 3px; }
+.hdr-meta  { font-size: 8pt; color: #e0d4ff; line-height: 2; text-align: left; }
+.hdr-meta strong { color: #fff; }
+
+/* ══ رسالة الترحيب ══ */
+.welcome-box {
+    border: 1px solid #c4b5fd;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    background-color: #f5f3ff;
+}
+.welcome-title { font-size: 11pt; font-weight: 900; color: #7c3aed; margin-bottom: 8px; }
+.welcome-text  { font-size: 9pt; color: #4b5563; line-height: 1.9; }
+
+/* ══ ملخص الكافل ══ */
+.summary-grid {
+    display: table;
+    width: 100%;
+    margin-bottom: 16px;
+    border-collapse: separate;
+    border-spacing: 8px;
+}
+.summary-row { display: table-row; }
+.summary-cell { display: table-cell; width: 25%; vertical-align: top; }
+.summary-box {
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+    border: 1px solid transparent;
+}
+.summary-box.purple { background-color: #f5f3ff; border-color: #c4b5fd; }
+.summary-box.green  { background-color: #f0fdf4; border-color: #bbf7d0; }
+.summary-box.orange { background-color: #fff7ed; border-color: #fed7aa; }
+.summary-box.blue   { background-color: #eff6ff; border-color: #bfdbfe; }
+.summary-val { font-size: 18pt; font-weight: 900; margin-bottom: 4px; }
+.summary-val.purple { color: #7c3aed; }
+.summary-val.green  { color: #1a7a4a; }
+.summary-val.orange { color: #b45309; }
+.summary-val.blue   { color: #2b6cb0; }
+.summary-lbl { font-size: 7pt; color: #9ca3af; font-weight: 700; }
+
+/* ══ الأقسام ══ */
+.section {
+    margin-bottom: 16px;
+    border: 1px solid #c4b5fd;
+    border-radius: 10px;
+    overflow: hidden;
+    page-break-inside: avoid;
+}
+.section-title {
+    background-color: #f3f0ff;
+    padding: 8px 14px;
+    font-size: 9.5pt;
+    font-weight: 700;
+    color: #7c3aed;
+    border-bottom: 1px solid #c4b5fd;
+}
+.section-title.green  { background-color: #f0fdf4; color: #1a7a4a; border-color: #bbf7d0; }
+.section-title.orange { background-color: #fff7ed; color: #b45309; border-color: #fed7aa; }
+
+/* ══ جداول ══ */
+.data-table { width: 100%; border-collapse: collapse; font-size: 8pt; }
+.data-table th {
+    padding: 7px 10px;
+    font-weight: 700;
+    text-align: right;
+    font-size: 7pt;
+    border-bottom: 1px solid #c4b5fd;
+    background-color: #f3f0ff;
+    color: #7c3aed;
+}
+.data-table.green th  { background-color: #f0fdf4; color: #1a7a4a; border-color: #bbf7d0; }
+.data-table.orange th { background-color: #fff7ed; color: #b45309; border-color: #fed7aa; }
+.data-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid #ede9fe;
+    vertical-align: middle;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:nth-child(even) td { background-color: #f9f7ff; }
+.data-table.green tr:nth-child(even) td { background-color: #f0fdf4; }
+.data-table.orange tr:nth-child(even) td { background-color: #fff7ed; }
+
+/* ══ Info ══ */
+.info-grid { display: table; width: 100%; padding: 10px; }
+.info-row  { display: table-row; }
+.info-cell { display: table-cell; width: 33.33%; padding: 4px 6px; vertical-align: top; }
+.info-box  { background-color: #f9f7ff; border-radius: 7px; padding: 8px 10px; }
+.info-lbl  { font-size: 6.5pt; color: #9ca3af; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
+.info-val  { font-size: 8.5pt; font-weight: 700; color: #1a1a2e; }
+
+/* Badges */
+.st-paid    { color: #1a7a4a; font-weight: 700; }
+.st-pending { color: #b45309; font-weight: 700; }
+.st-late    { color: #c53030; font-weight: 700; }
+.badge {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 8px;
+    font-size: 7pt;
+    font-weight: 700;
+}
+.badge-green  { background-color: #dcfce7; color: #1a7a4a; }
+.badge-red    { background-color: #fee2e2; color: #c53030; }
+.badge-orange { background-color: #fef3c7; color: #b45309; }
+.badge-gray   { background-color: #f3f4f6; color: #6b7280; }
+.badge-purple { background-color: #ede9fe; color: #7c3aed; }
+
+/* ══ بطاقة المكفول ══ */
+.bene-card {
+    border: 1px solid #ede9fe;
+    border-radius: 10px;
+    margin: 10px;
+    overflow: hidden;
+    page-break-inside: avoid;
+}
+.bene-card-hdr {
+    background-color: #f8f7ff;
+    padding: 8px 12px;
+    display: table;
+    width: 100%;
+    border-bottom: 1px solid #ede9fe;
+}
+.bene-name-cell { display: table-cell; vertical-align: middle; }
+.bene-name { font-size: 10pt; font-weight: 900; color: #1a1a2e; }
+.bene-type { font-size: 7.5pt; color: #9ca3af; margin-top: 1px; }
+.bene-badge-cell { display: table-cell; vertical-align: middle; text-align: left; }
+.bene-stats { display: table; width: 100%; padding: 8px; border-collapse: separate; border-spacing: 6px; }
+.bene-stat-row { display: table-row; }
+.bene-stat-cell { display: table-cell; width: 25%; vertical-align: top; }
+.bene-stat-box { background-color: #f9f7ff; border-radius: 7px; padding: 6px 8px; text-align: center; }
+.bene-stat-val { font-size: 11pt; font-weight: 900; color: #7c3aed; }
+.bene-stat-lbl { font-size: 6pt; color: #9ca3af; margin-top: 1px; }
+
+/* ══ نشاط الكافل ══ */
+.activity-grid { display: table; width: 100%; padding: 10px; border-collapse: separate; border-spacing: 6px; }
+.activity-row  { display: table-row; }
+.activity-cell { display: table-cell; width: 33.33%; vertical-align: top; }
+.activity-box  { background-color: #f9f7ff; border-radius: 8px; padding: 10px; text-align: center; }
+.activity-val  { font-size: 14pt; font-weight: 900; color: #7c3aed; margin-bottom: 3px; }
+.activity-lbl  { font-size: 7pt; color: #9ca3af; font-weight: 600; }
+
+/* ══ Footer ══ */
+.rp-footer {
+    margin-top: 20px;
+    padding-top: 10px;
+    border-top: 1px solid #ede9fe;
+    display: table;
+    width: 100%;
+    font-size: 7pt;
+    color: #9ca3af;
+}
+.footer-r { display: table-cell; width: 50%; }
+.footer-l { display: table-cell; width: 50%; text-align: left; }
+
+/* ══ Page Break ══ */
+.page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<!-- ══ Header ══ -->
+<div class="hdr">
+    <div class="hdr-right">
+        <div class="org-name">رُحَمَاء</div>
+        <div class="org-sub">جمعية نسائم فلسطين الخيرية</div>
+    </div>
+    <div class="hdr-left">
+        <div class="hdr-meta">
+            <div><strong>التقرير الشهري:</strong> {{ period_label }}</div>
+            <div><strong>تاريخ الإصدار:</strong> {% now "Y/m/d" %}</div>
+            <div><strong>أُرسل بواسطة:</strong> {{ sender_label }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ رسالة الترحيب ══ -->
+<div class="welcome-box">
+    <div class="welcome-title">أخي الكريم {{ sponsor.get_full_name }} — حفظه الله</div>
+    <div class="welcome-text">
+        السلام عليكم ورحمة الله وبركاته،<br><br>
+        نُقدِّم لكم تقريركم الشهري لشهر <strong>{{ period_label }}</strong> من منصة رُحَمَاء —
+        جمعية نسائم فلسطين الخيرية. يتضمن هذا التقرير بيانات مكفوليكم الكرام
+        وآخر التحديثات المتعلقة بهم. جزاكم الله خيراً على تفضلكم بالكفالة،
+        وجعلها الله في ميزان حسناتكم.
+    </div>
+</div>
+
+<!-- ══ ملخص الكافل ══ -->
+<div class="summary-grid">
+    <div class="summary-row">
+        <div class="summary-cell">
+            <div class="summary-box purple">
+                <div class="summary-val purple">{{ bene_count }}</div>
+                <div class="summary-lbl">إجمالي المكفولين</div>
+            </div>
+        </div>
+        <div class="summary-cell">
+            <div class="summary-box green">
+                <div class="summary-val green">{{ month_total_ils }}&#8362;</div>
+                <div class="summary-lbl">مدفوعات هذا الشهر</div>
+            </div>
+        </div>
+        <div class="summary-cell">
+            <div class="summary-box orange">
+                <div class="summary-val orange">{{ all_total_ils }}&#8362;</div>
+                <div class="summary-lbl">إجمالي الدفعات الكلي</div>
+            </div>
+        </div>
+        <div class="summary-cell">
+            <div class="summary-box blue">
+                <div class="summary-val blue">{{ total_aids }}</div>
+                <div class="summary-lbl">المساعدات المقدمة</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ بيانات كل مكفول ══ -->
+{% for bene in beneficiaries %}
+<div class="bene-card {% if not forloop.first and forloop.counter0|divisibleby:2 %}page-break{% endif %}">
+    <div class="bene-card-hdr">
+        <div class="bene-name-cell">
+            <div class="bene-name">{{ bene.full_name }}</div>
+            <div class="bene-type">{{ bene.type_label }} — {{ bene.reg_number }}</div>
+        </div>
+        <div class="bene-badge-cell">
+            {% if bene.is_active %}
+                <span class="badge badge-green">✓ نشط</span>
+            {% else %}
+                <span class="badge badge-red">معطّل</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- إحصائيات المكفول -->
+    <div class="bene-stats">
+        <div class="bene-stat-row">
+            <div class="bene-stat-cell">
+                <div class="bene-stat-box">
+                    <div class="bene-stat-val">{{ bene.month_pays }}&#8362;</div>
+                    <div class="bene-stat-lbl">دفعات هذا الشهر</div>
+                </div>
+            </div>
+            <div class="bene-stat-cell">
+                <div class="bene-stat-box">
+                    <div class="bene-stat-val">{{ bene.total_pays }}&#8362;</div>
+                    <div class="bene-stat-lbl">إجمالي الدفعات</div>
+                </div>
+            </div>
+            <div class="bene-stat-cell">
+                <div class="bene-stat-box">
+                    <div class="bene-stat-val">{{ bene.pays_count }}</div>
+                    <div class="bene-stat-lbl">عدد الدفعات</div>
+                </div>
+            </div>
+            <div class="bene-stat-cell">
+                <div class="bene-stat-box">
+                    <div class="bene-stat-val">{{ bene.aids_count }}</div>
+                    <div class="bene-stat-lbl">المساعدات</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- جدول الدفعات -->
+    {% if bene.payments %}
+    <div style="padding:0 10px 10px">
+        <div style="font-size:8pt;font-weight:700;color:#1a7a4a;margin-bottom:6px">💰 سجل الدفعات</div>
+        <table class="data-table green">
+            <thead>
+                <tr>
+                    <th>التاريخ</th>
+                    <th>المبلغ &#8362;</th>
+                    <th>المبلغ $</th>
+                    <th>الحالة</th>
+                    <th>ملاحظة</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in bene.payments %}
+                <tr>
+                    <td>{{ p.date }}</td>
+                    <td>{{ p.amount_ils }}&#8362;</td>
+                    <td>${{ p.amount_usd }}</td>
+                    <td class="st-{{ p.status }}">
+                        {% if p.status == 'paid' %}مدفوعة
+                        {% elif p.status == 'pending' %}معلّقة
+                        {% else %}متأخرة{% endif %}
+                    </td>
+                    <td>{{ p.note|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- جدول المساعدات -->
+    {% if bene.aids %}
+    <div style="padding:0 10px 10px">
+        <div style="font-size:8pt;font-weight:700;color:#b45309;margin-bottom:6px">🎁 المساعدات المقدمة</div>
+        <table class="data-table orange">
+            <thead>
+                <tr>
+                    <th>التاريخ</th>
+                    <th>الاسم</th>
+                    <th>النوع</th>
+                    <th>الكمية</th>
+                    <th>الجهة</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in bene.aids %}
+                <tr>
+                    <td>{{ a.date }}</td>
+                    <td>{{ a.name }}</td>
+                    <td>{{ a.aid_type_label }}</td>
+                    <td>{{ a.quantity }}</td>
+                    <td>{{ a.provider }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endfor %}
+
+<!-- ══ نشاط الكافل ══ -->
+<div class="section page-break">
+    <div class="section-title">👤 نشاط الكافل على المنصة</div>
+    <div class="activity-grid">
+        <div class="activity-row">
+            <div class="activity-cell">
+                <div class="activity-box">
+                    <div class="activity-val">{{ sponsor_activity.last_login }}</div>
+                    <div class="activity-lbl">آخر تسجيل دخول</div>
+                </div>
+            </div>
+            <div class="activity-cell">
+                <div class="activity-box">
+                    <div class="activity-val">{{ sponsor_activity.login_count }}</div>
+                    <div class="activity-lbl">مرات الدخول هذا الشهر</div>
+                </div>
+            </div>
+            <div class="activity-cell">
+                <div class="activity-box">
+                    <div class="activity-val">{{ sponsor_activity.msg_count }}</div>
+                    <div class="activity-lbl">رسائل مُرسَلة</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ إحصائيات الدفعات ══ -->
+<div class="section">
+    <div class="section-title green">📊 إحصائيات الدفعات</div>
+    <table class="data-table green">
+        <thead>
+            <tr>
+                <th>المكفول</th>
+                <th>إجمالي الدفعات &#8362;</th>
+                <th>هذا الشهر &#8362;</th>
+                <th>عدد الدفعات</th>
+                <th>آخر دفعة</th>
+                <th>الحالة</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for bene in beneficiaries %}
+            <tr>
+                <td style="font-weight:700">{{ bene.full_name }}</td>
+                <td>{{ bene.total_pays }}&#8362;</td>
+                <td>{{ bene.month_pays }}&#8362;</td>
+                <td>{{ bene.pays_count }}</td>
+                <td>{{ bene.last_pay_date|default:"—" }}</td>
+                <td>
+                    {% if bene.late_pays > 0 %}
+                        <span class="badge badge-red">{{ bene.late_pays }} متأخرة</span>
+                    {% else %}
+                        <span class="badge badge-green">منتظم</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- ══ شكر وتقدير ══ -->
+<div class="welcome-box" style="margin-top:16px;background-color:#f0fdf4;border-color:#bbf7d0">
+    <div class="welcome-title" style="color:#1a7a4a">شكر وتقدير 🌿</div>
+    <div class="welcome-text">
+        نتقدم لكم بخالص الشكر والتقدير على دعمكم المستمر لأبنائنا المكفولين.
+        إن كفالتكم الكريمة تُضيء دروبهم وتُسهم في بناء مستقبلهم.
+        جعل الله ذلك في ميزان حسناتكم وبارك في أموالكم وأهلكم.
+        <br><br>
+        للتواصل أو الاستفسار: <strong>جمعية نسائم فلسطين الخيرية</strong>
+    </div>
+</div>
+
+<!-- ══ Footer ══ -->
+<div class="rp-footer">
+    <div class="footer-r">منصة رُحَمَاء — جميع الحقوق محفوظة</div>
+    <div class="footer-l">تقرير {{ period_label }} — صدر بتاريخ {% now "Y/m/d" %}</div>
+</div>
+
+</body>
+</html>

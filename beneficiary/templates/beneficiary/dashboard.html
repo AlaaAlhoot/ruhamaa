@@ -1,0 +1,697 @@
+{% extends 'beneficiary/base.html' %}
+{% load static %}
+{% block title %}الرئيسية{% endblock %}
+{% block page_title %}لوحة التحكم{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ═══════════════════════════════════════════
+   DASHBOARD — FULL REDESIGN (DARK MODE READY)
+   متوافق مع متغيرات base.html بشكل كامل
+   ═══════════════════════════════════════════ */
+
+/* ── Keyframes ── */
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(18px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+@keyframes pulse-dot {
+  0%,100% { transform:scale(1); opacity:1; }
+  50%      { transform:scale(1.4); opacity:.6; }
+}
+@keyframes shimmer {
+  from { background-position: -400px 0; }
+  to   { background-position:  400px 0; }
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── Skeleton ── */
+.skel {
+  background: linear-gradient(90deg,
+    var(--green-dim) 25%,
+    var(--border) 50%,
+    var(--green-dim) 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 8px;
+}
+.skel-line  { height:14px; margin:6px 0; }
+.skel-block { height:80px; }
+
+/* ── Fade-in helpers ── */
+.fade-up { animation: fadeUp .5s ease both; }
+.fd1 { animation-delay:.05s; }
+.fd2 { animation-delay:.10s; }
+.fd3 { animation-delay:.15s; }
+.fd4 { animation-delay:.20s; }
+.fd5 { animation-delay:.25s; }
+.fd6 { animation-delay:.30s; }
+
+/* ── Loading spinner ── */
+#db-loader {
+  display:flex; align-items:center; justify-content:center;
+  min-height:60vh; flex-direction:column; gap:12px;
+}
+#db-loader .spin {
+  width:44px; height:44px; border-radius:50%;
+  border:4px solid var(--green-dim);
+  border-top-color:var(--green);
+  animation: spin .8s linear infinite;
+}
+
+/* ────────────────────────────────────────
+   WELCOME HEADER
+──────────────────────────────────────── */
+.welcome-card {
+  background: linear-gradient(135deg,
+    var(--green) 0%,
+    color-mix(in srgb, var(--green) 70%, #000) 100%);
+  border-radius: 20px;
+  padding: 28px 32px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.15);
+}
+.welcome-card::before {
+  content:'';
+  position:absolute; inset:0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='30'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+}
+.welcome-avatar {
+  width: 72px; height: 72px; border-radius: 50%;
+  border: 3px solid rgba(255,255,255,.35);
+  object-fit: cover; flex-shrink:0; position:relative;
+  background: rgba(255,255,255,.15);
+  display:flex; align-items:center; justify-content:center;
+  font-size:2rem;
+}
+.welcome-avatar img { width:100%; height:100%; border-radius:50%; object-fit:cover; }
+.welcome-text { flex:1; position:relative; }
+.welcome-greeting { font-size:.85rem; opacity:.8; margin-bottom:2px; }
+.welcome-name { font-size:1.45rem; font-weight:700; margin-bottom:4px; }
+.welcome-meta { font-size:.78rem; opacity:.7; display:flex; flex-wrap:wrap; gap:12px; }
+.welcome-meta span { display:flex; align-items:center; gap:4px; }
+.welcome-alerts { position:relative; display:flex; flex-direction:column; gap:8px; min-width:220px; }
+
+@media (max-width:767px) {
+  .welcome-card { flex-direction:column; text-align:center; padding:20px; }
+  .welcome-alerts { width:100%; min-width:unset; }
+  .welcome-meta { justify-content:center; }
+}
+
+/* ── Alert chips ── */
+.alert-chip {
+  background: rgba(255,255,255,.15);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: .78rem;
+  color:#fff;
+  display:flex; align-items:center; gap:8px;
+  cursor:pointer; transition: background .2s;
+  text-decoration:none;
+}
+.alert-chip:hover { background:rgba(255,255,255,.25); color:#fff; }
+.alert-chip-icon { font-size:1rem; flex-shrink:0; }
+.alert-chip-text { flex:1; }
+.alert-chip.warning { border-color:rgba(255,200,0,.4); background:rgba(255,200,0,.15); }
+.alert-chip.success { border-color:rgba(100,255,150,.4); background:rgba(100,255,150,.12); }
+
+/* ────────────────────────────────────────
+   SHARED CARD STYLES (Cards adapt to surface)
+──────────────────────────────────────── */
+.status-card, .stat-card, .sponsor-card, .no-sponsor, .chart-card, .timeline-card, .notif-card {
+  background: var(--surface);
+  border-radius: 18px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.03);
+  border: 1px solid var(--border);
+  position: relative;
+}
+
+/* ────────────────────────────────────────
+   STATUS PROGRESS
+──────────────────────────────────────── */
+.status-card { padding: 24px 28px; margin-bottom: 24px; }
+.status-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom: 20px; flex-wrap:wrap; gap:8px;
+}
+.status-title { font-size:1rem; font-weight:700; color:var(--text); }
+.status-desc-badge {
+  background: var(--green-dim);
+  color: var(--green);
+  border-radius:20px; padding:4px 14px; font-size:.8rem; font-weight:600;
+}
+/* Steps */
+.progress-steps {
+  display: flex; align-items: center; overflow-x: auto;
+  padding-bottom: 4px; gap: 0; scrollbar-width: thin;
+}
+.ps-item {
+  display:flex; flex-direction:column; align-items:center;
+  gap:6px; min-width:70px; text-align:center;
+}
+.ps-circle {
+  width:36px; height:36px; border-radius:50%;
+  border:2px solid var(--border);
+  display:flex; align-items:center; justify-content:center;
+  font-size:.8rem; font-weight:700;
+  color:var(--text-muted);
+  background: var(--surface);
+  transition: all .3s;
+}
+.ps-circle.done { background: var(--green); border-color: var(--green); color:#fff; }
+.ps-circle.active {
+  background: var(--green); border-color: var(--green); color:#fff;
+  box-shadow: 0 0 0 4px var(--green-dim);
+}
+.ps-label { font-size:.68rem; color:var(--text-muted); font-weight:500; white-space:nowrap; }
+.ps-item.active .ps-label { color:var(--green); font-weight:700; }
+.ps-line {
+  flex:1; height:2px; min-width:16px;
+  background: var(--border); margin-bottom:22px;
+  transition: background .3s;
+}
+.ps-line.done { background: var(--green); }
+
+/* ────────────────────────────────────────
+   STATS GRID — 6 CARDS
+──────────────────────────────────────── */
+.stats-grid {
+  display: grid; grid-template-columns: repeat(6,1fr);
+  gap: 14px; margin-bottom: 24px;
+}
+@media (max-width:1199px) { .stats-grid { grid-template-columns: repeat(3,1fr); } }
+@media (max-width:575px)  { .stats-grid { grid-template-columns: repeat(2,1fr); } }
+
+.stat-card {
+  border-radius: 16px; padding: 20px 18px;
+  display:flex; flex-direction:column; gap:8px;
+  transition: transform .2s, box-shadow .2s;
+}
+.stat-card:hover { transform:translateY(-3px); box-shadow:0 8px 24px var(--border); }
+.stat-icon {
+  font-size:1.5rem; width:44px; height:44px;
+  background: var(--green-dim); border-radius:12px;
+  display:flex; align-items:center; justify-content:center;
+}
+.stat-val { font-size:1.3rem; font-weight:800; color:var(--text); line-height:1.1; }
+.stat-lbl { font-size:.73rem; color:var(--text-muted); font-weight:500; }
+.stat-sub { font-size:.7rem; color:var(--green); font-weight:600; }
+
+/* ────────────────────────────────────────
+   SPONSOR CARD
+──────────────────────────────────────── */
+.sponsor-card { padding:22px 24px; display:flex; align-items:center; gap:18px; }
+.sponsor-avatar {
+  width:64px; height:64px; border-radius:50%;
+  border:3px solid var(--border); object-fit:cover; flex-shrink:0;
+  background:var(--green-dim); display:flex; align-items:center; justify-content:center; font-size:1.8rem;
+}
+.sponsor-info { flex:1; min-width:0; }
+.sponsor-name { font-size:1.05rem; font-weight:700; color:var(--text); }
+.sponsor-meta { font-size:.78rem; color:var(--text-muted); margin-top:2px; display:flex; flex-wrap:wrap; gap:8px; }
+.sponsor-duration {
+  background:var(--green-dim); color:var(--green);
+  border-radius:20px; padding:3px 12px; font-size:.75rem; font-weight:600; white-space:nowrap;
+}
+.no-sponsor { border:2px dashed var(--border); text-align:center; color:var(--text-muted); padding:22px 24px; }
+.no-sponsor .ns-icon { font-size:2rem; margin-bottom:8px; }
+.no-sponsor .ns-text { font-size:.85rem; font-weight:500; }
+.no-sponsor .ns-sub  { font-size:.75rem; margin-top:4px; }
+
+/* ────────────────────────────────────────
+   MINI CHART + QUICK ACCESS ROW
+──────────────────────────────────────── */
+.chart-card { padding:22px 24px; height:100%; }
+.chart-title {
+  font-size:.95rem; font-weight:700; color:var(--text);
+  margin-bottom:16px; display:flex; align-items:center; justify-content:space-between;
+}
+.mini-bars { display:flex; align-items:flex-end; gap:8px; height:110px; }
+.mini-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; }
+.mini-bar {
+  width:100%; background:var(--green-dim);
+  border-radius:6px 6px 2px 2px; position:relative;
+  transition:height .6s cubic-bezier(.34,1.56,.64,1); min-height:4px;
+}
+.mini-bar.active, .mini-bar:hover { background:var(--green); }
+.mini-bar-label { font-size:.65rem; color:var(--text-muted); font-weight:500; }
+.bar-tooltip {
+  position:absolute; top:-28px; left:50%; transform:translateX(-50%);
+  background:var(--green); color:#fff;
+  font-size:.65rem; padding:2px 6px; border-radius:6px;
+  white-space:nowrap; opacity:0; pointer-events:none; transition:.2s;
+}
+.mini-bar:hover .bar-tooltip { opacity:1; }
+
+/* Quick Access */
+.qa-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.qa-btn {
+  background:var(--green-dim); border:1px solid var(--border);
+  border-radius:14px; padding:14px 10px;
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  text-decoration:none; color:var(--text); font-size:.75rem; font-weight:600;
+  transition:all .2s;
+}
+.qa-btn:hover { background:var(--green); color:#fff; transform:translateY(-2px); box-shadow:0 4px 12px var(--border); }
+.qa-btn .qa-icon { font-size:1.3rem; }
+
+/* ────────────────────────────────────────
+   TIMELINE
+──────────────────────────────────────── */
+.timeline-card { padding:22px 24px; height:100%; }
+.tl-item { display:flex; gap:14px; padding:12px 0; border-bottom:1px solid var(--border); }
+.tl-item:last-child { border-bottom:none; padding-bottom:0; }
+.tl-icon {
+  width:36px; height:36px; border-radius:50%;
+  background:var(--green-dim); display:flex; align-items:center; justify-content:center;
+  font-size:1rem; flex-shrink:0;
+}
+.tl-body { flex:1; min-width:0; }
+.tl-title { font-size:.85rem; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tl-date  { font-size:.72rem; color:var(--text-muted); margin-top:2px; }
+.tl-right { display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex-shrink:0; }
+.tl-amount { font-size:.82rem; font-weight:700; color:var(--green); }
+.tl-tag { font-size:.65rem; padding:2px 8px; border-radius:20px; background:var(--green-dim); color:var(--green); font-weight:600; }
+
+/* ────────────────────────────────────────
+   NOTIFICATIONS PANEL
+──────────────────────────────────────── */
+.notif-card { padding:22px 24px; height:100%; }
+.notif-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.notif-title { font-size:.95rem; font-weight:700; color:var(--text); }
+.notif-badge { background:var(--green); color:#fff; border-radius:20px; padding:2px 10px; font-size:.72rem; font-weight:700; }
+.notif-item { display:flex; gap:12px; padding:10px; border-radius:12px; margin-bottom:6px; transition:background .2s; cursor:pointer; }
+.notif-item:hover { background:var(--green-dim); }
+.notif-item.unread { background:var(--green-dim); border-right: 3px solid var(--green); }
+.notif-dot { width:8px; height:8px; border-radius:50%; background:var(--green); flex-shrink:0; margin-top:5px; animation:pulse-dot 2s infinite; }
+.notif-dot.read { background:transparent; }
+.notif-body { flex:1; min-width:0; }
+.notif-n-title { font-size:.83rem; font-weight:600; color:var(--text); }
+.notif-msg { font-size:.73rem; color:var(--text-muted); margin-top:2px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.notif-time { font-size:.68rem; color:var(--text-muted); margin-top:4px; }
+.notif-icon-wrap { font-size:1.1rem; flex-shrink:0; }
+
+/* ── Section Header ── */
+.section-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:8px; }
+.section-title { font-size:.95rem; font-weight:700; color:var(--text); }
+.btn-sm-green {
+  background:var(--green-dim); color:var(--green); border:1px solid var(--border);
+  border-radius:20px; padding:5px 14px; font-size:.75rem; font-weight:600;
+  cursor:pointer; transition:all .2s; text-decoration:none;
+  display:inline-flex; align-items:center; gap:4px;
+}
+.btn-sm-green:hover { background:var(--green); color:#fff; }
+
+/* ── Error state ── */
+.error-state {
+  background: color-mix(in srgb, var(--red) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--red) 30%, transparent);
+  border-radius:14px; padding:20px; text-align:center; color:var(--red);
+  font-size:.85rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ═══ LOADER ═══ -->
+<div id="db-loader">
+  <div class="spin"></div>
+  <span style="color:var(--text-muted,#9ca3af);font-size:.85rem">جاري تحميل بياناتك...</span>
+</div>
+
+<!-- ═══ MAIN CONTENT (hidden until data loaded) ═══ -->
+<div id="db-content" style="display:none">
+
+  <!-- 1. WELCOME HEADER -->
+  <div class="welcome-card fade-up fd1" id="wc-card">
+    <div class="welcome-avatar" id="wc-avatar">🙂</div>
+    <div class="welcome-text">
+      <div class="welcome-greeting" id="wc-greeting">أهلاً بك</div>
+      <div class="welcome-name" id="wc-name">...</div>
+      <div class="welcome-meta" id="wc-meta"></div>
+    </div>
+    <div class="welcome-alerts" id="wc-alerts"></div>
+  </div>
+
+  <!-- 2. STATUS PROGRESS -->
+  <div class="status-card fade-up fd2">
+    <div class="status-header">
+      <div class="status-title">📋 حالة طلبك</div>
+      <div class="status-desc-badge" id="st-desc">—</div>
+    </div>
+    <div class="progress-steps" id="st-steps"></div>
+  </div>
+
+  <!-- 3. STATS GRID -->
+  <div class="stats-grid" id="stats-grid">
+    <!-- filled by JS -->
+  </div>
+
+  <!-- 4. SPONSOR -->
+  <div class="fade-up fd3 mb-4" id="sponsor-wrap"></div>
+
+  <!-- 5. CHART + QUICK ACCESS -->
+  <div class="row g-4 mb-4 fade-up fd4">
+    <div class="col-lg-7">
+      <div class="chart-card">
+        <div class="chart-title">
+          📈 الدفعات — آخر 6 أشهر
+          <a href="{% url 'beneficiary:payments' %}" class="btn-sm-green">عرض التفاصيل ←</a>
+        </div>
+        <div class="mini-bars" id="mini-bars"></div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="chart-card">
+        <div class="chart-title">⚡ الوصول السريع</div>
+        <div class="qa-grid">
+          <a href="{% url 'beneficiary:profile' %}"   class="qa-btn"><span class="qa-icon">👤</span>ملفي</a>
+          <a href="{% url 'beneficiary:payments' %}"  class="qa-btn"><span class="qa-icon">💰</span>الدفعات</a>
+          <a href="{% url 'beneficiary:reports' %}"   class="qa-btn"><span class="qa-icon">📊</span>التقارير</a>
+
+
+          <a href="{% url 'beneficiary:faq' %}"      class="qa-btn"><span class="qa-icon">❓</span>مساعدة</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. TIMELINE + NOTIFICATIONS -->
+  <div class="row g-4 fade-up fd5">
+    <div class="col-lg-7">
+      <div class="timeline-card">
+        <div class="section-hdr">
+          <div class="section-title">⏰ آخر الأحداث</div>
+        </div>
+        <div id="timeline-list"></div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="notif-card" id="notifications">
+        <div class="notif-header">
+          <div class="notif-title">🔔 الإشعارات</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="notif-badge" id="notif-badge" style="display:none">0</span>
+            <button class="btn-sm-green" id="mark-read-btn" onclick="markAllRead()" style="display:none">
+              ✓ تحديد الكل
+            </button>
+          </div>
+        </div>
+        <div id="notif-list"></div>
+        <div style="text-align:center;margin-top:12px" id="notif-more" style="display:none">
+          <a href="{% url 'beneficiary:notifications' %}" class="btn-sm-green">عرض كل الإشعارات</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /#db-content -->
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+/* ═══════════════════════════════════════════
+   DASHBOARD JS — متوافق مع dashboard_data_api
+   ═══════════════════════════════════════════ */
+
+const API_URL = '{% url "beneficiary:dashboard_data" %}';
+const MARK_URL = '{% url "beneficiary:mark_notifications_read" %}';
+
+function getCsrf() {
+  return document.cookie.split(';').map(c=>c.trim())
+    .find(c=>c.startsWith('csrftoken='))?.split('=')[1] || '';
+}
+
+/* ── Fetch & render ── */
+async function loadDashboard() {
+  try {
+    const res = await fetch(API_URL, { headers:{ 'X-Requested-With':'XMLHttpRequest' } });
+    const json = await res.json();
+    if (json.status !== 'success') throw new Error(json.message || 'خطأ');
+    render(json.data);
+  } catch(e) {
+    document.getElementById('db-loader').innerHTML =
+      `<div class="error-state">⚠️ تعذّر تحميل البيانات — ${e.message}<br>
+       <button class="btn-sm-green" style="margin-top:10px" onclick="loadDashboard()">إعادة المحاولة</button></div>`;
+  }
+}
+
+function render(d) {
+  renderWelcome(d);
+  renderStatus(d.status_steps, d.current_step_desc);
+  renderStats(d.summary, d.sponsor);
+  renderSponsor(d.sponsor);
+  renderChart(d.mini_chart);
+  renderTimeline(d.timeline);
+  renderNotifications(d.notifications, d.unread_count);
+
+  document.getElementById('db-loader').style.display = 'none';
+  document.getElementById('db-content').style.display = 'block';
+}
+
+/* ── 1. Welcome ── */
+function renderWelcome(d) {
+  const u = d.user;
+  // avatar
+  const av = document.getElementById('wc-avatar');
+  if (u.photo) av.innerHTML = `<img src="${u.photo}" alt="">`;
+
+  // greeting + name
+  document.getElementById('wc-greeting').textContent = `${d.greeting_icon} ${d.greeting}`;
+  document.getElementById('wc-name').textContent = u.full_name || u.first_name;
+
+  // meta
+  const meta = document.getElementById('wc-meta');
+  const items = [];
+  if (u.reg_number) items.push(`🪪 ${u.reg_number}`);
+  if (u.form_number) items.push(`📋 رقم الاستمارة: ${u.form_number}`);
+  if (d.status)      items.push(`<span style="background:rgba(255,255,255,.2);padding:2px 8px;border-radius:10px">${d.status}</span>`);
+  meta.innerHTML = items.map(i=>`<span>${i}</span>`).join('');
+
+  // alerts
+  const aw = document.getElementById('wc-alerts');
+  if (!d.alerts || !d.alerts.length) return;
+  aw.innerHTML = d.alerts.map(a=>{
+    const href = a.action_url ? `href="${a.action_url}"` : '';
+    return `<a ${href} class="alert-chip ${a.type||''}">
+      <span class="alert-chip-icon">${a.icon}</span>
+      <span class="alert-chip-text">${a.text}</span>
+      ${a.action_label ? `<span style="opacity:.7;font-size:.7rem">← ${a.action_label}</span>` : ''}
+    </a>`;
+  }).join('');
+}
+
+/* ── 2. Status ── */
+function renderStatus(steps, desc) {
+  document.getElementById('st-desc').textContent = desc || '';
+  const c = document.getElementById('st-steps');
+  c.innerHTML = steps.map((s,i)=>{
+    const cls = s.done ? 'done' : s.active ? 'active' : '';
+    const icon = s.done ? '✓' : (i+1);
+    const line = i < steps.length-1
+      ? `<div class="ps-line ${s.done?'done':''}"></div>` : '';
+    return `<div class="ps-item ${s.active?'active':''}">
+      <div class="ps-circle ${cls}" title="${s.description}">${icon}</div>
+      <div class="ps-label">${s.label}</div>
+    </div>${line}`;
+  }).join('');
+}
+
+/* ── 3. Stats ── */
+function renderStats(s, sponsor) {
+  const grid = document.getElementById('stats-grid');
+  const lp = s.last_payment;
+  const lpText = lp
+    ? `${lp.date} <small style="opacity:.7">(منذ ${lp.days_ago} يوم)</small>`
+    : '—';
+
+  const cards = [
+    { icon:'💰', val:fmtNum(s.total_ils)+' ₪', lbl:'إجمالي الدفعات', sub:'', cls:'fd1' },
+    { icon:'💵', val:'$ '+fmtNum(s.total_usd,2), lbl:'إجمالي الدفعات', sub:'', cls:'fd2' },
+    { icon:'📋', val:s.payments_count, lbl:'عدد الدفعات', sub:'', cls:'fd3' },
+    { icon:'🎁', val:s.aids_count, lbl:'عدد المساعدات', sub:'', cls:'fd4' },
+    { icon:'📅', val:lp ? lp.amount+' ₪' : '—',
+      lbl:'آخر دفعة', sub: lp ? `منذ ${lp.days_ago} يوم` : '', cls:'fd5' },
+    sponsor
+      ? { icon:'🤝', val:s.sponsorship_months!=null ? s.sponsorship_months+' شهر' : '—',
+          lbl:'مدة الكفالة', sub:'', cls:'fd6' }
+      : { icon:'🤝', val:'—', lbl:'مدة الكفالة', sub:'لا يوجد كافل', cls:'fd6' }
+  ];
+
+  grid.innerHTML = cards.map(c=>`
+    <div class="stat-card fade-up ${c.cls}">
+      <div class="stat-icon">${c.icon}</div>
+      <div class="stat-val">${c.val}</div>
+      <div class="stat-lbl">${c.lbl}</div>
+      ${c.sub ? `<div class="stat-sub">${c.sub}</div>` : ''}
+    </div>`).join('');
+}
+
+/* ── 4. Sponsor ── */
+function renderSponsor(sp) {
+  const wrap = document.getElementById('sponsor-wrap');
+  if (!sp) {
+    wrap.innerHTML = `<div class="no-sponsor">
+      <div class="ns-icon">🤝</div>
+      <div class="ns-text">لا يوجد كافل مخصص لك حتى الآن</div>
+      <div class="ns-sub">نحن نبحث لك عن كافل مناسب — سيتم إعلامك فور تخصيصه</div>
+    </div>`;
+    return;
+  }
+  const photo = sp.photo
+    ? `<img src="${sp.photo}" alt="">`
+    : '🙂';
+  wrap.innerHTML = `<div class="sponsor-card">
+    <div class="sponsor-avatar">${photo}</div>
+    <div class="sponsor-info">
+      <div class="sponsor-name">${sp.full_name}</div>
+      <div class="sponsor-meta">
+        ${sp.country ? `🌍 ${sp.country}` : ''}
+        ${sp.city    ? `🏙️ ${sp.city}` : ''}
+        ${sp.job     ? `💼 ${sp.job}` : ''}
+      </div>
+      ${sp.start_date ? `<div style="font-size:.75rem;color:var(--text-muted);margin-top:4px">📅 منذ ${sp.start_date}</div>` : ''}
+    </div>
+    ${sp.duration ? `<div class="sponsor-duration">⏱ ${sp.duration}</div>` : ''}
+  </div>`;
+}
+
+/* ── 5. Mini Chart ── */
+function renderChart(chart) {
+  const c = document.getElementById('mini-bars');
+  if (!chart || !chart.values?.length) { c.innerHTML='<div style="color:var(--text-muted);font-size:.85rem;padding:20px">لا توجد بيانات</div>'; return; }
+  const max = Math.max(...chart.values, 1);
+  const lastIdx = chart.values.length - 1;
+  c.innerHTML = chart.values.map((v,i)=>{
+    const pct = Math.round((v/max)*100);
+    const isActive = i === lastIdx;
+    const label = chart.labels[i] || '';
+    return `<div class="mini-bar-wrap">
+      <div class="mini-bar ${isActive?'active':''}" style="height:${Math.max(pct,4)}%">
+        <div class="bar-tooltip">${fmtNum(v)} ₪</div>
+      </div>
+      <div class="mini-bar-label">${label}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ── 6. Timeline ── */
+function renderTimeline(items) {
+  const c = document.getElementById('timeline-list');
+  if (!items?.length) {
+    c.innerHTML='<div style="text-align:center;color:var(--text-muted);padding:30px">لا توجد أحداث بعد</div>';
+    return;
+  }
+  c.innerHTML = items.map(e=>`
+    <div class="tl-item">
+      <div class="tl-icon">${e.icon}</div>
+      <div class="tl-body">
+        <div class="tl-title">${e.title}</div>
+        <div class="tl-date">${e.date}</div>
+      </div>
+      <div class="tl-right">
+        ${e.amount ? `<div class="tl-amount">${e.amount}</div>` : ''}
+        ${e.tag    ? `<div class="tl-tag">${e.tag}</div>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+/* ── 7. Notifications ── */
+function renderNotifications(list, unread) {
+  const c = document.getElementById('notif-list');
+  const badge = document.getElementById('notif-badge');
+  const markBtn = document.getElementById('mark-read-btn');
+  const more = document.getElementById('notif-more');
+
+  if (unread > 0) {
+    badge.textContent = unread;
+    badge.style.display = 'inline-block';
+    markBtn.style.display = 'inline-flex';
+  }
+
+  if (!list?.length) {
+    c.innerHTML='<div style="text-align:center;color:var(--text-muted);padding:30px">🔔 لا توجد إشعارات</div>';
+    return;
+  }
+
+  const ICONS = { APPROVED:'✅', REJECTED:'❌', NEW_MSG:'💬', PAYMENT_DUE:'💳' };
+
+  c.innerHTML = list.map(n=>`
+    <div class="notif-item ${!n.is_read?'unread':''}"
+         onclick="window.location='{% url 'beneficiary:notifications' %}'">
+      <div class="notif-dot ${n.is_read?'read':''}"></div>
+      <div class="notif-icon-wrap">${ICONS[n.ntype] || '🔔'}</div>
+      <div class="notif-body">
+        <div class="notif-n-title">${n.title}</div>
+        ${n.message ? `<div class="notif-msg">${n.message}</div>` : ''}
+        <div class="notif-time">${n.time_ago}</div>
+      </div>
+    </div>`).join('');
+
+  more.style.display = 'block';
+}
+
+/* ── Mark all read ── */
+async function markAllRead() {
+  const btn = document.getElementById('mark-read-btn');
+  btn.textContent = '...';
+  try {
+    await fetch(MARK_URL, {
+      method:'POST',
+      headers:{ 'X-CSRFToken': getCsrf(), 'X-Requested-With':'XMLHttpRequest' }
+    });
+    // إزالة الـ unread styling بدون reload
+    document.querySelectorAll('.notif-item.unread').forEach(el=>{
+      el.classList.remove('unread');
+    });
+    document.querySelectorAll('.notif-dot').forEach(el=>{
+      el.classList.add('read');
+    });
+    document.getElementById('notif-badge').style.display = 'none';
+    btn.style.display = 'none';
+    // تحديث الـ badge في الـ navbar لو موجود
+    const nb = document.getElementById('nav-notif-badge');
+    if (nb) nb.style.display = 'none';
+  } catch(e) {
+    btn.textContent = '✓ تحديد الكل';
+  }
+}
+
+/* ── Format number ── */
+function fmtNum(v, decimals=0) {
+  const n = parseFloat(v) || 0;
+  return n.toLocaleString('ar-EG', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  });
+}
+
+/* ── Init ── */
+loadDashboard();
+
+/* ── Auto refresh stats every 60s ── */
+setInterval(async () => {
+  try {
+    const res = await fetch(API_URL, { headers:{ 'X-Requested-With':'XMLHttpRequest' } });
+    const json = await res.json();
+    if (json.status==='success') {
+      renderStats(json.data.summary, json.data.sponsor);
+      const uc = json.data.unread_count;
+      const badge = document.getElementById('notif-badge');
+      if (uc > 0) { badge.textContent=uc; badge.style.display='inline-block'; }
+    }
+  } catch(_) {}
+}, 60000);
+</script>
+{% endblock %}

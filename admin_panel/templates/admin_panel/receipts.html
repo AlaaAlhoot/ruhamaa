@@ -1,0 +1,848 @@
+{% extends 'admin_panel/base.html' %}
+{% block title %}الوصولات المالية{% endblock %}
+{% block page_title %}💳 الوصولات المالية{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ══ إحصائيات ══ */
+.rc-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.rc-stat{background:#fff;border:1px solid rgba(124,58,237,0.08);border-radius:14px;padding:14px 16px;transition:all 0.25s;position:relative;overflow:hidden;}
+body.dark-mode .rc-stat{background:#0d0a1a;}
+.rc-stat:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(124,58,237,0.1);}
+.rc-stat-val{font-size:1.5rem;font-weight:900;font-family:'Cairo',sans-serif;line-height:1;}
+.rc-stat-lbl{font-size:0.72rem;color:#9ca3af;margin-top:3px;}
+.rc-stat-bar{position:absolute;bottom:0;left:0;right:0;height:3px;}
+
+/* ══ شريط الأدوات ══ */
+.rc-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+.rc-search{display:flex;align-items:center;background:var(--bg-secondary,#f4f9f6);border:1.5px solid rgba(124,58,237,0.15);border-radius:10px;padding:7px 12px;gap:7px;flex:1;min-width:200px;}
+body.dark-mode .rc-search{background:#130f24;}
+.rc-search input{border:none;background:transparent;outline:none;font-family:'Tajawal',sans-serif;font-size:0.85rem;color:var(--text,#1a1a2e);width:100%;}
+body.dark-mode .rc-search input{color:#e8f5ee;}
+.rc-sel{background:var(--bg-secondary,#f4f9f6);border:1.5px solid rgba(124,58,237,0.15);border-radius:9px;padding:7px 11px;font-family:'Tajawal',sans-serif;font-size:0.83rem;color:var(--text,#1a1a2e);outline:none;cursor:pointer;}
+body.dark-mode .rc-sel{background:#130f24;color:#e8f5ee;}
+.rc-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:9px;border:1.5px solid;font-family:'Tajawal',sans-serif;font-size:0.81rem;font-weight:700;cursor:pointer;transition:all 0.2s;}
+.rc-btn-p{background:rgba(124,58,237,0.1);color:var(--adm);border-color:rgba(124,58,237,0.2);}
+.rc-btn-g{background:rgba(26,122,74,0.1);color:#1a7a4a;border-color:rgba(26,122,74,0.2);}
+.rc-btn-r{background:rgba(229,62,62,0.1);color:#c53030;border-color:rgba(229,62,62,0.2);}
+.rc-btn-o{background:rgba(245,158,11,0.1);color:#b45309;border-color:rgba(245,158,11,0.2);}
+
+/* ══ تابات ══ */
+.rc-tabs{display:flex;gap:4px;background:var(--bg-secondary,#f4f9f6);padding:4px;border-radius:12px;margin-bottom:14px;}
+body.dark-mode .rc-tabs{background:#130f24;}
+.rc-tab{flex:1;padding:8px;border-radius:9px;border:none;font-family:'Tajawal',sans-serif;font-size:0.84rem;font-weight:700;cursor:pointer;color:#6b7280;background:transparent;transition:all 0.2s;}
+.rc-tab.active{background:var(--adm);color:#fff;}
+
+/* ══ بطاقات الوصولات ══ */
+.rc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;}
+.rc-card{background:#fff;border-radius:14px;border:1px solid rgba(124,58,237,0.06);padding:16px;transition:all 0.2s;border-right:4px solid transparent;animation:rcIn 0.3s ease;}
+body.dark-mode .rc-card{background:#0d0a1a;}
+@keyframes rcIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.rc-card:hover{box-shadow:0 4px 16px rgba(124,58,237,0.08);}
+.rc-card.pending{border-right-color:#b45309;}
+.rc-card.approved{border-right-color:#1a7a4a;}
+.rc-card.rejected{border-right-color:#c53030;}
+.rc-badge{padding:3px 10px;border-radius:9px;font-size:0.72rem;font-weight:700;display:inline-flex;align-items:center;gap:4px;}
+.rc-badge-p{background:rgba(245,158,11,0.1);color:#b45309;}
+.rc-badge-a{background:rgba(26,122,74,0.1);color:#1a7a4a;}
+.rc-badge-r{background:rgba(229,62,62,0.1);color:#c53030;}
+.rc-act{width:30px;height:30px;border-radius:8px;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:0.85rem;transition:all 0.2s;}
+.rc-act:hover{transform:scale(1.12);}
+
+/* ══ Pagination ══ */
+.rc-pages{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:16px;flex-wrap:wrap;}
+.rc-page{width:30px;height:30px;border-radius:8px;border:1.5px solid rgba(124,58,237,0.15);background:transparent;cursor:pointer;font-family:'Cairo',sans-serif;font-size:0.8rem;font-weight:700;color:var(--text,#1a1a2e);transition:all 0.2s;display:flex;align-items:center;justify-content:center;}
+body.dark-mode .rc-page{color:#e8f5ee;}
+.rc-page:hover,.rc-page.active{background:var(--adm);color:#fff;border-color:var(--adm);}
+.rc-page:disabled{opacity:0.4;cursor:not-allowed;}
+
+/* ══ المودلات ══ */
+.m-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1000;align-items:center;justify-content:center;padding:14px;}
+.m-overlay.show{display:flex;}
+.m-box{background:#fff;border-radius:18px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.18);animation:mIn 0.25s ease;overflow:hidden;display:flex;flex-direction:column;max-height:92vh;}
+body.dark-mode .m-box{background:#0d0a1a;}
+@keyframes mIn{from{transform:scale(0.95);opacity:0}to{transform:scale(1);opacity:1}}
+.m-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(124,58,237,0.08);flex-shrink:0;}
+.m-title{font-size:0.92rem;font-weight:700;color:var(--text,#1a1a2e);}
+body.dark-mode .m-title{color:#e8f5ee;}
+.m-close{background:none;border:none;font-size:1.1rem;cursor:pointer;color:#9ca3af;}
+.m-close:hover{color:var(--adm);}
+.m-body{padding:16px 18px;overflow-y:auto;flex:1;}
+.m-footer{padding:10px 18px;border-top:1px solid rgba(124,58,237,0.08);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0;}
+.m-tabs{display:flex;gap:4px;margin-bottom:14px;background:var(--bg-secondary,#f4f9f6);padding:4px;border-radius:10px;}
+body.dark-mode .m-tabs{background:#130f24;}
+.m-tab{padding:6px 12px;border-radius:8px;border:none;background:transparent;font-family:'Tajawal',sans-serif;font-size:0.8rem;font-weight:600;color:#6b7280;cursor:pointer;transition:all 0.2s;}
+.m-tab.active{background:var(--adm);color:#fff;}
+.m-panel{display:none;}
+.m-panel.active{display:block;}
+.f-label{font-family:'Tajawal',sans-serif;font-size:0.78rem;font-weight:700;color:#6b7280;display:block;margin-bottom:5px;}
+.f-input{width:100%;border:1.5px solid rgba(124,58,237,0.18);border-radius:9px;padding:9px 12px;font-family:'Tajawal',sans-serif;font-size:0.86rem;outline:none;background:#fff;color:#1a1a2e;transition:border 0.2s;}
+body.dark-mode .f-input{background:#130f24;color:#e8f5ee;}
+.f-input:focus{border-color:var(--adm);}
+.f-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.f-group{margin-bottom:10px;}
+.i-item{background:var(--bg-secondary,#f4f9f6);border-radius:8px;padding:9px 11px;}
+body.dark-mode .i-item{background:#130f24;}
+.i-lbl{font-size:0.62rem;color:#9ca3af;font-weight:700;margin-bottom:3px;}
+.i-val{font-size:0.84rem;font-weight:700;color:var(--text,#1a1a2e);}
+body.dark-mode .i-val{color:#e8f5ee;}
+
+/* ══ Toast / Success ══ */
+.toast-wrap{position:fixed;bottom:16px;left:16px;z-index:9999;display:flex;flex-direction:column;gap:6px;}
+.rc-toast{background:#fff;border:1px solid rgba(124,58,237,0.1);border-radius:10px;padding:10px 14px;font-family:'Tajawal',sans-serif;font-size:0.83rem;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,0.1);display:flex;align-items:center;gap:7px;animation:tIn 0.28s ease;max-width:280px;}
+body.dark-mode .rc-toast{background:#0d0a1a;}
+@keyframes tIn{from{transform:translateY(14px);opacity:0}to{transform:translateY(0);opacity:1}}
+.rc-toast.success{border-right:3px solid #1a7a4a;}
+.rc-toast.error{border-right:3px solid #e53e3e;}
+.rc-toast.info{border-right:3px solid var(--adm);}
+
+/* skeleton */
+.skel{background:linear-gradient(90deg,rgba(124,58,237,0.06) 25%,rgba(124,58,237,0.12) 50%,rgba(124,58,237,0.06) 75%);background-size:200% 100%;animation:sk 1.4s infinite;border-radius:5px;height:13px;}
+@keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+@media(max-width:768px){.rc-stats{grid-template-columns:repeat(2,1fr);}.rc-grid{grid-template-columns:1fr;}.rc-toolbar{flex-direction:column;align-items:stretch;}.m-box{max-height:90vh;border-radius:14px;}.f-grid{grid-template-columns:1fr;}}
+@media(max-width:480px){.rc-stats{grid-template-columns:1fr 1fr;}.rc-tab{font-size:0.76rem;padding:7px;}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="toastWrap" class="toast-wrap"></div>
+
+<!-- ══ إحصائيات ══ -->
+<div class="rc-stats fade-in">
+    <div class="rc-stat">
+        <div class="rc-stat-val" id="st_pending" style="color:#b45309">—</div>
+        <div class="rc-stat-lbl">بانتظار المراجعة</div>
+        <div class="rc-stat-bar" style="background:#b45309"></div>
+    </div>
+    <div class="rc-stat">
+        <div class="rc-stat-val" id="st_approved" style="color:#1a7a4a">—</div>
+        <div class="rc-stat-lbl">مقبولة</div>
+        <div class="rc-stat-bar" style="background:#1a7a4a"></div>
+    </div>
+    <div class="rc-stat">
+        <div class="rc-stat-val" id="st_ils" style="color:var(--adm)">—</div>
+        <div class="rc-stat-lbl">إجمالي مقبول ₪</div>
+        <div class="rc-stat-bar" style="background:var(--adm)"></div>
+    </div>
+    <div class="rc-stat">
+        <div class="rc-stat-val" id="st_month" style="color:#2b6cb0">—</div>
+        <div class="rc-stat-lbl">هذا الشهر ₪</div>
+        <div class="rc-stat-bar" style="background:#2b6cb0"></div>
+    </div>
+</div>
+
+<!-- ══ شريط الأدوات ══ -->
+<div class="dash-card fade-in fade-in-d1" style="margin-bottom:12px;padding:12px 14px">
+    <div class="rc-toolbar">
+        <div class="rc-search">
+            <span>🔍</span>
+            <input type="text" id="searchInp" placeholder="بحث باسم الكافل أو رقم الوصل..." oninput="debounce(loadReceipts,400)()">
+            <button onclick="document.getElementById('searchInp').value='';loadReceipts()" style="background:none;border:none;cursor:pointer;color:#9ca3af">✕</button>
+        </div>
+        <select class="rc-sel" id="currencyFilter" onchange="loadReceipts()">
+            <option value="">كل العملات</option>
+            <option value="ILS">🇮🇱 شيقل</option>
+            <option value="USD">🇺🇸 دولار</option>
+            <option value="JOD">🇯🇴 دينار أردني</option>
+            <option value="SAR">🇸🇦 ريال سعودي</option>
+            <option value="EGP">🇪🇬 جنيه مصري</option>
+        </select>
+        <select class="rc-sel" id="dateFilter" onchange="loadReceipts()">
+            <option value="">كل الأوقات</option>
+            <option value="today">اليوم</option>
+            <option value="week">الأسبوع</option>
+            <option value="month">الشهر</option>
+        </select>
+        <button class="rc-btn rc-btn-g" onclick="exportReceipts()">📊 Excel</button>
+        <button class="rc-btn rc-btn-g" style="background:rgba(26,122,74,0.15)" onclick="exportReceipts('all')">📊 تصدير الكل</button>
+        <button class="rc-btn rc-btn-p" onclick="loadReceipts()" style="margin-right:auto">🔄</button>
+    </div>
+</div>
+
+<!-- ══ تابات ══ -->
+<div class="rc-tabs fade-in fade-in-d2">
+    <button class="rc-tab active" id="tab_pending"  onclick="switchTab('pending',this)">⏳ بانتظار المراجعة <span id="tab_cnt_pending" style="background:rgba(255,255,255,0.2);border-radius:10px;padding:1px 7px;font-size:0.72rem;margin-right:4px"></span></button>
+    <button class="rc-tab"        id="tab_approved" onclick="switchTab('approved',this)">✅ المقبولة <span id="tab_cnt_approved" style="background:rgba(255,255,255,0.2);border-radius:10px;padding:1px 7px;font-size:0.72rem;margin-right:4px"></span></button>
+    <button class="rc-tab"        id="tab_rejected" onclick="switchTab('rejected',this)">❌ المرفوضة <span id="tab_cnt_rejected" style="background:rgba(255,255,255,0.2);border-radius:10px;padding:1px 7px;font-size:0.72rem;margin-right:4px"></span></button>
+</div>
+
+<!-- ══ المحتوى ══ -->
+<div id="receiptsList" class="fade-in fade-in-d3"></div>
+<div class="rc-pages" id="pagination"></div>
+<div style="text-align:center;padding:6px 0;font-size:0.74rem;color:#9ca3af;font-family:'Tajawal',sans-serif" id="pageInfo"></div>
+
+<!-- ══ مودل العرض/التعديل ══ -->
+<div class="m-overlay" id="viewModal">
+    <div class="m-box" style="max-width:680px">
+        <div class="m-hdr">
+            <span class="m-title" id="viewModalTitle">تفاصيل الوصل</span>
+            <div style="display:flex;gap:6px">
+                <button class="rc-btn rc-btn-p" style="padding:5px 10px;font-size:0.76rem" id="viewApproveBtn" onclick="submitApprove()">✅ حفظ وقبول</button>
+                <button class="m-close" onclick="closeModal('viewModal')">✕</button>
+            </div>
+        </div>
+        <div class="m-body">
+            <div class="m-tabs">
+                <button class="m-tab active" onclick="switchMTab('details',this)">📋 التفاصيل</button>
+                <button class="m-tab" onclick="switchMTab('edit',this)">✏️ تعديل</button>
+                <button class="m-tab" onclick="switchMTab('image',this)">🖼️ الصورة</button>
+            </div>
+
+            <!-- تفاصيل -->
+            <div class="m-panel active" id="mp_details">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="detailsContent"></div>
+            </div>
+
+            <!-- تعديل -->
+            <div class="m-panel" id="mp_edit">
+                <div class="f-grid">
+                    <div class="f-group">
+                        <label class="f-label">المبلغ</label>
+                        <input type="number" class="f-input" id="ed_amount" step="0.01">
+                    </div>
+                    <div class="f-group">
+                        <label class="f-label">العملة</label>
+                        <select class="f-input" id="ed_currency">
+                            <option value="ILS">🇮🇱 شيقل (ILS)</option>
+                            <option value="USD">🇺🇸 دولار (USD)</option>
+                            <option value="JOD">🇯🇴 دينار أردني (JOD)</option>
+                            <option value="SAR">🇸🇦 ريال سعودي (SAR)</option>
+                            <option value="EGP">🇪🇬 جنيه مصري (EGP)</option>
+                        </select>
+                    </div>
+                    <div class="f-group">
+                        <label class="f-label">تاريخ الوصل</label>
+                        <input type="date" class="f-input" id="ed_date">
+                    </div>
+                    <div class="f-group">
+                        <label class="f-label">المستفيد</label>
+                        <select class="f-input" id="ed_beneficiary"></select>
+                    </div>
+                </div>
+                <div class="f-group">
+                    <label class="f-label">ملاحظات الإدارة</label>
+                    <textarea class="f-input" id="ed_notes" rows="3" placeholder="ملاحظات تُرسَل للكافل مع بريد الموافقة..."></textarea>
+                </div>
+            </div>
+
+            <!-- الصورة -->
+            <div class="m-panel" id="mp_image" style="text-align:center">
+                <div id="imageContent"></div>
+            </div>
+        </div>
+        <div class="m-footer">
+            <button class="rc-btn" style="background:var(--bg-secondary,#f4f9f6);border-color:transparent;color:#6b7280" onclick="closeModal('viewModal')">إغلاق</button>
+            <button class="rc-btn rc-btn-r" id="viewRejectBtn" onclick="openRejectFromView()">❌ رفض</button>
+        </div>
+        <input type="hidden" id="viewReceiptId">
+    </div>
+</div>
+
+<!-- ══ مودل الرفض ══ -->
+<div class="m-overlay" id="rejectModal">
+    <div class="m-box" style="max-width:420px">
+        <div class="m-hdr"><span class="m-title">❌ سبب الرفض</span><button class="m-close" onclick="closeModal('rejectModal')">✕</button></div>
+        <div class="m-body">
+            <div class="f-group">
+                <label class="f-label">سبب الرفض *</label>
+                <textarea class="f-input" id="rejectReason" rows="4" placeholder="اكتب سبب الرفض..."></textarea>
+            </div>
+        </div>
+        <div class="m-footer">
+            <button class="rc-btn" style="background:var(--bg-secondary);border-color:transparent;color:#6b7280" onclick="closeModal('rejectModal')">إلغاء</button>
+            <button class="rc-btn rc-btn-r" onclick="submitReject()">❌ تأكيد الرفض</button>
+        </div>
+        <input type="hidden" id="rejectReceiptId">
+    </div>
+</div>
+
+<!-- ══ مودل حذف ══ -->
+<div class="m-overlay" id="deleteModal">
+    <div class="m-box" style="max-width:360px">
+        <div class="m-hdr"><span class="m-title">🗑️ حذف الوصل</span><button class="m-close" onclick="closeModal('deleteModal')">✕</button></div>
+        <div class="m-body" style="text-align:center;padding:20px">
+            <div style="font-size:2.8rem;margin-bottom:12px">⚠️</div>
+            <p style="font-family:'Tajawal',sans-serif;font-size:0.9rem;color:var(--text,#1a1a2e)">
+                هل تريد حذف وصل <strong id="deleteReceiptRef"></strong>؟<br>
+                <small style="color:#c53030">لا يمكن التراجع</small>
+            </p>
+        </div>
+        <div class="m-footer">
+            <button class="rc-btn" style="background:var(--bg-secondary);border-color:transparent;color:#6b7280" onclick="closeModal('deleteModal')">إلغاء</button>
+            <button class="rc-btn rc-btn-r" onclick="submitDelete()">🗑️ حذف</button>
+        </div>
+        <input type="hidden" id="deleteReceiptId">
+    </div>
+</div>
+
+<!-- ══ مودل نجاح ══ -->
+<div class="m-overlay" id="successModal">
+    <div class="m-box" style="max-width:300px">
+        <div class="m-body" style="text-align:center;padding:24px">
+            <div style="font-size:2.8rem;margin-bottom:10px" id="successIcon">✅</div>
+            <h5 style="font-weight:700;color:var(--text,#1a1a2e);margin-bottom:6px;font-family:'Tajawal',sans-serif" id="successTitle">تم</h5>
+            <p style="color:#6b7280;font-size:0.84rem;font-family:'Tajawal',sans-serif" id="successMsg"></p>
+            <button class="rc-btn rc-btn-p" style="margin-top:12px;width:100%;justify-content:center" onclick="closeModal('successModal')">حسناً</button>
+        </div>
+    </div>
+</div>
+<!-- ══ مودل تحميل PDF ══ -->
+<div class="m-overlay" id="pdfModal">
+    <div class="m-box" style="max-width:380px;text-align:center;padding:36px 28px">
+
+        <!-- أيقونة -->
+        <div style="font-size:3rem;margin-bottom:16px">📄</div>
+
+        <!-- العنوان -->
+        <div id="pdfTitle"
+             style="font-family:'Cairo',sans-serif;font-size:1.1rem;font-weight:700;
+                    color:var(--text,#1a1a2e);margin-bottom:6px">
+            جاري تجهيز الملف…
+        </div>
+
+        <!-- النص الفرعي -->
+        <div id="pdfSub"
+             style="font-family:'Tajawal',sans-serif;font-size:0.82rem;
+                    color:#9ca3af;margin-bottom:22px">
+            يرجى الانتظار
+        </div>
+
+        <!-- شريط التقدم -->
+        <div style="background:#e5e7eb;border-radius:99px;height:8px;overflow:hidden;margin-bottom:20px">
+            <div id="pdfBar"
+                 style="height:100%;width:0%;border-radius:99px;
+                        background:linear-gradient(90deg,#1a7a4a,#22c55e);
+                        transition:width 0.4s ease"></div>
+        </div>
+
+        <!-- زر الإغلاق (يظهر فقط عند الخطأ) -->
+        <button id="pdfCloseBtn"
+                onclick="closeModal('pdfModal')"
+                style="display:none;margin-top:8px;padding:9px 28px;
+                       border:none;border-radius:10px;cursor:pointer;
+                       background:#f1f5f9;color:var(--text,#1a1a2e);
+                       font-family:'Tajawal',sans-serif;font-size:0.9rem;font-weight:700">
+            إغلاق
+        </button>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+'use strict';
+
+/* ══════════════════════════════════════════
+   الثوابت والمتغيرات العامة
+══════════════════════════════════════════ */
+const CSRF     = document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='))?.split('=')[1] || '';
+const PER_PAGE = 20;
+
+let currentTab       = 'pending';
+let currentPage      = 1;
+let totalPages       = 1;
+let currentReceiptId = null;
+
+/* ══════════════════════════════════════════
+   التابات الرئيسية
+══════════════════════════════════════════ */
+function switchTab(tab, btn) {
+    currentTab  = tab;
+    currentPage = 1;
+    document.querySelectorAll('.rc-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadReceipts();
+}
+
+/* ══════════════════════════════════════════
+   تحميل البيانات
+══════════════════════════════════════════ */
+async function loadReceipts(page) {
+    currentPage   = page || 1;
+    const el      = document.getElementById('receiptsList');
+
+    if (currentPage === 1) {
+        el.innerHTML = [1, 2, 3].map(() => `
+            <div style="background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;border:1px solid rgba(124,58,237,0.06)">
+                <div class="skel" style="height:80px;border-radius:8px"></div>
+            </div>
+        `).join('');
+    }
+
+    const params = new URLSearchParams({
+        status:   currentTab,
+        page:     currentPage,
+        q:        document.getElementById('searchInp').value.trim(),
+        currency: document.getElementById('currencyFilter').value,
+        date:     document.getElementById('dateFilter').value,
+    });
+
+    try {
+        const r    = await fetch(`/admin-panel/receipts/data/?${params}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const data = await r.json();
+        updateStats(data.stats    || {});
+        renderReceipts(data.receipts  || []);
+        renderPagination(data.pagination || {});
+    } catch {
+        el.innerHTML = '<p style="text-align:center;color:#c53030;font-family:\'Tajawal\',sans-serif;padding:24px">⚠️ خطأ في التحميل</p>';
+    }
+}
+
+/* ══════════════════════════════════════════
+   تحديث الإحصائيات
+══════════════════════════════════════════ */
+function updateStats(s) {
+    document.getElementById('st_pending').textContent       = s.pending   || 0;
+    document.getElementById('st_approved').textContent      = s.approved  || 0;
+    document.getElementById('st_ils').textContent           = s.total_ils || '0';
+    document.getElementById('st_month').textContent         = s.month_ils || '0';
+    document.getElementById('tab_cnt_pending').textContent  = s.pending   || '';
+    document.getElementById('tab_cnt_approved').textContent = s.approved  || '';
+    document.getElementById('tab_cnt_rejected').textContent = s.rejected  || '';
+}
+
+/* ══════════════════════════════════════════
+   رسم البطاقات
+══════════════════════════════════════════ */
+function renderReceipts(list) {
+    const el = document.getElementById('receiptsList');
+
+    if (!list.length) {
+        el.innerHTML = `
+            <div style="text-align:center;padding:60px;color:#9ca3af;font-family:'Tajawal',sans-serif">
+                <div style="font-size:3.5rem;margin-bottom:12px">💳</div>
+                <div style="font-weight:700">لا توجد وصولات</div>
+            </div>`;
+        return;
+    }
+
+    const CURR_FLAGS = { ILS: '🇮🇱', USD: '🇺🇸', JOD: '🇯🇴', SAR: '🇸🇦', EGP: '🇪🇬' };
+    const CURR_NAMES = { ILS: 'شيقل', USD: 'دولار', JOD: 'دينار', SAR: 'ريال', EGP: 'جنيه' };
+    const TYPE_LABELS = { orphan: 'يتيم', family: 'أسرة', special: 'ذوو احتياجات' };
+
+    el.innerHTML = `<div class="rc-grid">` + list.map(r => {
+        const isApproved = r.status === 'موافق';
+        const isRejected = r.status === 'مرفوض';
+        const cls        = isApproved ? 'approved' : isRejected ? 'rejected' : 'pending';
+
+        const badge = isApproved
+            ? '<span class="rc-badge rc-badge-a">✅ موافق</span>'
+            : isRejected
+            ? '<span class="rc-badge rc-badge-r">❌ مرفوض</span>'
+            : '<span class="rc-badge rc-badge-p">⏳ قيد المراجعة</span>';
+
+        const safeRef = (r.system_ref || r.id).replace(/'/g, "\\'");
+
+        return `
+        <div class="rc-card ${cls}" id="card_${r.id}">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+                <div>
+                    <div style="font-weight:700;font-size:0.9rem;color:var(--text,#1a1a2e)">${r.sponsor_name}</div>
+                    <div style="font-size:0.72rem;color:#9ca3af;margin-top:2px">${r.system_ref}</div>
+                </div>
+                ${badge}
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+                <div style="background:var(--bg-secondary,#f4f9f6);border-radius:8px;padding:8px 10px">
+                    <div style="font-size:0.65rem;color:#9ca3af">المبلغ</div>
+                    <div style="font-size:1rem;font-weight:900;font-family:'Cairo',sans-serif;color:var(--adm)">
+                        ${CURR_FLAGS[r.currency] || '💰'} ${r.amount_original} ${CURR_NAMES[r.currency] || r.currency}
+                    </div>
+                    <div style="font-size:0.72rem;color:#9ca3af">${r.amount_ils}₪ / $${r.amount_usd}</div>
+                </div>
+                <div style="background:var(--bg-secondary,#f4f9f6);border-radius:8px;padding:8px 10px">
+                    <div style="font-size:0.65rem;color:#9ca3af">المستفيد</div>
+                    <div style="font-size:0.84rem;font-weight:700;color:var(--text,#1a1a2e)">${r.beneficiary_name}</div>
+                    <div style="font-size:0.7rem;color:#9ca3af">${TYPE_LABELS[r.beneficiary_type] || ''}</div>
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;font-size:0.72rem;color:#9ca3af;margin-bottom:12px;flex-wrap:wrap">
+                <span>📅 ${r.receipt_date  || '—'}</span>
+                <span>🔢 ${r.unique_number || '—'}</span>
+                <span>👤 ${r.sender_name   || '—'}</span>
+                ${r.reviewed_by ? `<span>✅ ${r.reviewed_by}</span>` : ''}
+            </div>
+            <div style="display:flex;gap:6px;justify-content:flex-end">
+                <button class="rc-act" style="background:rgba(124,58,237,0.1);color:var(--adm)"
+                    onclick="openView('${r.id}')" title="عرض وتعديل">👁</button>
+
+                ${!isApproved && !isRejected ? `
+                <button class="rc-act" style="background:rgba(26,122,74,0.1);color:#1a7a4a"
+                    onclick="quickApprove('${r.id}')" title="قبول سريع">✅</button>` : ''}
+
+                ${isApproved ? `
+<button class="rc-act" style="background:rgba(43,108,176,0.1);color:#2b6cb0"
+    onclick="window.open('/admin-panel/receipts/pdf/?id=${r.id}','_blank')" title="فتح PDF">📄</button>
+<button class="rc-act" style="background:rgba(26,122,74,0.1);color:#1a7a4a"
+    onclick="downloadPdf('${r.id}')" title="تحميل PDF">📥</button>` : ''}
+
+                <button class="rc-act" style="background:rgba(229,62,62,0.1);color:#c53030"
+                    onclick="openDelete('${r.id}','${safeRef}')" title="حذف">🗑️</button>
+            </div>
+        </div>`;
+    }).join('') + `</div>`;
+}
+async function downloadPdf(id) {
+    openModal('pdfModal');
+    const bar   = document.getElementById('pdfBar');
+    const title = document.getElementById('pdfTitle');
+    const sub   = document.getElementById('pdfSub');
+    document.getElementById('pdfCloseBtn').style.display = 'none';
+    bar.style.width = '0%';
+
+    const steps = [
+        { pct: 20, d: 300,  m: 'جاري تجهيز البيانات…', s: 'يرجى الانتظار' },
+        { pct: 50, d: 800,  m: 'جاري إنشاء الملف…',    s: 'بضع ثوانٍ'     },
+        { pct: 75, d: 1400, m: 'جاري المعالجة…',        s: 'سيتم التحميل خلال دقيقتين'         },
+    ];
+    const timers = steps.map(x =>
+        setTimeout(() => { bar.style.width = x.pct + '%'; title.textContent = x.m; sub.textContent = x.s; }, x.d)
+    );
+
+    try {
+        const response = await fetch(`/admin-panel/receipts/pdf-download/?id=${id}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const blob = await response.blob();
+
+        timers.forEach(t => clearTimeout(t));
+        bar.style.width   = '100%';
+        title.textContent = 'تم التحميل ✅';
+        sub.textContent   = 'سيتم إغلاق هذه النافذة تلقائياً…';
+
+        const url    = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href     = url;
+        anchor.download = `وصل-${id}.pdf`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(url);
+
+        setTimeout(() => closeModal('pdfModal'), 1000);
+
+    } catch (err) {
+        timers.forEach(t => clearTimeout(t));
+        bar.style.background  = '#dc2626';
+        bar.style.width       = '100%';
+        title.textContent     = 'حدث خطأ ❌';
+        sub.textContent       = 'يرجى المحاولة مجدداً';
+        document.getElementById('pdfCloseBtn').style.display = 'block';
+        console.error(err);
+    }
+}
+/* ══════════════════════════════════════════
+   Pagination
+══════════════════════════════════════════ */
+function renderPagination(pg) {
+    totalPages      = pg.total_pages || 1;
+    const total     = pg.total || 0;
+    const start     = ((pg.page || 1) - 1) * PER_PAGE + 1;
+    const end       = Math.min(start + PER_PAGE - 1, total);
+
+    document.getElementById('pageInfo').textContent = total
+        ? `عرض ${start}–${end} من ${total}` : '';
+
+    if (totalPages <= 1) {
+        document.getElementById('pagination').innerHTML = '';
+        return;
+    }
+
+    let html = `<button class="rc-page" ${currentPage === 1 ? 'disabled' : ''}
+        onclick="loadReceipts(${currentPage - 1})">←</button>`;
+
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || Math.abs(i - currentPage) <= 2)
+            html += `<button class="rc-page ${i === currentPage ? 'active' : ''}"
+                onclick="loadReceipts(${i})">${i}</button>`;
+        else if (Math.abs(i - currentPage) === 3)
+            html += `<span style="color:#9ca3af">…</span>`;
+    }
+
+    html += `<button class="rc-page" ${currentPage === totalPages ? 'disabled' : ''}
+        onclick="loadReceipts(${currentPage + 1})">→</button>`;
+
+    document.getElementById('pagination').innerHTML = html;
+}
+
+/* ══════════════════════════════════════════
+   مودل العرض
+══════════════════════════════════════════ */
+async function openView(id) {
+    currentReceiptId = id;
+    document.getElementById('viewReceiptId').value = id;
+
+    // إعادة التابات للأولى
+    document.querySelectorAll('#viewModal .m-tab').forEach((b, i)  => b.classList.toggle('active', i === 0));
+    document.querySelectorAll('#viewModal .m-panel').forEach((p, i) => p.classList.toggle('active', i === 0));
+    document.getElementById('detailsContent').innerHTML = '<div class="skel" style="height:160px;border-radius:8px"></div>';
+    openModal('viewModal');
+
+    try {
+        const r    = await fetch(`/admin-panel/receipts/detail/?id=${id}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const data = await r.json();
+        if (data.status !== 'success') return;
+        const rc   = data.receipt;
+
+        document.getElementById('viewModalTitle').textContent = `وصل — ${rc.system_ref}`;
+
+        const isApproved = rc.status === 'موافق';
+
+        // إظهار/إخفاء الأزرار حسب الحالة
+        document.getElementById('viewApproveBtn').style.display = isApproved ? 'none' : '';
+        document.getElementById('viewRejectBtn').style.display  = isApproved ? 'none' : '';
+        const pdfBtn = document.getElementById('viewPdfBtn');
+            if (pdfBtn) pdfBtn.style.display = isApproved ? '' : 'none';
+
+        const CURR_LABELS = { ILS: 'شيقل', USD: 'دولار', JOD: 'دينار أردني', SAR: 'ريال سعودي', EGP: 'جنيه مصري' };
+        const TYPE_LABELS = { orphan: 'يتيم', family: 'أسرة', special: 'ذوو احتياجات' };
+
+        // تاب التفاصيل
+        document.getElementById('detailsContent').innerHTML = [
+            ['الرقم المرجعي',  rc.system_ref],
+            ['رقم الوصل',      rc.unique_number],
+            ['اسم الكافل',     rc.sponsor_name],
+            ['المستفيد',       `${rc.beneficiary_name} — ${TYPE_LABELS[rc.beneficiary_type] || ''}`],
+            ['المبلغ الأصلي',  `${rc.amount_original} ${CURR_LABELS[rc.currency] || rc.currency}`],
+            ['بالشيقل',        `${rc.amount_ils} ₪`],
+            ['بالدولار',       `$${rc.amount_usd}`],
+            ['اسم المرسل',     rc.sender_name],
+            ['تاريخ الوصل',    rc.receipt_date],
+            ['تاريخ الإرسال',  rc.submitted_at],
+            ['الحالة',         rc.status],
+            ['مراجَع من',      rc.reviewed_by  || '—'],
+            ['تاريخ المراجعة', rc.reviewed_at  || '—'],
+            rc.notes         ? ['ملاحظات',   rc.notes]         : null,
+            rc.reject_reason ? ['سبب الرفض', rc.reject_reason] : null,
+        ].filter(Boolean).map(([l, v]) =>
+            `<div class="i-item"><div class="i-lbl">${l}</div><div class="i-val">${v || '—'}</div></div>`
+        ).join('');
+
+        // تاب التعديل
+        document.getElementById('ed_amount').value   = rc.amount_original;
+        document.getElementById('ed_currency').value = rc.currency;
+        document.getElementById('ed_date').value     = rc.receipt_date;
+        document.getElementById('ed_notes').value    = rc.notes || '';
+
+        // تحميل المستفيدين
+        await loadBeneficiaries(rc.sponsor_id, rc.beneficiary_id);
+
+        // تاب الصورة
+        document.getElementById('imageContent').innerHTML = rc.receipt_image
+            ? `<a href="${rc.receipt_image}" target="_blank">
+                <img src="${rc.receipt_image}"
+                    style="max-width:100%;max-height:400px;border-radius:10px;border:1px solid rgba(124,58,237,0.1)"
+                    alt="صورة الوصل">
+               </a>`
+            : '<p style="color:#9ca3af;font-family:\'Tajawal\',sans-serif;padding:30px">لا توجد صورة</p>';
+
+    } catch (e) { console.error(e); }
+}
+
+async function loadBeneficiaries(sponsorId, currentBeneId) {
+    const sel = document.getElementById('ed_beneficiary');
+    sel.innerHTML = '<option value="">— اختر المستفيد —</option>';
+    if (!sponsorId) return;
+    try {
+        const r    = await fetch(`/admin-panel/receipts/beneficiaries/?sponsor_id=${sponsorId}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const data = await r.json();
+        const TYPE_LABELS = { orphan: 'يتيم', family: 'أسرة', special: 'ذوو احتياجات' };
+        (data.beneficiaries || []).forEach(b => {
+            const opt       = document.createElement('option');
+            opt.value       = b.id;
+            opt.textContent = `${b.name} — ${TYPE_LABELS[b.type] || b.type}`;
+            if (b.id === currentBeneId) opt.selected = true;
+            sel.appendChild(opt);
+        });
+    } catch {}
+}
+
+function switchMTab(tab, btn) {
+    document.querySelectorAll('#viewModal .m-tab').forEach(b  => b.classList.remove('active'));
+    document.querySelectorAll('#viewModal .m-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('mp_' + tab).classList.add('active');
+}
+
+/* ══════════════════════════════════════════
+   PDF من مودل العرض
+══════════════════════════════════════════ */
+function openReceiptPdf() {
+    if (!currentReceiptId) return;
+    window.open(`/admin-panel/receipts/pdf/?id=${currentReceiptId}`, '_blank');
+}
+
+/* ══════════════════════════════════════════
+   قبول الوصل
+══════════════════════════════════════════ */
+async function submitApprove() {
+    const id = document.getElementById('viewReceiptId').value;
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('receipt_id',      id);
+    fd.append('amount_original', document.getElementById('ed_amount').value);
+    fd.append('currency',        document.getElementById('ed_currency').value);
+    fd.append('receipt_date',    document.getElementById('ed_date').value);
+    fd.append('beneficiary_id',  document.getElementById('ed_beneficiary').value);
+    fd.append('notes',           document.getElementById('ed_notes').value.trim());
+
+    const btn      = document.getElementById('viewApproveBtn');
+    btn.disabled   = true;
+    btn.textContent = '⏳ جار الحفظ...';
+
+    try {
+        const r    = await fetch('/admin-panel/receipts/approve/', { method: 'POST', body: fd });
+        const data = await r.json();
+        closeModal('viewModal');
+        if (data.status === 'success') {
+            showSuccess('✅', 'تمت الموافقة', data.message);
+            loadReceipts(currentPage);
+        } else {
+            toast(data.message, 'error');
+        }
+    } catch {
+        toast('حدث خطأ، يرجى المحاولة مجدداً', 'error');
+    } finally {
+        btn.disabled    = false;
+        btn.textContent = '✅ حفظ وقبول';
+    }
+}
+
+async function quickApprove(id) {
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('receipt_id', id);
+    try {
+        const r    = await fetch('/admin-panel/receipts/approve/', { method: 'POST', body: fd });
+        const data = await r.json();
+        if (data.status === 'success') {
+            showSuccess('✅', 'تمت الموافقة', data.message);
+            loadReceipts(currentPage);
+        } else {
+            toast(data.message, 'error');
+        }
+    } catch {
+        toast('حدث خطأ، يرجى المحاولة مجدداً', 'error');
+    }
+}
+
+/* ══════════════════════════════════════════
+   رفض الوصل
+══════════════════════════════════════════ */
+function openRejectFromView() {
+    const id = document.getElementById('viewReceiptId').value;
+    document.getElementById('rejectReceiptId').value = id;
+    document.getElementById('rejectReason').value    = '';
+    closeModal('viewModal');
+    openModal('rejectModal');
+}
+
+async function submitReject() {
+    const id     = document.getElementById('rejectReceiptId').value;
+    const reason = document.getElementById('rejectReason').value.trim();
+    if (!reason) { toast('سبب الرفض مطلوب', 'error'); return; }
+
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('receipt_id',    id);
+    fd.append('reject_reason', reason);
+
+    try {
+        const r    = await fetch('/admin-panel/receipts/reject/', { method: 'POST', body: fd });
+        const data = await r.json();
+        closeModal('rejectModal');
+        if (data.status === 'success') {
+            showSuccess('❌', 'تم الرفض', data.message);
+            loadReceipts(currentPage);
+        } else {
+            toast(data.message, 'error');
+        }
+    } catch {
+        toast('حدث خطأ، يرجى المحاولة مجدداً', 'error');
+    }
+}
+
+/* ══════════════════════════════════════════
+   حذف الوصل
+══════════════════════════════════════════ */
+function openDelete(id, ref) {
+    document.getElementById('deleteReceiptId').value       = id;
+    document.getElementById('deleteReceiptRef').textContent = ref;
+    openModal('deleteModal');
+}
+
+async function submitDelete() {
+    const id = document.getElementById('deleteReceiptId').value;
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('receipt_id', id);
+
+    try {
+        const r    = await fetch('/admin-panel/receipts/delete/', { method: 'POST', body: fd });
+        const data = await r.json();
+        closeModal('deleteModal');
+        if (data.status === 'success') {
+            toast('تم الحذف', 'success');
+            loadReceipts(currentPage);
+        } else {
+            toast(data.message, 'error');
+        }
+    } catch {
+        toast('حدث خطأ، يرجى المحاولة مجدداً', 'error');
+    }
+}
+
+/* ══════════════════════════════════════════
+   تصدير Excel
+══════════════════════════════════════════ */
+function exportReceipts(tab) {
+    window.location.href = `/admin-panel/receipts/export/?status=${tab || currentTab}`;
+}
+
+/* ══════════════════════════════════════════
+   المساعدات العامة
+══════════════════════════════════════════ */
+function openModal(id)  { document.getElementById(id)?.classList.add('show');    }
+function closeModal(id) { document.getElementById(id)?.classList.remove('show'); }
+
+function showSuccess(icon, title, msg) {
+    document.getElementById('successIcon').textContent  = icon;
+    document.getElementById('successTitle').textContent = title;
+    document.getElementById('successMsg').textContent   = msg;
+    openModal('successModal');
+    setTimeout(() => closeModal('successModal'), 2500);
+}
+
+function toast(msg, type = 'info') {
+    const icons = { success: '✅', error: '⚠️', info: 'ℹ️' };
+    const c     = document.getElementById('toastWrap');
+    const el    = document.createElement('div');
+    el.className = `rc-toast ${type}`;
+    el.innerHTML = `
+        <span>${icons[type] || 'ℹ️'}</span>
+        <span style="font-family:'Tajawal',sans-serif;color:var(--text,#1a1a2e)">${msg}</span>`;
+    c.appendChild(el);
+    setTimeout(() => {
+        el.style.opacity    = '0';
+        el.style.transition = 'opacity 0.3s';
+        setTimeout(() => el.remove(), 300);
+    }, 3500);
+}
+
+function debounce(fn, delay) {
+    let t;
+    return function () { clearTimeout(t); t = setTimeout(fn, delay); };
+}
+
+// إغلاق المودلات بالنقر خارجها
+document.querySelectorAll('.m-overlay').forEach(m => {
+    m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); });
+});
+
+// تحميل البيانات عند فتح الصفحة
+window.addEventListener('load', () => loadReceipts(1));
+</script>
+{% endblock %}

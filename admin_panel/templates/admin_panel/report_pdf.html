@@ -1,0 +1,187 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>تقرير شامل — رُحَمَاء</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Arial', sans-serif; background: #fff; color: #1a1a2e; font-size: 10pt; direction: rtl; }
+
+/* Header */
+.hdr { background-color: #7c3aed; padding: 14px 20px; border-radius: 8px; margin-bottom: 16px; display: table; width: 100%; }
+.hdr-right { display: table-cell; vertical-align: middle; width: 60%; }
+.hdr-left  { display: table-cell; vertical-align: middle; text-align: left; width: 40%; }
+.org-name { font-size: 18pt; font-weight: 900; color: #fff; }
+.org-sub  { font-size: 8pt; color: #e0d4ff; margin-top: 2px; }
+.hdr-meta { font-size: 8pt; color: #e0d4ff; line-height: 1.9; text-align: left; }
+.hdr-meta strong { color: #fff; }
+
+/* Title */
+.rp-title { text-align: center; margin-bottom: 14px; padding: 10px; border: 2px solid #7c3aed; border-radius: 8px; background-color: #f5f3ff; }
+.rp-title h2 { font-size: 13pt; font-weight: 900; color: #7c3aed; }
+
+/* Section */
+.section { margin-bottom: 14px; border: 1px solid #c4b5fd; border-radius: 8px; overflow: hidden; page-break-inside: avoid; }
+.section-title { background-color: #f3f0ff; padding: 7px 14px; font-size: 9pt; font-weight: 700; color: #7c3aed; border-bottom: 1px solid #c4b5fd; }
+.section-title.green  { background-color: #f0fdf4; color: #1a7a4a; border-color: #bbf7d0; }
+.section-title.orange { background-color: #fff7ed; color: #b45309; border-color: #fed7aa; }
+
+/* Stats Grid */
+.stats-grid { display: table; width: 100%; padding: 10px; }
+.stats-row  { display: table-row; }
+.stat-cell  { display: table-cell; width: 25%; padding: 6px; vertical-align: top; }
+.stat-box   { background-color: #f9f7ff; border-radius: 8px; padding: 10px; text-align: center; }
+.stat-val   { font-size: 16pt; font-weight: 900; color: #7c3aed; }
+.stat-lbl   { font-size: 7pt; color: #9ca3af; margin-top: 3px; font-weight: 600; }
+.stat-box.green  { background-color: #f0fdf4; }
+.stat-box.green .stat-val { color: #1a7a4a; }
+.stat-box.orange { background-color: #fff7ed; }
+.stat-box.orange .stat-val { color: #b45309; }
+.stat-box.blue   { background-color: #eff6ff; }
+.stat-box.blue   .stat-val { color: #2b6cb0; }
+.stat-box.red    { background-color: #fef2f2; }
+.stat-box.red    .stat-val { color: #c53030; }
+
+/* Table */
+.data-table { width: 100%; border-collapse: collapse; font-size: 7.5pt; }
+.data-table th { background-color: #f3f0ff; color: #7c3aed; padding: 6px 8px; font-weight: 700; text-align: right; font-size: 7pt; border-bottom: 1px solid #c4b5fd; }
+.data-table.green th  { background-color: #f0fdf4; color: #1a7a4a; border-color: #bbf7d0; }
+.data-table.orange th { background-color: #fff7ed; color: #b45309; border-color: #fed7aa; }
+.data-table td { padding: 6px 8px; border-bottom: 1px solid #ede9fe; vertical-align: top; }
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:nth-child(even) td { background-color: #f9f7ff; }
+.data-table.green  tr:nth-child(even) td { background-color: #f0fdf4; }
+.data-table.orange tr:nth-child(even) td { background-color: #fff7ed; }
+.st-paid    { color: #1a7a4a; font-weight: 700; }
+.st-pending { color: #b45309; font-weight: 700; }
+.st-late    { color: #c53030; font-weight: 700; }
+
+/* Mini stats */
+.mini-grid { display: table; width: 100%; padding: 10px; }
+.mini-row  { display: table-row; }
+.mini-cell { display: table-cell; width: 33.33%; padding: 5px; vertical-align: top; }
+.mini-box  { background-color: #f9f7ff; border-radius: 7px; padding: 8px; text-align: center; }
+.mini-val  { font-size: 12pt; font-weight: 900; }
+.mini-lbl  { font-size: 6.5pt; color: #9ca3af; margin-top: 2px; }
+
+/* Footer */
+.rp-footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #ede9fe; display: table; width: 100%; font-size: 7pt; color: #9ca3af; }
+.footer-cell { display: table-cell; width: 33.33%; }
+.footer-cell:last-child { text-align: left; }
+.footer-cell:nth-child(2) { text-align: center; }
+
+/* Page break */
+.page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="hdr">
+    <div class="hdr-right">
+        <div class="org-name">رُحَمَاء</div>
+        <div class="org-sub">جمعية نسائم فلسطين الخيرية</div>
+    </div>
+    <div class="hdr-left">
+        <div class="hdr-meta">
+            <div><strong>الفترة:</strong> {{ date_from }} → {{ date_to }}</div>
+            <div><strong>تاريخ التصدير:</strong> {% now "Y/m/d H:i" %}</div>
+            <div><strong>أعدّه:</strong> {{ printed_by }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Title -->
+<div class="rp-title">
+    <h2>📊 التقرير الشامل — رُحَمَاء</h2>
+</div>
+
+<!-- الملخص العام -->
+<div class="section">
+    <div class="section-title">📋 الملخص العام</div>
+    <div class="stats-grid">
+        <div class="stats-row">
+            <div class="stat-cell"><div class="stat-box"><div class="stat-val">{{ summary.total_users }}</div><div class="stat-lbl">إجمالي المستفيدين</div></div></div>
+            <div class="stat-cell"><div class="stat-box"><div class="stat-val">{{ summary.new_users }}</div><div class="stat-lbl">مستفيدون جدد في الفترة</div></div></div>
+            <div class="stat-cell"><div class="stat-box green"><div class="stat-val">{{ summary.total_pays_ils }}&#8362;</div><div class="stat-lbl">إجمالي المدفوعات</div></div></div>
+            <div class="stat-cell"><div class="stat-box orange"><div class="stat-val">{{ summary.total_aids }}</div><div class="stat-lbl">إجمالي المساعدات</div></div></div>
+        </div>
+        <div class="stats-row">
+            <div class="stat-cell"><div class="stat-box"><div class="stat-val">{{ summary.orphans }}</div><div class="stat-lbl">الأيتام</div></div></div>
+            <div class="stat-cell"><div class="stat-box"><div class="stat-val">{{ summary.families }}</div><div class="stat-lbl">الأسر</div></div></div>
+            <div class="stat-cell"><div class="stat-box"><div class="stat-val">{{ summary.specials }}</div><div class="stat-lbl">ذوو احتياجات</div></div></div>
+            <div class="stat-cell"><div class="stat-box blue"><div class="stat-val">{{ summary.sponsors }}</div><div class="stat-lbl">الكفلاء</div></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- تفاصيل المدفوعات -->
+<div class="section">
+    <div class="section-title green">💰 تفاصيل المدفوعات</div>
+    <div class="mini-grid">
+        <div class="mini-row">
+            <div class="mini-cell"><div class="mini-box"><div class="mini-val" style="color:#1a7a4a">{{ summary.paid_ils }}&#8362;</div><div class="mini-lbl">مدفوعة</div></div></div>
+            <div class="mini-cell"><div class="mini-box"><div class="mini-val" style="color:#b45309">{{ summary.pending_ils }}&#8362;</div><div class="mini-lbl">معلّقة</div></div></div>
+            <div class="mini-cell"><div class="mini-box"><div class="mini-val" style="color:#c53030">{{ summary.late_ils }}&#8362;</div><div class="mini-lbl">متأخرة</div></div></div>
+        </div>
+    </div>
+    {% if payments %}
+    <table class="data-table green">
+        <thead>
+            <tr><th>التاريخ</th><th>المبلغ &#8362;</th><th>المبلغ $</th><th>مصدر الدفع</th><th>المستفيد</th><th>الحالة</th></tr>
+        </thead>
+        <tbody>
+            {% for p in payments %}
+            <tr>
+                <td>{{ p.date }}</td>
+                <td>{{ p.amount_ils }}&#8362;</td>
+                <td>${{ p.amount_usd }}</td>
+                <td>{% if p.paid_by == 'sponsor' %}كافل{% elif p.paid_by == 'admin' %}إدارة{% else %}جهة خارجية{% endif %}</td>
+                <td>{{ p.beneficiary.get_full_name|default:"—" }}</td>
+                <td class="st-{{ p.status }}">{% if p.status == 'paid' %}مدفوعة{% elif p.status == 'pending' %}معلّقة{% else %}متأخرة{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="padding:14px;text-align:center;color:#9ca3af;font-size:8pt">لا توجد مدفوعات في هذه الفترة</div>
+    {% endif %}
+</div>
+
+<!-- تفاصيل المساعدات -->
+<div class="section page-break">
+    <div class="section-title orange">🎁 تفاصيل المساعدات</div>
+    {% if aids %}
+    <table class="data-table orange">
+        <thead>
+            <tr><th>التاريخ</th><th>الاسم</th><th>النوع</th><th>الكمية</th><th>الجهة</th><th>المستفيد</th><th>معتمد الطلب</th></tr>
+        </thead>
+        <tbody>
+            {% for a in aids %}
+            <tr>
+                <td>{{ a.date }}</td>
+                <td>{{ a.name }}</td>
+                <td>{% if a.aid_type == 'food' %}غذائية{% elif a.aid_type == 'medical' %}طبية{% elif a.aid_type == 'financial' %}مالية{% elif a.aid_type == 'clothing' %}ملابس{% elif a.aid_type == 'furniture' %}أثاث{% elif a.aid_type == 'education' %}تعليمية{% else %}أخرى{% endif %}</td>
+                <td>{{ a.quantity }}</td>
+                <td>{{ a.provider }}</td>
+                <td>{{ a.beneficiary.get_full_name|default:"—" }}</td>
+                <td>{% if a.created_by %}{{ a.created_by.get_full_name|default:a.created_by.username }}{% else %}النظام{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="padding:14px;text-align:center;color:#9ca3af;font-size:8pt">لا توجد مساعدات في هذه الفترة</div>
+    {% endif %}
+</div>
+
+<!-- Footer -->
+<div class="rp-footer">
+    <div class="footer-cell">منصة رُحَمَاء — جميع الحقوق محفوظة</div>
+    <div class="footer-cell">تقرير شامل للفترة: {{ date_from }} → {{ date_to }}</div>
+    <div class="footer-cell">{% now "Y/m/d H:i" %}</div>
+</div>
+
+</body>
+</html>

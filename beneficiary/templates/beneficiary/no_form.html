@@ -1,0 +1,17 @@
+{% extends 'beneficiary/base.html' %}
+{% block title %}لا توجد استمارة{% endblock %}
+{% block page_title %}📋 الملف الشخصي{% endblock %}
+{% block content %}
+<div class="dash-card text-center fade-in" style="padding:60px 24px;max-width:500px;margin:0 auto">
+    <div style="font-size:3.5rem;margin-bottom:16px">📋</div>
+    <h5 style="font-weight:700;color:var(--text,#1a1a2e);margin-bottom:10px">لا توجد استمارة</h5>
+    <p style="color:var(--text-muted,#6b7280);font-size:0.9rem;line-height:1.8">
+        لم يتم إنشاء استمارتك بعد. يرجى التواصل مع الإدارة.
+    </p>
+    <div class="mt-4">
+        <a href="{% url 'beneficiary:messages' %}" class="btn-primary">
+            💬 تواصل مع الإدارة
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,582 @@
+{% extends 'main/base.html' %}
+{% load static %}
+{% block title %}الأسئلة الشائعة{% endblock %}
+{% block body_class %}faq-page{% endblock %}
+
+{% block extra_css %}
+<style>
+.faq-page {
+    background: linear-gradient(150deg, #e8f5e9 0%, #f0faf4 40%, #e8f4fd 100%);
+    min-height: 100vh;
+}
+body.dark-mode .faq-page {
+    background: linear-gradient(150deg, #060e09 0%, #0a160e 40%, #080d18 100%);
+}
+
+/* ===== Hero ===== */
+.faq-hero {
+    text-align: center;
+    padding: 64px 20px 48px;
+}
+.faq-hero-title {
+    font-family: 'Amiri', serif;
+    font-size: 2.6rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #0f5232, #2ecc71);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+}
+body.dark-mode .faq-hero-title {
+    background: linear-gradient(135deg, #4ade80, #86efac);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+.faq-hero-sub {
+    font-family: 'Tajawal', sans-serif;
+    font-size: 1rem;
+    color: var(--text-muted, #6b7280);
+    max-width: 500px;
+    margin: 0 auto 32px;
+    line-height: 1.8;
+}
+body.dark-mode .faq-hero-sub { color: #7aaa8e; }
+
+/* ===== بحث ===== */
+.faq-search-wrap {
+    max-width: 500px;
+    margin: 0 auto;
+    position: relative;
+}
+.faq-search {
+    width: 100%;
+    padding: 14px 50px 14px 20px;
+    border-radius: 50px;
+    border: 1.5px solid rgba(26,122,74,0.2);
+    background: #fff;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.95rem;
+    color: var(--text, #1a1a2e);
+    box-shadow: 0 4px 20px rgba(26,122,74,0.08);
+    transition: all 0.25s;
+    outline: none;
+}
+body.dark-mode .faq-search {
+    background: #0d1a12;
+    border-color: rgba(46,204,113,0.2);
+    color: #e8f5ee;
+}
+.faq-search:focus {
+    border-color: #1a7a4a;
+    box-shadow: 0 4px 24px rgba(26,122,74,0.15);
+}
+.faq-search::placeholder { color: #9ca3af; }
+.faq-search-icon {
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.1rem;
+    color: var(--text-muted, #9ca3af);
+    pointer-events: none;
+}
+
+/* ===== فلتر التصنيف ===== */
+.faq-filters {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 32px 0 24px;
+}
+.faq-filter {
+    padding: 7px 20px;
+    border-radius: 50px;
+    border: 1.5px solid rgba(26,122,74,0.2);
+    background: transparent;
+    color: var(--text-muted, #6b7280);
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s;
+}
+body.dark-mode .faq-filter { border-color: rgba(46,204,113,0.2); color: #7aaa8e; }
+.faq-filter:hover,
+.faq-filter.active {
+    background: linear-gradient(135deg, #1a7a4a, #2ecc71);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 4px 14px rgba(26,122,74,0.25);
+}
+
+/* ===== Accordion ===== */
+.faq-list { max-width: 720px; margin: 0 auto; }
+
+.faq-item {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(26,122,74,0.1);
+    border-radius: 16px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: all 0.3s;
+    backdrop-filter: blur(10px);
+}
+body.dark-mode .faq-item {
+    background: rgba(13,26,18,0.95);
+    border-color: rgba(46,204,113,0.1);
+}
+.faq-item:hover {
+    border-color: rgba(26,122,74,0.25);
+    box-shadow: 0 4px 20px rgba(26,122,74,0.08);
+}
+.faq-item.open {
+    border-color: rgba(26,122,74,0.3);
+    box-shadow: 0 6px 24px rgba(26,122,74,0.1);
+}
+
+.faq-question {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 22px;
+    cursor: pointer;
+    user-select: none;
+}
+.faq-q-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--green-dim, rgba(26,122,74,0.1));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+    transition: all 0.3s;
+}
+.faq-item.open .faq-q-icon {
+    background: linear-gradient(135deg, #1a7a4a, #2ecc71);
+}
+.faq-q-text {
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text, #1a1a2e);
+    flex: 1;
+    line-height: 1.5;
+}
+body.dark-mode .faq-q-text { color: #e8f5ee; }
+.faq-item.open .faq-q-text { color: #1a7a4a; }
+body.dark-mode .faq-item.open .faq-q-text { color: #4ade80; }
+
+.faq-arrow {
+    font-size: 0.85rem;
+    color: var(--text-muted, #9ca3af);
+    transition: transform 0.3s;
+    flex-shrink: 0;
+}
+.faq-item.open .faq-arrow { transform: rotate(180deg); color: #1a7a4a; }
+
+.faq-answer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease, padding 0.3s;
+}
+.faq-item.open .faq-answer { max-height: 600px; }
+
+.faq-answer-inner {
+    padding: 0 22px 20px 22px;
+    border-top: 1px solid rgba(26,122,74,0.08);
+    padding-top: 16px;
+    margin: 0 22px;
+}
+body.dark-mode .faq-answer-inner { border-color: rgba(46,204,113,0.08); }
+.faq-answer-text {
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.9rem;
+    color: var(--text-muted, #6b7280);
+    line-height: 1.9;
+}
+body.dark-mode .faq-answer-text { color: #7aaa8e; }
+
+/* ===== Badge تصنيف ===== */
+.faq-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 9px;
+    border-radius: 20px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    font-family: 'Tajawal', sans-serif;
+}
+.faq-badge.all     { background: rgba(26,122,74,0.1);  color: #1a7a4a; }
+.faq-badge.sponsor { background: rgba(43,108,176,0.1); color: #2b6cb0; }
+.faq-badge.orphan  { background: rgba(124,58,237,0.1); color: #7c3aed; }
+body.dark-mode .faq-badge.all     { color: #4ade80; }
+body.dark-mode .faq-badge.sponsor { color: #63b3ed; }
+body.dark-mode .faq-badge.orphan  { color: #a78bfa; }
+
+/* ===== Empty State ===== */
+.faq-empty {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-muted, #9ca3af);
+    display: none;
+}
+.faq-empty.show { display: block; }
+.faq-empty-icon { font-size: 3rem; margin-bottom: 12px; }
+
+/* ===== CTA ===== */
+.faq-cta {
+    text-align: center;
+    padding: 48px 20px 64px;
+}
+.faq-cta-card {
+    display: inline-block;
+    background: rgba(255,255,255,0.9);
+    border: 1px solid rgba(26,122,74,0.12);
+    border-radius: 20px;
+    padding: 32px 40px;
+    max-width: 480px;
+    backdrop-filter: blur(10px);
+}
+body.dark-mode .faq-cta-card {
+    background: rgba(13,26,18,0.95);
+    border-color: rgba(46,204,113,0.12);
+}
+.faq-cta-title {
+    font-family: 'Tajawal', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text, #1a1a2e);
+    margin-bottom: 8px;
+}
+body.dark-mode .faq-cta-title { color: #e8f5ee; }
+.faq-cta-sub {
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.88rem;
+    color: var(--text-muted, #6b7280);
+    margin-bottom: 20px;
+    line-height: 1.7;
+}
+body.dark-mode .faq-cta-sub { color: #7aaa8e; }
+.btn-cta {
+    background: linear-gradient(135deg, #0f5232, #2ecc71);
+    color: #fff;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 50px;
+    font-family: 'Tajawal', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 6px 20px rgba(26,122,74,0.25);
+    transition: all 0.3s;
+}
+.btn-cta:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px rgba(26,122,74,0.35);
+    color: #fff;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 767px) {
+    .faq-hero-title { font-size: 1.9rem; }
+    .faq-hero       { padding: 48px 16px 36px; }
+    .faq-question   { padding: 14px 16px; }
+    .faq-answer-inner { margin: 0 16px; }
+    .faq-cta-card   { padding: 24px 20px; }
+}
+
+/* ===== Animation ===== */
+@keyframes fadeInUp {
+    from { opacity:0; transform:translateY(12px); }
+    to   { opacity:1; transform:translateY(0); }
+}
+.faq-item { animation: fadeInUp 0.35s ease both; }
+{% for i in faqs %}
+.faq-item:nth-child({{ forloop.counter }}) { animation-delay: {{ forloop.counter0 }}0ms; }
+{% endfor %}
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<!-- Hero -->
+<div class="faq-hero">
+    <h1 class="faq-hero-title">❓ الأسئلة الشائعة</h1>
+    <p class="faq-hero-sub">
+        نجيب على أكثر الأسئلة شيوعاً حول منصة رُحَمَاء وخدماتها
+    </p>
+
+    <!-- بحث -->
+    <div class="faq-search-wrap">
+        <span class="faq-search-icon">🔍</span>
+        <input type="text"
+               id="faqSearch"
+               class="faq-search"
+               placeholder="ابحث في الأسئلة..."
+               oninput="searchFaq(this.value)">
+    </div>
+</div>
+
+<!-- فلتر التصنيف -->
+<div class="faq-filters">
+    <button class="faq-filter active" onclick="filterFaq('all', this)">
+        📋 الكل
+    </button>
+    <button class="faq-filter" onclick="filterFaq('sponsor', this)">
+        🤝 للكفلاء
+    </button>
+    <button class="faq-filter" onclick="filterFaq('orphan', this)">
+        👦 للمستفيدين
+    </button>
+</div>
+
+<!-- قائمة الأسئلة -->
+<div class="container pb-4">
+    <div class="faq-list" id="faqList">
+
+        {% if faqs %}
+            {% for faq in faqs %}
+            <div class="faq-item"
+                 data-target="{{ faq.target }}"
+                 data-question="{{ faq.question|lower }}"
+                 id="faqItem_{{ faq.pk }}">
+
+                <div class="faq-question" onclick="toggleFaq({{ faq.pk }})">
+                    <div class="faq-q-icon">❓</div>
+                    <div class="faq-q-text">{{ faq.question }}</div>
+                    <span class="faq-arrow">▼</span>
+                </div>
+
+                <div class="faq-answer" id="faqAnswer_{{ faq.pk }}">
+                    <div class="faq-answer-inner">
+                        <span class="faq-badge
+                            {% if faq.target == 'all' %}all
+                            {% elif faq.target == 'sponsor' %}sponsor
+                            {% else %}orphan{% endif %}">
+                            {% if faq.target == 'all' %}للجميع
+                            {% elif faq.target == 'sponsor' %}للكفلاء
+                            {% else %}للمستفيدين{% endif %}
+                        </span>
+                        <div class="faq-answer-text">{{ faq.answer }}</div>
+                    </div>
+                </div>
+
+            </div>
+            {% endfor %}
+
+        {% else %}
+            <!-- أسئلة افتراضية إذا كانت قاعدة البيانات فارغة -->
+            <div class="faq-item" data-target="all" data-question="ما هي منصة رحماء">
+                <div class="faq-question" onclick="toggleFaqEl(this)">
+                    <div class="faq-q-icon">❓</div>
+                    <div class="faq-q-text">ما هي منصة رُحَمَاء؟</div>
+                    <span class="faq-arrow">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <div class="faq-answer-inner">
+                        <span class="faq-badge all">للجميع</span>
+                        <div class="faq-answer-text">
+                            منصة رُحَمَاء هي منصة خيرية إلكترونية تابعة لجمعية نسائم فلسطين الخيرية،
+                            تهدف إلى ربط الكفلاء بالأيتام والأسر المحتاجة وذوي الاحتياجات الخاصة في غزة،
+                            وتسهيل عملية الكفالة والمتابعة إلكترونياً.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-item" data-target="sponsor" data-question="كيف اصبح كافلا">
+                <div class="faq-question" onclick="toggleFaqEl(this)">
+                    <div class="faq-q-icon">❓</div>
+                    <div class="faq-q-text">كيف أصبح كافلاً؟</div>
+                    <span class="faq-arrow">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <div class="faq-answer-inner">
+                        <span class="faq-badge sponsor">للكفلاء</span>
+                        <div class="faq-answer-text">
+                            يمكنك التسجيل كـ كافل من صفحة التسجيل، واختيار "كافل" كنوع الحساب.
+                            بعد موافقة الإدارة على حسابك، يمكنك الاطلاع على قائمة الأيتام
+                            ورفع وصولات الدفع الشهرية عبر لوحة التحكم الخاصة بك.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-item" data-target="sponsor" data-question="كيف ارفع وصل الدفع">
+                <div class="faq-question" onclick="toggleFaqEl(this)">
+                    <div class="faq-q-icon">❓</div>
+                    <div class="faq-q-text">كيف أرفع وصل الدفع الشهري؟</div>
+                    <span class="faq-arrow">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <div class="faq-answer-inner">
+                        <span class="faq-badge sponsor">للكفلاء</span>
+                        <div class="faq-answer-text">
+                            من لوحة التحكم اذهب إلى "رفع وصل مالي"، أدخل تاريخ الوصل
+                            واسم المُرسِل والمبلغ والرقم الفريد، ثم ارفع صورة الوصل.
+                            ستتلقى إشعاراً بالبريد الإلكتروني بعد مراجعة الوصل من الإدارة.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-item" data-target="orphan" data-question="كيف اتابع حالة طلبي">
+                <div class="faq-question" onclick="toggleFaqEl(this)">
+                    <div class="faq-q-icon">❓</div>
+                    <div class="faq-q-text">كيف أتابع حالة طلبي؟</div>
+                    <span class="faq-arrow">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <div class="faq-answer-inner">
+                        <span class="faq-badge orphan">للمستفيدين</span>
+                        <div class="faq-answer-text">
+                            بعد تسجيل الدخول إلى لوحة التحكم الخاصة بك، ستجد في الصفحة الرئيسية
+                            شريط التقدم الذي يوضح مرحلة طلبك الحالية من المراجعة حتى التكفل.
+                            كما ستصلك إشعارات فور تحديث حالة طلبك.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-item" data-target="all" data-question="هل المعلومات سرية">
+                <div class="faq-question" onclick="toggleFaqEl(this)">
+                    <div class="faq-q-icon">❓</div>
+                    <div class="faq-q-text">هل معلوماتي الشخصية سرية؟</div>
+                    <span class="faq-arrow">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <div class="faq-answer-inner">
+                        <span class="faq-badge all">للجميع</span>
+                        <div class="faq-answer-text">
+                            نعم، جميع البيانات محمية ومشفّرة ولا تُشارك مع أي طرف ثالث.
+                            التواصل المباشر بين الكافل والمستفيد لا يتم إلا بإذن صريح من الإدارة.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-item" data-target="all" data-question="كيف اتواصل مع الادارة">
+                <div class="faq-question" onclick="toggleFaqEl(this)">
+                    <div class="faq-q-icon">❓</div>
+                    <div class="faq-q-text">كيف أتواصل مع الإدارة؟</div>
+                    <span class="faq-arrow">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <div class="faq-answer-inner">
+                        <span class="faq-badge all">للجميع</span>
+                        <div class="faq-answer-text">
+                            يمكنك التواصل مع الإدارة من خلال قسم "التواصل" في لوحة التحكم الخاصة بك،
+                            أو من خلال نموذج التواصل في الصفحة الرئيسية للموقع.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Empty State -->
+        <div class="faq-empty" id="faqEmpty">
+            <div class="faq-empty-icon">🔍</div>
+            <p style="font-family:'Tajawal',sans-serif;font-size:0.9rem">
+                لا توجد أسئلة مطابقة لبحثك
+            </p>
+        </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="faq-cta">
+        <div class="faq-cta-card">
+            <div class="faq-cta-title">لم تجد إجابة سؤالك؟</div>
+            <div class="faq-cta-sub">
+                تواصل معنا مباشرة وسيرد عليك فريقنا في أقرب وقت ممكن
+            </div>
+            <a href="{% url 'main:home' %}#contact" class="btn-cta">
+                <span>✉️</span> تواصل معنا
+            </a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+// ===== فتح / إغلاق السؤال =====
+function toggleFaq(id) {
+    const item = document.getElementById('faqItem_' + id);
+    if (item) toggleItem(item);
+}
+
+function toggleFaqEl(questionEl) {
+    const item = questionEl.closest('.faq-item');
+    if (item) toggleItem(item);
+}
+
+function toggleItem(item) {
+    const isOpen = item.classList.contains('open');
+
+    // إغلاق جميع العناصر المفتوحة
+    document.querySelectorAll('.faq-item.open').forEach(el => {
+        el.classList.remove('open');
+    });
+
+    // فتح العنصر المطلوب إذا كان مغلقاً
+    if (!isOpen) item.classList.add('open');
+}
+
+// ===== بحث =====
+function searchFaq(q) {
+    const query = q.trim().toLowerCase();
+    let visible = 0;
+
+    document.querySelectorAll('.faq-item[data-question]').forEach(item => {
+        const text = item.dataset.question || '';
+        const ans  = item.querySelector('.faq-answer-text')?.textContent.toLowerCase() || '';
+        const match = !query || text.includes(query) || ans.includes(query);
+        item.style.display = match ? 'block' : 'none';
+        if (match) visible++;
+    });
+
+    const empty = document.getElementById('faqEmpty');
+    if (empty) empty.classList.toggle('show', visible === 0);
+}
+
+// ===== فلتر التصنيف =====
+function filterFaq(target, btn) {
+    // تحديث الأزرار
+    document.querySelectorAll('.faq-filter').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    // إظهار / إخفاء الأسئلة
+    let visible = 0;
+    document.querySelectorAll('.faq-item[data-target]').forEach(item => {
+        const t     = item.dataset.target;
+        const match = target === 'all' || t === target || t === 'all';
+        item.style.display = match ? 'block' : 'none';
+        if (match) visible++;
+    });
+
+    const empty = document.getElementById('faqEmpty');
+    if (empty) empty.classList.toggle('show', visible === 0);
+
+    // إغلاق الأسئلة المفتوحة عند التصفية
+    document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
+}
+
+// ===== فتح السؤال الأول تلقائياً =====
+document.addEventListener('DOMContentLoaded', () => {
+    const first = document.querySelector('.faq-item');
+    if (first) first.classList.add('open');
+});
+</script>
+{% endblock %}

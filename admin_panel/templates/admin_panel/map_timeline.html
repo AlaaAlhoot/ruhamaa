@@ -1,0 +1,546 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% block title %}الاستكشاف{% endblock %}
+{% block page_title %}🗺️ الاستكشاف الجغرافي والتايم لاين{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css">
+<style>
+:root { --c-orphan:#22c55e; --c-family:#3b82f6; --c-special:#f59e0b; --c-sponsor:#a855f7; }
+
+/* ══ إحصائيات ══ */
+.mt-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;}
+.mt-stat{background:#fff;border:1px solid rgba(124,58,237,0.08);border-radius:14px;padding:14px 16px;transition:all 0.25s;}
+body.dark-mode .mt-stat{background:#0d0a1a;}
+.mt-stat:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(124,58,237,0.1);}
+.mt-stat-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1rem;margin-bottom:8px;}
+.mt-stat-val{font-size:1.5rem;font-weight:900;font-family:'Cairo',sans-serif;color:var(--adm);line-height:1;}
+body.dark-mode .mt-stat-val{color:#a78bfa;}
+.mt-stat-lbl{font-size:0.72rem;color:#9ca3af;margin-top:3px;}
+
+/* ══ تابات رئيسية ══ */
+.mt-main-tabs{display:flex;gap:4px;background:var(--bg-secondary,#f4f9f6);padding:4px;border-radius:12px;margin-bottom:16px;}
+body.dark-mode .mt-main-tabs{background:#130f24;}
+.mt-main-tab{flex:1;padding:9px;border-radius:9px;border:none;font-family:'Tajawal',sans-serif;font-size:0.88rem;font-weight:700;cursor:pointer;color:#6b7280;background:transparent;transition:all 0.2s;}
+.mt-main-tab.active{background:var(--adm);color:#fff;}
+
+/* ══ أزرار الخريطة ══ */
+.map-controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center;}
+.map-btn{padding:6px 13px;border-radius:8px;border:1.5px solid;font-family:'Tajawal',sans-serif;font-size:0.8rem;font-weight:700;cursor:pointer;transition:all 0.2s;}
+.map-btn.active{color:#fff!important;}
+.map-btn-all{background:rgba(124,58,237,0.1);color:var(--adm);border-color:rgba(124,58,237,0.2);}
+.map-btn-all.active{background:var(--adm);border-color:var(--adm);}
+.map-btn-orphan{background:rgba(34,197,94,0.1);color:#16a34a;border-color:rgba(34,197,94,0.2);}
+.map-btn-orphan.active{background:#22c55e;border-color:#22c55e;}
+.map-btn-family{background:rgba(59,130,246,0.1);color:#2563eb;border-color:rgba(59,130,246,0.2);}
+.map-btn-family.active{background:#3b82f6;border-color:#3b82f6;}
+.map-btn-special{background:rgba(245,158,11,0.1);color:#b45309;border-color:rgba(245,158,11,0.2);}
+.map-btn-special.active{background:#f59e0b;border-color:#f59e0b;}
+.map-btn-sponsor{background:rgba(168,85,247,0.1);color:#7c3aed;border-color:rgba(168,85,247,0.2);}
+.map-btn-sponsor.active{background:#a855f7;border-color:#a855f7;}
+#mapContainer{height:520px;border-radius:14px;overflow:hidden;border:1px solid rgba(124,58,237,0.1);}
+
+/* ══ رسوم بيانية ══ */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chart-card{background:#fff;border:1px solid rgba(124,58,237,0.08);border-radius:14px;padding:16px;}
+body.dark-mode .chart-card{background:#0d0a1a;}
+.chart-title{font-family:'Tajawal',sans-serif;font-size:0.88rem;font-weight:700;color:var(--text,#1a1a2e);margin-bottom:14px;}
+body.dark-mode .chart-title{color:#e8f5ee;}
+.chart-wrap{position:relative;height:200px;}
+
+/* ══ تايم لاين ══ */
+.tl-controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center;}
+.tl-btn{padding:7px 14px;border-radius:9px;border:1.5px solid rgba(124,58,237,0.2);background:transparent;font-family:'Tajawal',sans-serif;font-size:0.82rem;font-weight:700;cursor:pointer;color:#6b7280;transition:all 0.2s;}
+.tl-btn.active{background:var(--adm);color:#fff;border-color:var(--adm);}
+
+/* dropdown القائمة */
+.tl-dd-wrap{position:relative;flex:1;min-width:220px;}
+.tl-dd-sel{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border:1.5px solid rgba(124,58,237,0.18);border-radius:10px;cursor:pointer;background:var(--bg-card,#fff);font-family:'Tajawal',sans-serif;font-size:0.85rem;color:var(--text,#1a1a2e);user-select:none;}
+body.dark-mode .tl-dd-sel{background:#130f24;color:#e8f5ee;}
+.tl-dd-panel{display:none;position:absolute;top:calc(100% + 4px);right:0;width:100%;min-width:280px;background:#fff;border:1.5px solid rgba(124,58,237,0.15);border-radius:12px;box-shadow:0 8px 28px rgba(124,58,237,0.14);z-index:999;flex-direction:column;max-height:340px;overflow:hidden;}
+body.dark-mode .tl-dd-panel{background:#0d0a1a;}
+.tl-dd-panel.open{display:flex;}
+.tl-dd-search{width:100%;border:none;border-bottom:1px solid rgba(124,58,237,0.08);padding:10px 14px;font-family:'Tajawal',sans-serif;font-size:0.84rem;outline:none;background:transparent;color:var(--text,#1a1a2e);}
+body.dark-mode .tl-dd-search{color:#e8f5ee;}
+.tl-dd-list{overflow-y:auto;flex:1;}
+.tl-dd-group-hdr{padding:7px 14px;font-size:0.7rem;font-weight:700;font-family:'Tajawal',sans-serif;letter-spacing:0.5px;background:rgba(124,58,237,0.04);position:sticky;top:0;}
+.tl-dd-item{padding:9px 14px;cursor:pointer;font-family:'Tajawal',sans-serif;font-size:0.84rem;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(124,58,237,0.04);transition:background 0.15s;}
+.tl-dd-item:hover{background:rgba(124,58,237,0.06);}
+.tl-dd-item:last-child{border-bottom:none;}
+
+/* تايم لاين عمودي */
+.tl-wrap{position:relative;padding-right:24px;}
+.tl-wrap::before{content:'';position:absolute;right:10px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--adm),rgba(124,58,237,0.08));}
+.tl-day-hdr{font-size:0.74rem;color:var(--adm);font-family:'Cairo',sans-serif;font-weight:700;margin-bottom:10px;position:relative;right:-30px;display:flex;align-items:center;gap:6px;}
+.tl-day-hdr::after{content:'';flex:1;height:1px;background:rgba(124,58,237,0.1);}
+.tl-item{position:relative;margin-bottom:16px;display:flex;gap:12px;animation:tlIn 0.35s ease;}
+@keyframes tlIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
+.tl-dot{position:absolute;right:-30px;top:6px;width:16px;height:16px;border-radius:50%;border:2.5px solid #fff;flex-shrink:0;}
+body.dark-mode .tl-dot{border-color:#0d0a1a;}
+.tl-card{flex:1;background:var(--bg-secondary,#f4f9f6);border-radius:10px;padding:10px 14px;border:1px solid rgba(124,58,237,0.06);}
+body.dark-mode .tl-card{background:#130f24;}
+.tl-card-title{font-size:0.86rem;font-weight:700;color:var(--text,#1a1a2e);font-family:'Tajawal',sans-serif;}
+body.dark-mode .tl-card-title{color:#e8f5ee;}
+.tl-card-desc{font-size:0.76rem;color:#6b7280;font-family:'Tajawal',sans-serif;margin-top:2px;}
+.tl-card-user{font-size:0.7rem;color:var(--adm);font-family:'Tajawal',sans-serif;margin-top:4px;font-weight:700;}
+
+/* فلتر الأحداث */
+.tl-evt-filter{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.tl-evt-btn{padding:5px 11px;border-radius:7px;border:1.5px solid rgba(124,58,237,0.15);background:transparent;font-family:'Tajawal',sans-serif;font-size:0.78rem;font-weight:700;cursor:pointer;color:#6b7280;transition:all 0.2s;}
+.tl-evt-btn.active{background:var(--adm);color:#fff;border-color:var(--adm);}
+
+/* skeleton */
+.skel{background:linear-gradient(90deg,rgba(124,58,237,0.06) 25%,rgba(124,58,237,0.12) 50%,rgba(124,58,237,0.06) 75%);background-size:200% 100%;animation:sk 1.4s infinite;border-radius:5px;height:13px;}
+@keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* responsive */
+@media(max-width:1024px){.mt-stats{grid-template-columns:repeat(3,1fr);}.charts-grid{grid-template-columns:1fr;}}
+@media(max-width:768px){.mt-stats{grid-template-columns:repeat(2,1fr);}#mapContainer{height:350px;}}
+@media(max-width:480px){.mt-stats{grid-template-columns:1fr 1fr;}}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══ إحصائيات ══ -->
+<div class="mt-stats fade-in">
+    <div class="mt-stat"><div class="mt-stat-icon" style="background:rgba(124,58,237,0.1)">🌍</div><div class="mt-stat-val" id="st_countries">—</div><div class="mt-stat-lbl">دول الكفلاء</div></div>
+    <div class="mt-stat"><div class="mt-stat-icon" style="background:rgba(34,197,94,0.1)">👦</div><div class="mt-stat-val" id="st_orphans">—</div><div class="mt-stat-lbl">أيتام</div></div>
+    <div class="mt-stat"><div class="mt-stat-icon" style="background:rgba(59,130,246,0.1)">👨‍👩‍👧</div><div class="mt-stat-val" id="st_families">—</div><div class="mt-stat-lbl">أسر</div></div>
+    <div class="mt-stat"><div class="mt-stat-icon" style="background:rgba(245,158,11,0.1)">♿</div><div class="mt-stat-val" id="st_specials">—</div><div class="mt-stat-lbl">ذوو احتياجات</div></div>
+    <div class="mt-stat"><div class="mt-stat-icon" style="background:rgba(168,85,247,0.1)">📊</div><div class="mt-stat-val" id="st_coverage">—</div><div class="mt-stat-lbl">نسبة الكفالة</div></div>
+</div>
+
+<!-- ══ تابات رئيسية ══ -->
+<div class="mt-main-tabs fade-in fade-in-d1">
+    <button class="mt-main-tab active" onclick="switchMainTab('map',this)">🗺️ الخريطة</button>
+    <button class="mt-main-tab"       onclick="switchMainTab('charts',this)">📊 الرسوم البيانية</button>
+    <button class="mt-main-tab"       onclick="switchMainTab('timeline',this)">📅 التايم لاين</button>
+</div>
+
+<!-- ══ قسم الخريطة ══ -->
+<div id="section_map">
+    <div class="dash-card" style="margin-bottom:16px">
+        <div class="map-controls">
+            <span style="font-family:'Tajawal',sans-serif;font-size:0.82rem;color:#9ca3af;flex-shrink:0">عرض:</span>
+            <button class="map-btn map-btn-all active"  onclick="filterMap('all',this)">🌐 الكل</button>
+            <button class="map-btn map-btn-orphan"      onclick="filterMap('orphan',this)">👦 أيتام</button>
+            <button class="map-btn map-btn-family"      onclick="filterMap('family',this)">👨‍👩‍👧 أسر</button>
+            <button class="map-btn map-btn-special"     onclick="filterMap('special',this)">♿ ذوو احتياجات</button>
+            <button class="map-btn map-btn-sponsor"     onclick="filterMap('sponsor',this)">🤝 كفلاء</button>
+            <button onclick="mapInstance?.setView([29,35],4)" style="margin-right:auto;background:rgba(124,58,237,0.1);color:var(--adm);border:1.5px solid rgba(124,58,237,0.2);border-radius:8px;padding:5px 11px;font-family:'Tajawal',sans-serif;font-size:0.78rem;cursor:pointer">🔍 إعادة ضبط</button>
+        </div>
+        <div id="mapContainer"></div>
+        <div style="display:flex;gap:16px;margin-top:12px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:6px;font-family:'Tajawal',sans-serif;font-size:0.78rem;color:#6b7280"><div style="width:12px;height:12px;border-radius:50%;background:var(--c-orphan)"></div>أيتام</div>
+            <div style="display:flex;align-items:center;gap:6px;font-family:'Tajawal',sans-serif;font-size:0.78rem;color:#6b7280"><div style="width:12px;height:12px;border-radius:50%;background:var(--c-family)"></div>أسر</div>
+            <div style="display:flex;align-items:center;gap:6px;font-family:'Tajawal',sans-serif;font-size:0.78rem;color:#6b7280"><div style="width:12px;height:12px;border-radius:50%;background:var(--c-special)"></div>ذوو احتياجات</div>
+            <div style="display:flex;align-items:center;gap:6px;font-family:'Tajawal',sans-serif;font-size:0.78rem;color:#6b7280"><div style="width:12px;height:12px;border-radius:50%;background:var(--c-sponsor)"></div>كفلاء</div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ قسم الرسوم البيانية ══ -->
+<div id="section_charts" style="display:none">
+    <div class="charts-grid">
+        <div class="chart-card"><div class="chart-title">📊 توزيع المستفيدين حسب النوع</div><div class="chart-wrap"><canvas id="chartDonut"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title">🌍 توزيع الكفلاء حسب الدولة</div><div class="chart-wrap"><canvas id="chartCountry"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title">📈 التسجيلات الشهرية (آخر 12 شهر)</div><div class="chart-wrap"><canvas id="chartMonthly"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title">💰 المدفوعات الشهرية ₪</div><div class="chart-wrap"><canvas id="chartPayments"></canvas></div></div>
+    </div>
+</div>
+
+<!-- ══ قسم التايم لاين ══ -->
+<div id="section_timeline" style="display:none">
+    <div class="dash-card">
+        <!-- أوضاع -->
+        <div class="tl-controls">
+            <button class="tl-btn active" id="tlBtn_individual" onclick="switchTlMode('individual',this)">👤 فردي</button>
+            <button class="tl-btn"        id="tlBtn_type"       onclick="switchTlMode('type',this)">📋 حسب النوع</button>
+            <button class="tl-btn"        id="tlBtn_all"        onclick="switchTlMode('all',this)">🌐 جماعي</button>
+
+            <!-- dropdown اختيار المستفيد -->
+            <div class="tl-dd-wrap" id="tlDdWrap">
+                <div class="tl-dd-sel" id="tlDdSel" onclick="toggleTlDd()">
+                    <span id="tlDdText">اختر مستفيداً أو كافلاً...</span>
+                    <span style="font-size:0.7rem;color:#9ca3af">▼</span>
+                </div>
+                <div class="tl-dd-panel" id="tlDdPanel">
+                    <input type="text" class="tl-dd-search" id="tlDdSearch"
+                           placeholder="🔍 ابحث بالاسم أو رقم الاستمارة..."
+                           oninput="filterTlDd(this.value)"
+                           onclick="event.stopPropagation()">
+                    <div class="tl-dd-list" id="tlDdList">
+                        <div style="text-align:center;padding:20px;color:#9ca3af;font-family:'Tajawal',sans-serif;font-size:0.82rem">جار التحميل...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- فلتر النوع -->
+            <div id="tlTypeFilter" style="display:none;gap:6px;flex-wrap:wrap">
+                <button class="tl-btn active" onclick="loadTlData('type','orphan');setTlTypeActive(this)">👦 أيتام</button>
+                <button class="tl-btn"        onclick="loadTlData('type','family');setTlTypeActive(this)">👨‍👩‍👧 أسر</button>
+                <button class="tl-btn"        onclick="loadTlData('type','special');setTlTypeActive(this)">♿ ذوو احتياجات</button>
+            </div>
+        </div>
+
+        <!-- المستفيد المحدد -->
+        <div id="tlSelectedBanner" style="display:none;background:rgba(124,58,237,0.06);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-family:'Tajawal',sans-serif;font-size:0.88rem;font-weight:700;color:var(--adm)"></div>
+
+        <!-- فلتر الأحداث -->
+        <div class="tl-evt-filter">
+            <button class="tl-evt-btn active" onclick="filterEvt('all',this)">الكل</button>
+            <button class="tl-evt-btn" onclick="filterEvt('register',this)">📝 تسجيل</button>
+            <button class="tl-evt-btn" onclick="filterEvt('payment',this)">💰 دفعات</button>
+            <button class="tl-evt-btn" onclick="filterEvt('aid',this)">🎁 مساعدات</button>
+            <button class="tl-evt-btn" onclick="filterEvt('log',this)">📋 نشاط</button>
+            <button class="tl-evt-btn" onclick="filterEvt('note',this)">📝 ملاحظات</button>
+        </div>
+
+        <!-- المحتوى -->
+        <div id="tlContent">
+            <div style="text-align:center;padding:50px;color:#9ca3af;font-family:'Tajawal',sans-serif">
+                <div style="font-size:3rem;margin-bottom:12px">📅</div>
+                اختر مستفيداً أو وضعاً لعرض التايم لاين
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+'use strict';
+
+/* ══ حالة ══ */
+let mapData     = null;
+let mapInstance = null;
+let clusterGrp  = null;
+let chartsBuilt = false;
+let tlMode      = 'individual';
+let tlAllEvents = [];
+let tlEvtFilter = 'all';
+let tlUsers     = [];
+let tlDdOpen    = false;
+let tlSelectedId= null;
+
+/* ══ تبديل الأقسام ══ */
+function switchMainTab(section, btn) {
+    document.querySelectorAll('.mt-main-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    ['map','charts','timeline'].forEach(s =>
+        document.getElementById('section_' + s).style.display = s === section ? '' : 'none'
+    );
+    if (section === 'map'    && !mapInstance) initMap();
+    if (section === 'charts' && !chartsBuilt) buildCharts();
+    if (section === 'timeline') loadTlUsers();
+}
+
+/* ══════════════════════════════════════════
+   تحميل بيانات الخريطة
+══════════════════════════════════════════ */
+async function loadMapData() {
+    try {
+        const r = await fetch('/admin-panel/map-timeline/map-data/', {headers:{'X-Requested-With':'XMLHttpRequest'}});
+        mapData = await r.json();
+        updateStats(mapData.stats || {});
+        if (mapInstance) renderMarkers('all');
+        if (chartsBuilt) buildCharts();
+    } catch(e) { console.error('map data error:', e); }
+}
+
+function updateStats(s) {
+    document.getElementById('st_countries').textContent = s.total_countries || 0;
+    document.getElementById('st_orphans').textContent   = s.orphan_count    || 0;
+    document.getElementById('st_families').textContent  = s.family_count    || 0;
+    document.getElementById('st_specials').textContent  = s.special_count   || 0;
+    document.getElementById('st_coverage').textContent  = (s.coverage_pct   || 0) + '%';
+}
+
+/* ══════════════════════════════════════════
+   الخريطة
+══════════════════════════════════════════ */
+function initMap() {
+    mapInstance = L.map('mapContainer', {center:[29,35], zoom:4});
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution:'© OpenStreetMap', maxZoom:18
+    }).addTo(mapInstance);
+    clusterGrp = L.markerClusterGroup({
+        maxClusterRadius: 40,
+        iconCreateFunction: cluster => L.divIcon({
+            html: `<div style="background:var(--adm,#7c3aed);color:#fff;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-family:'Cairo',sans-serif;font-size:0.88rem;border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,0.2)">${cluster.getChildCount()}</div>`,
+            className:'', iconSize:[36,36], iconAnchor:[18,18],
+        }),
+    });
+    mapInstance.addLayer(clusterGrp);
+    if (mapData) renderMarkers('all');
+}
+
+function _makeMarker(item, type) {
+    const COLORS = {orphan:'#22c55e', family:'#3b82f6', special:'#f59e0b', sponsor:'#a855f7'};
+    const color  = COLORS[type] || '#6b7280';
+    const size   = type === 'sponsor' ? Math.max(12, Math.min(30, 10 + (item.benes||0)*2)) : 12;
+    const icon   = L.divIcon({
+        html:`<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.25)"></div>`,
+        className:'', iconSize:[size,size], iconAnchor:[size/2,size/2],
+    });
+    const m = L.marker([item.lat, item.lng], {icon});
+    m._type = type;
+    const TYPE_LBL = {orphan:'👦 يتيم', family:'👨‍👩‍👧 أسرة', special:'♿ ذوو احتياجات'};
+    if (type === 'sponsor') {
+        m.bindPopup(`<div style="font-family:'Tajawal',sans-serif;direction:rtl;min-width:180px">
+            <div style="font-weight:700;font-size:0.9rem;color:#7c3aed;margin-bottom:6px">🤝 ${item.name}</div>
+            <div style="font-size:0.78rem;color:#6b7280">🌍 ${item.country} ${item.city?'— '+item.city:''}</div>
+            <div style="font-size:0.78rem;color:#6b7280;margin-top:3px">👥 ${item.benes} مكفول</div>
+            <div style="font-size:0.78rem;color:#1a7a4a;margin-top:3px">💰 ${item.total_paid}₪</div>
+        </div>`);
+    } else {
+        m.bindPopup(`<div style="font-family:'Tajawal',sans-serif;direction:rtl;min-width:180px">
+            <div style="font-weight:700;font-size:0.9rem;color:${color};margin-bottom:6px">${TYPE_LBL[type]||''}: ${item.name}</div>
+            <div style="font-size:0.78rem;color:#6b7280">📍 ${item.city}</div>
+            <div style="font-size:0.78rem;color:#6b7280;margin-top:3px">🔄 ${item.status}</div>
+            <div style="font-size:0.78rem;margin-top:3px">${item.sponsor!=='غير مكفول'?'🤝 '+item.sponsor:'<span style="color:#e53e3e">غير مكفول</span>'}</div>
+            <button onclick="openTlFromMap('${item.id}','${item.name.replace(/'/g,"\\'")}','${type}')"
+                style="margin-top:8px;background:rgba(124,58,237,0.1);color:#7c3aed;border:none;border-radius:6px;padding:4px 10px;font-family:'Tajawal',sans-serif;font-size:0.76rem;cursor:pointer;font-weight:700">
+                📅 التايم لاين
+            </button>
+        </div>`);
+    }
+    return m;
+}
+
+function renderMarkers(filter) {
+    if (!mapInstance || !mapData) return;
+    clusterGrp.clearLayers();
+    const showBenes   = ['all','orphan','family','special'].includes(filter);
+    const showSponsor = ['all','sponsor'].includes(filter);
+    if (showBenes) {
+        const list = filter === 'all' ? mapData.benes : mapData.benes.filter(b => b.type === filter);
+        list.forEach(item => clusterGrp.addLayer(_makeMarker(item, item.type)));
+    }
+    if (showSponsor) {
+        mapData.sponsors.forEach(item => clusterGrp.addLayer(_makeMarker(item, 'sponsor')));
+    }
+}
+
+function filterMap(filter, btn) {
+    document.querySelectorAll('.map-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderMarkers(filter);
+}
+
+function openTlFromMap(id, name, type) {
+    switchMainTab('timeline', document.querySelectorAll('.mt-main-tab')[2]);
+    setTimeout(() => selectTlUser(id, name, type), 100);
+}
+
+/* ══════════════════════════════════════════
+   الرسوم البيانية
+══════════════════════════════════════════ */
+function buildCharts() {
+    if (!mapData) return;
+    chartsBuilt = true;
+    const s = mapData.stats || {};
+    const c = mapData.charts || {};
+    const isDark    = document.body.classList.contains('dark-mode');
+    const textColor = isDark ? '#e8f5ee' : '#1a1a2e';
+    const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+    Chart.defaults.font.family = "'Tajawal',sans-serif";
+    Chart.defaults.color       = textColor;
+
+    new Chart(document.getElementById('chartDonut'), {
+        type:'doughnut',
+        data:{
+            labels:['أيتام','أسر','ذوو احتياجات'],
+            datasets:[{data:[s.orphan_count||0,s.family_count||0,s.special_count||0],backgroundColor:['#22c55e','#3b82f6','#f59e0b'],borderWidth:3,borderColor:isDark?'#0d0a1a':'#fff'}],
+        },
+        options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{position:'bottom',labels:{padding:16,font:{size:12}}}}},
+    });
+
+    const countries = c.country_distribution || [];
+    new Chart(document.getElementById('chartCountry'), {
+        type:'bar', indexAxis:'y',
+        data:{labels:countries.map(x=>x.country),datasets:[{label:'عدد الكفلاء',data:countries.map(x=>x.count),backgroundColor:'rgba(168,85,247,0.7)',borderRadius:6}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:gridColor}},y:{grid:{display:false}}}},
+    });
+
+    const monthly = c.monthly_registrations || [];
+    new Chart(document.getElementById('chartMonthly'), {
+        type:'line',
+        data:{labels:monthly.map(x=>x.month),datasets:[{label:'تسجيلات',data:monthly.map(x=>x.count),borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,0.1)',borderWidth:2,fill:true,tension:0.4,pointRadius:4,pointBackgroundColor:'#7c3aed'}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:gridColor}},x:{grid:{display:false}}}},
+    });
+
+    const payments = c.monthly_payments || [];
+    new Chart(document.getElementById('chartPayments'), {
+        type:'bar',
+        data:{labels:payments.map(x=>x.month),datasets:[{label:'₪',data:payments.map(x=>x.total),backgroundColor:'rgba(26,122,74,0.7)',borderRadius:6}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:gridColor}},x:{grid:{display:false}}}},
+    });
+}
+
+/* ══════════════════════════════════════════
+   التايم لاين
+══════════════════════════════════════════ */
+function switchTlMode(mode, btn) {
+    tlMode = mode;
+    document.querySelectorAll('#section_timeline .tl-btn:not(.tl-evt-btn)').forEach((b,i) => { if(i<3) b.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById('tlDdWrap').style.display      = mode === 'individual' ? '' : 'none';
+    document.getElementById('tlTypeFilter').style.display  = mode === 'type' ? 'flex' : 'none';
+    document.getElementById('tlSelectedBanner').style.display = 'none';
+
+    if (mode === 'all')  loadTlData('all');
+    if (mode === 'type') loadTlData('type', 'orphan');
+    if (mode === 'individual') {
+        document.getElementById('tlContent').innerHTML =
+            '<div style="text-align:center;padding:50px;color:#9ca3af;font-family:\'Tajawal\',sans-serif"><div style="font-size:3rem;margin-bottom:12px">📅</div>اختر مستفيداً من القائمة</div>';
+    }
+}
+
+function setTlTypeActive(btn) {
+    document.querySelectorAll('#tlTypeFilter .tl-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+}
+
+/* ── dropdown القائمة ── */
+async function loadTlUsers() {
+    if (tlUsers.length) return;
+    try {
+        const r    = await fetch('/admin-panel/map-timeline/search/?q=', {headers:{'X-Requested-With':'XMLHttpRequest'}});
+        const data = await r.json();
+        tlUsers = data.results || [];
+        renderTlDd(tlUsers);
+    } catch(e) { console.error('tl users error:', e); }
+}
+
+function toggleTlDd() {
+    tlDdOpen = !tlDdOpen;
+    document.getElementById('tlDdPanel').classList.toggle('open', tlDdOpen);
+    if (tlDdOpen) {
+        loadTlUsers();
+        setTimeout(() => document.getElementById('tlDdSearch')?.focus(), 40);
+    }
+}
+
+function filterTlDd(q) {
+    const ql = q.toLowerCase().trim();
+    const filtered = ql
+        ? tlUsers.filter(u => u.name.includes(q) || (u.reg||'').includes(q))
+        : tlUsers;
+    renderTlDd(filtered);
+}
+
+function renderTlDd(list) {
+    const el = document.getElementById('tlDdList');
+    if (!list.length) {
+        el.innerHTML = '<p style="text-align:center;color:#9ca3af;font-family:\'Tajawal\',sans-serif;padding:14px;font-size:0.82rem">لا توجد نتائج</p>';
+        return;
+    }
+    const TYPE_COLORS = {orphan:'#22c55e',family:'#3b82f6',special:'#f59e0b',sponsor:'#a855f7'};
+    const TYPE_LABELS = {orphan:'أيتام',family:'أسر',special:'ذوو احتياجات',sponsor:'كفلاء'};
+
+    const grouped = {};
+    list.forEach(u => { if (!grouped[u.type]) grouped[u.type] = []; grouped[u.type].push(u); });
+
+    el.innerHTML = Object.entries(grouped).map(([type, users]) => `
+        <div class="tl-dd-group-hdr" style="color:${TYPE_COLORS[type]||'#6b7280'}">
+            ${TYPE_LABELS[type]||type} <span style="opacity:0.6">(${users.length})</span>
+        </div>
+        ${users.map(u => `
+        <div class="tl-dd-item" onclick="selectTlUser('${u.id}','${u.name.replace(/'/g,"\\'")}','${u.type}')">
+            <span style="font-weight:600">${u.name}</span>
+            <span style="font-size:0.7rem;color:#9ca3af">${u.reg||''}</span>
+        </div>`).join('')}`
+    ).join('');
+}
+
+function selectTlUser(id, name, type) {
+    tlSelectedId = id;
+    document.getElementById('tlDdText').textContent           = name;
+    document.getElementById('tlDdPanel').classList.remove('open');
+    tlDdOpen = false;
+    document.getElementById('tlSelectedBanner').style.display = '';
+    document.getElementById('tlSelectedBanner').textContent   = `📅 تايم لاين: ${name}`;
+    loadTlData('individual', null, id);
+}
+
+async function loadTlData(mode, type, userId) {
+    const el = document.getElementById('tlContent');
+    el.innerHTML = `<div style="padding:20px"><div class="skel" style="height:80px;border-radius:10px;margin-bottom:10px"></div><div class="skel" style="height:60px;border-radius:10px;margin-bottom:10px"></div><div class="skel" style="height:60px;border-radius:10px"></div></div>`;
+
+    let url = `/admin-panel/map-timeline/timeline/?mode=${mode}`;
+    if (type)   url += `&type=${type}`;
+    if (userId) url += `&user_id=${userId}`;
+
+    try {
+        const r    = await fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest'}});
+        const data = await r.json();
+        tlAllEvents = data.events || [];
+        tlEvtFilter = 'all';
+        document.querySelectorAll('.tl-evt-btn').forEach((b,i) => b.classList.toggle('active', i===0));
+        renderTl(tlAllEvents);
+    } catch(e) {
+        el.innerHTML = '<p style="text-align:center;color:#c53030;font-family:\'Tajawal\',sans-serif;padding:24px">⚠️ خطأ في التحميل</p>';
+        console.error('timeline error:', e);
+    }
+}
+
+function filterEvt(filter, btn) {
+    tlEvtFilter = filter;
+    document.querySelectorAll('.tl-evt-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderTl(filter === 'all' ? tlAllEvents : tlAllEvents.filter(e => e.type === filter));
+}
+
+function renderTl(events) {
+    const el = document.getElementById('tlContent');
+    if (!events.length) {
+        el.innerHTML = '<p style="text-align:center;color:#9ca3af;font-family:\'Tajawal\',sans-serif;padding:30px">لا توجد أحداث</p>';
+        return;
+    }
+
+    // تجميع حسب اليوم
+    const grouped = {};
+    events.forEach(e => { if (!grouped[e.date]) grouped[e.date] = []; grouped[e.date].push(e); });
+    const dates = Object.keys(grouped).sort((a,b) => b.localeCompare(a));
+
+    el.innerHTML = `<div class="tl-wrap">` + dates.map(date => `
+        <div class="tl-day-hdr">📅 ${date}</div>
+        ${grouped[date].map(e => `
+        <div class="tl-item">
+            <div class="tl-dot" style="background:${e.color};box-shadow:0 0 0 2px ${e.color}40"></div>
+            <div class="tl-card">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:4px">
+                    <div>
+                        <div class="tl-card-title">${e.icon} ${e.title}</div>
+                        <div class="tl-card-desc">${e.desc}</div>
+                    </div>
+                    ${tlMode !== 'individual' ? `<div class="tl-card-user">${e.user}</div>` : ''}
+                </div>
+            </div>
+        </div>`).join('')}`
+    ).join('') + `</div>`;
+}
+
+/* ══ إغلاق dropdown عند الضغط خارجه ══ */
+document.addEventListener('click', e => {
+    if (!e.target.closest('#tlDdWrap')) {
+        document.getElementById('tlDdPanel').classList.remove('open');
+        tlDdOpen = false;
+    }
+});
+
+/* ══ تهيئة ══ */
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadMapData();
+    initMap();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,250 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>تقرير شامل — {{ user.get_full_name }}</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+@page { size:A4; margin:12mm 10mm; }
+body { font-family:'Arial',sans-serif; background:#fff; direction:rtl; color:#1a1a2e; font-size:9pt; line-height:1.5; }
+
+/* ══ Header ══ */
+.hdr { background:linear-gradient(135deg,#1a7a4a,#2ecc71); border-radius:10px; padding:14px 18px; margin-bottom:14px; display:table; width:100%; }
+.hdr-r { display:table-cell; vertical-align:middle; width:55%; }
+.hdr-l { display:table-cell; vertical-align:middle; text-align:left; width:45%; background:rgba(0,0,0,0.1); border-radius:8px; padding:10px 14px; }
+.org-n { font-size:16pt; font-weight:900; color:#fff; margin-bottom:2px; }
+.org-s { font-size:7.5pt; color:rgba(255,255,255,0.8); }
+.doc-l { font-size:7pt; color:rgba(255,255,255,0.7); margin-bottom:2px; }
+.doc-t { font-size:11pt; font-weight:900; color:#fff; margin-bottom:4px; }
+.doc-m { font-size:7pt; color:rgba(255,255,255,0.75); line-height:1.8; }
+.doc-m strong { color:#fff; }
+
+/* ══ Stats ══ */
+.stats-row { display:table; width:100%; border-collapse:separate; border-spacing:6px; margin-bottom:12px; }
+.stat-c { display:table-cell; }
+.sbox { border-radius:8px; padding:8px 6px; text-align:center; }
+.sb-g { background:#f0fdf4; border:1px solid #bbf7d0; }
+.sb-b { background:#eff6ff; border:1px solid #bfdbfe; }
+.sb-r { background:#fef2f2; border:1px solid #fecaca; }
+.sb-o { background:#fff7ed; border:1px solid #fed7aa; }
+.sb-p { background:#f5f3ff; border:1px solid #c4b5fd; }
+.sv { font-size:11pt; font-weight:900; line-height:1.1; }
+.sv-g { color:#1a7a4a; } .sv-b { color:#2b6cb0; } .sv-r { color:#c53030; }
+.sv-o { color:#b45309; } .sv-p { color:#7c3aed; }
+.sl { font-size:6.5pt; color:#9ca3af; font-weight:700; margin-top:2px; }
+
+/* ══ Section ══ */
+.sec { margin-bottom:12px; border:1px solid #bbf7d0; border-radius:8px; overflow:hidden; page-break-inside:avoid; }
+.sec-hdr { background:#f0fdf4; padding:7px 12px; font-size:8.5pt; font-weight:700; color:#1a7a4a; border-bottom:1px solid #bbf7d0; display:flex; align-items:center; gap:6px; }
+.sec-hdr-blue { background:#eff6ff; color:#2b6cb0; border-color:#bfdbfe; }
+.sec-hdr-purple { background:#f5f3ff; color:#7c3aed; border-color:#c4b5fd; }
+.sec-body { padding:10px 12px; }
+
+/* ══ Info Grid ══ */
+.info-g { display:table; width:100%; border-collapse:separate; border-spacing:6px; }
+.info-r { display:table-row; }
+.info-c { display:table-cell; width:50%; vertical-align:top; }
+.info-box { background:#f8fffe; border:1px solid #d1fae5; border-radius:7px; padding:6px 10px; }
+.info-l { font-size:6.5pt; color:#9ca3af; font-weight:700; margin-bottom:2px; }
+.info-v { font-size:8.5pt; font-weight:700; color:#1a1a2e; }
+
+/* ══ Tables ══ */
+.tbl { width:100%; border-collapse:collapse; font-size:8pt; }
+.tbl th { background:#f0fdf4; color:#1a7a4a; padding:6px 8px; font-weight:700; text-align:right; border-bottom:1px solid #bbf7d0; font-size:7.5pt; }
+.tbl td { padding:6px 8px; border-bottom:1px solid #e8f5e9; vertical-align:middle; }
+.tbl tr:last-child td { border-bottom:none; }
+.tbl tr:nth-child(even) td { background:rgba(26,122,74,0.02); }
+.tbl-blue th { background:#eff6ff; color:#2b6cb0; border-color:#bfdbfe; }
+.tbl-blue td { border-color:#e8f0ff; }
+.tbl-blue tr:nth-child(even) td { background:rgba(43,108,176,0.02); }
+
+.st-paid    { color:#1a7a4a; font-weight:700; }
+.st-late    { color:#c53030; font-weight:700; }
+.st-pending { color:#b45309; font-weight:700; }
+.st-ok      { color:#1a7a4a; font-weight:700; }
+.st-rej     { color:#c53030; font-weight:700; }
+.st-wait    { color:#b45309; font-weight:700; }
+
+/* ══ Benes Cards ══ */
+.bene-grid { display:table; width:100%; border-collapse:separate; border-spacing:6px; }
+.bene-row  { display:table-row; }
+.bene-cell { display:table-cell; width:50%; vertical-align:top; }
+.bene-box  { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:8px 10px; }
+.bene-name { font-size:9pt; font-weight:900; color:#1a7a4a; margin-bottom:4px; }
+.bene-meta { font-size:7pt; color:#6b7280; line-height:1.9; }
+.bene-meta strong { color:#1a7a4a; }
+
+/* ══ Commit Bar ══ */
+.cb-bg   { background:#e8f5e9; border-radius:50px; height:5px; overflow:hidden; margin-top:4px; }
+.cb-fill { height:100%; border-radius:50px; background:linear-gradient(90deg,#1a7a4a,#2ecc71); }
+
+/* ══ Footer ══ */
+.footer { margin-top:12px; padding-top:10px; border-top:2px solid #bbf7d0; display:table; width:100%; font-size:7pt; }
+.foot-r { display:table-cell; width:50%; color:#9ca3af; }
+.foot-l { display:table-cell; width:50%; color:#9ca3af; text-align:left; }
+.foot-brand { font-size:9.5pt; font-weight:900; color:#1a7a4a; margin-bottom:2px; }
+
+/* page break */
+.pb { page-break-before:always; }
+</style>
+</head>
+<body>
+
+<!-- ══ Header ══ -->
+<div class="hdr">
+    <div class="hdr-r">
+        <div class="org-n">رُحَمَاء</div>
+        <div class="org-s">جمعية نسائم فلسطين الخيرية</div>
+    </div>
+    <div class="hdr-l">
+        <div class="doc-l">تقرير شامل للكافل</div>
+        <div class="doc-t">{{ user.get_full_name }}</div>
+        <div class="doc-m">
+            <strong>رقم التسجيل:</strong> {{ user.registration_number|default:"—" }}<br>
+            <strong>الفترة:</strong> {{ period_label }}<br>
+            <strong>تاريخ الطباعة:</strong> {{ print_date }}
+        </div>
+    </div>
+</div>
+
+<!-- ══ إحصائيات ══ -->
+<div class="stats-row">
+    <div class="stat-c"><div class="sbox sb-g"><div class="sv sv-g">{{ benes|length }}</div><div class="sl">المكفولون</div></div></div>
+    <div class="stat-c"><div class="sbox sb-b"><div class="sv sv-b">{{ stats.total_ils }}₪</div><div class="sl">المدفوع (₪)</div></div></div>
+    <div class="stat-c"><div class="sbox sb-o"><div class="sv sv-o">${{ stats.total_usd }}</div><div class="sl">المدفوع ($)</div></div></div>
+    <div class="stat-c"><div class="sbox sb-g"><div class="sv sv-g">{{ stats.paid_count }}</div><div class="sl">مسددة</div></div></div>
+    <div class="stat-c"><div class="sbox sb-r"><div class="sv sv-r">{{ stats.late_count }}</div><div class="sl">متأخرة</div></div></div>
+    <div class="stat-c"><div class="sbox sb-g"><div class="sv sv-g">{{ stats.commitment_pct }}%</div><div class="sl">الالتزام</div><div class="cb-bg"><div class="cb-fill" style="width:{{ stats.commitment_pct }}%"></div></div></div></div>
+    <div class="stat-c"><div class="sbox sb-p"><div class="sv sv-p">{{ stats.rec_total }}</div><div class="sl">الوصولات</div></div></div>
+    <div class="stat-c"><div class="sbox sb-g"><div class="sv sv-g">{{ stats.rec_ils }}₪</div><div class="sl">وصولات موافقة</div></div></div>
+</div>
+
+<!-- ══ بيانات الكافل ══ -->
+<div class="sec">
+    <div class="sec-hdr">👤 بيانات الكافل</div>
+    <div class="sec-body">
+        <div class="info-g">
+            <div class="info-r">
+                <div class="info-c"><div class="info-box"><div class="info-l">الاسم الكامل</div><div class="info-v">{{ user.get_full_name }}</div></div></div>
+                <div class="info-c"><div class="info-box"><div class="info-l">رقم التسجيل</div><div class="info-v">{{ user.registration_number|default:"—" }}</div></div></div>
+            </div>
+            <div class="info-r" style="padding-top:6px">
+                <div class="info-c"><div class="info-box"><div class="info-l">البريد الإلكتروني</div><div class="info-v" style="direction:ltr;text-align:right">{{ user.email|default:"—" }}</div></div></div>
+                <div class="info-c"><div class="info-box"><div class="info-l">الجوال</div><div class="info-v" style="direction:ltr;text-align:right">{{ user.phone_country }}{{ user.phone|default:"—" }}</div></div></div>
+            </div>
+            <div class="info-r" style="padding-top:6px">
+                <div class="info-c"><div class="info-box"><div class="info-l">المهنة</div><div class="info-v">{{ profile.job|default:"—" }}</div></div></div>
+                <div class="info-c"><div class="info-box"><div class="info-l">الدولة / المدينة</div><div class="info-v">{{ profile.country|default:"—" }} / {{ profile.city|default:"—" }}</div></div></div>
+            </div>
+            <div class="info-r" style="padding-top:6px">
+                <div class="info-c"><div class="info-box"><div class="info-l">تاريخ الانضمام</div><div class="info-v">{{ user.date_joined|date:"Y/m/d" }}</div></div></div>
+                <div class="info-c"><div class="info-box"><div class="info-l">الجنسية</div><div class="info-v">{{ user.nationality|default:"—" }}</div></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ قائمة المكفولين ══ -->
+{% if benes %}
+<div class="sec">
+    <div class="sec-hdr">❤️ قائمة المكفولين ({{ benes|length }} مستفيد/ة)</div>
+    <div class="sec-body">
+        <div class="bene-grid">
+            {% for b in benes %}
+            {% if forloop.counter0|divisibleby:2 %}<div class="bene-row">{% endif %}
+            <div class="bene-cell">
+                <div class="bene-box">
+                    <div class="bene-name">{{ b.name }}</div>
+                    <div class="bene-meta">
+                        <strong>رقم التسجيل:</strong> {{ b.reg }}<br>
+                        <strong>النوع:</strong> {{ b.type }} &nbsp;|&nbsp; <strong>المدينة:</strong> {{ b.city }}<br>
+                        <strong>تاريخ الكفالة:</strong> {{ b.sp_date }}<br>
+                        <strong>إجمالي المدفوع:</strong> <span style="color:#1a7a4a;font-weight:900">{{ b.total }}₪</span>
+                    </div>
+                </div>
+            </div>
+            {% if forloop.counter|divisibleby:2 or forloop.last %}</div>{% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ══ سجل الدفعات ══ -->
+{% if payments %}
+<div class="sec pb">
+    <div class="sec-hdr">💳 سجل الدفعات ({{ payments|length }} دفعة)</div>
+    <div style="padding:0">
+        <table class="tbl">
+            <thead><tr><th>#</th><th>المستفيد</th><th>المبلغ (₪)</th><th>المبلغ ($)</th><th>الحالة</th><th>التاريخ</th></tr></thead>
+            <tbody>
+                {% for p in payments %}
+                <tr>
+                    <td style="color:#9ca3af">{{ forloop.counter }}</td>
+                    <td style="font-weight:600">{{ p.beneficiary.get_full_name|default:"—" }}</td>
+                    <td style="color:#1a7a4a;font-weight:700">{{ p.amount_ils }}₪</td>
+                    <td style="color:#2b6cb0;font-weight:700">${{ p.amount_usd }}</td>
+                    <td>
+                        {% if p.status == 'paid' %}<span class="st-paid">✓ مسدّد</span>
+                        {% elif p.status == 'late' %}<span class="st-late">✗ متأخر</span>
+                        {% else %}<span class="st-pending">⏳ معلّق</span>{% endif %}
+                    </td>
+                    <td>{{ p.date }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div style="background:#f0fdf4;padding:8px 12px;border-top:1px solid #bbf7d0;display:flex;justify-content:space-between;font-size:8pt">
+            <span style="font-weight:700;color:#1a7a4a">الإجمالي:</span>
+            <span style="font-weight:900;color:#1a7a4a">{{ stats.total_ils }}₪ / ${{ stats.total_usd }}</span>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ══ سجل الوصولات ══ -->
+{% if receipts %}
+<div class="sec">
+    <div class="sec-hdr sec-hdr-blue">📩 سجل الوصولات المالية ({{ receipts|length }} وصل)</div>
+    <div style="padding:0">
+        <table class="tbl tbl-blue">
+            <thead><tr><th>#</th><th>الرقم المرجعي</th><th>المستفيد</th><th>المبلغ الأصلي</th><th>بالشيقل</th><th>بالدولار</th><th>الحالة</th></tr></thead>
+            <tbody>
+                {% for r in receipts %}
+                <tr>
+                    <td style="color:#9ca3af">{{ forloop.counter }}</td>
+                    <td style="font-size:7pt;direction:ltr;text-align:right">{{ r.system_ref|default:r.unique_number }}</td>
+                    <td style="font-weight:600">{{ r.beneficiary.get_full_name|default:"—" }}</td>
+                    <td>{{ r.amount_original }} {{ r.currency }}</td>
+                    <td style="color:#1a7a4a;font-weight:700">{{ r.amount_shekel }}₪</td>
+                    <td style="color:#2b6cb0;font-weight:700">${{ r.amount_dollar }}</td>
+                    <td>
+                        {% if r.status == 'موافق' %}<span class="st-ok">✓ موافق</span>
+                        {% elif r.status == 'مرفوض' %}<span class="st-rej">✗ مرفوض</span>
+                        {% else %}<span class="st-wait">⏳ انتظار</span>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- ══ Footer ══ -->
+<div class="footer">
+    <div class="foot-r">
+        <div class="foot-brand">رُحَمَاء</div>
+        <div>جمعية نسائم فلسطين الخيرية</div>
+        <div style="margin-top:2px;font-size:6.5pt;color:#bbb">وثيقة إلكترونية صادرة تلقائياً من المنصة</div>
+    </div>
+    <div class="foot-l">
+        <div>تاريخ الطباعة: {{ print_date }}</div>
+        <div>أعدّه: {{ user.get_full_name }}</div>
+        <div>الفترة: {{ period_label }}</div>
+    </div>
+</div>
+
+</body>
+</html>

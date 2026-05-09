@@ -1,0 +1,283 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>كشف المساعدات — {{ user.get_full_name }}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Cairo','Arial',sans-serif;background:#fff;color:#1a1a2e;font-size:11pt;direction:rtl;}
+
+/* ══ Overlay ══ */
+#pwd-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;}
+.pwd-box{background:#fff;border-radius:16px;padding:36px 32px;max-width:380px;width:90%;text-align:center;}
+.pwd-logo{width:64px;height:64px;background:linear-gradient(135deg,#1a7a4a,#2ecc71);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:30px;}
+.pwd-title{font-size:15pt;font-weight:900;margin-bottom:6px;}
+.pwd-sub{font-size:8.5pt;color:#6b7280;margin-bottom:16px;line-height:1.7;}
+.pwd-hint{display:inline-block;background:#f0fdf4;border:1px solid #bbf7d0;color:#1a7a4a;border-radius:8px;padding:5px 14px;font-size:8pt;font-weight:700;margin-bottom:16px;}
+.pwd-input{width:100%;border:2px solid #e5e7eb;border-radius:10px;padding:12px;font-size:18pt;font-weight:700;text-align:center;letter-spacing:8px;direction:ltr;margin-bottom:12px;transition:border-color 0.2s;font-family:monospace;}
+.pwd-input:focus{outline:none;border-color:#1a7a4a;}
+.pwd-input.error{border-color:#c53030;animation:shake 0.4s ease;}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.pwd-btn{width:100%;padding:12px;background:linear-gradient(135deg,#1a7a4a,#2ecc71);color:#fff;border:none;border-radius:10px;font-size:10pt;font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif;}
+.pwd-error{color:#c53030;font-size:8pt;font-weight:700;margin-top:8px;min-height:18px;}
+.pwd-attempts{font-size:7.5pt;color:#9ca3af;margin-top:6px;}
+
+/* ══ Content ══ */
+#protected-content{display:{% if is_download %}block{% else %}none{% endif %};}
+.watermark{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);opacity:0.035;z-index:0;pointer-events:none;font-size:60pt;font-weight:900;color:#1a7a4a;white-space:nowrap;}
+.wrapper{max-width:100%;padding:16px 20px;position:relative;z-index:1;}
+
+/* ══ Header ══ */
+.print-header{background:linear-gradient(135deg,#1a7a4a,#156b3e);padding:16px 24px;margin-bottom:18px;border-radius:10px;display:table;width:100%;}
+.hdr-r{display:table-cell;vertical-align:middle;width:60%;}
+.hdr-l{display:table-cell;vertical-align:middle;text-align:left;width:40%;}
+.org-wrap{display:table;}
+.org-wrap img{display:table-cell;width:52px;height:52px;vertical-align:middle;}
+.org-text{display:table-cell;vertical-align:middle;padding-right:10px;}
+.org-name{font-size:20pt;font-weight:900;color:#fff;}
+.org-sub{font-size:8pt;color:#a7f3d0;margin-top:2px;}
+.print-meta{font-size:8pt;color:#a7f3d0;line-height:1.9;text-align:left;}
+.print-meta strong{color:#fff;}
+
+/* ══ Doc Title ══ */
+.doc-title{text-align:center;margin-bottom:16px;padding:12px 16px;border:2px solid #1a7a4a;border-radius:8px;background:#f0fdf4;}
+.doc-title h2{font-size:13pt;font-weight:900;color:#1a7a4a;}
+.doc-title p{font-size:8pt;color:#6b7280;margin-top:4px;}
+
+/* ══ Stats ══ */
+.stats-bar{display:table;width:100%;margin-bottom:16px;border:1px solid #bbf7d0;border-radius:8px;overflow:hidden;}
+.stat-cell{display:table-cell;text-align:center;padding:10px 8px;border-left:1px solid #bbf7d0;vertical-align:middle;}
+.stat-cell:last-child{border-left:none;}
+.stat-cell:nth-child(odd){background:#f0fdf4;}
+.stat-cell:nth-child(even){background:#fff;}
+.stat-num{font-size:13pt;font-weight:900;color:#1a7a4a;display:block;}
+.stat-lbl{font-size:6.5pt;color:#6b7280;font-weight:700;display:block;margin-top:3px;}
+
+/* ══ Info ══ */
+.section{margin-bottom:14px;border:1px solid #bbf7d0;border-radius:8px;overflow:hidden;page-break-inside:avoid;}
+.section-title{background:#f0fdf4;padding:7px 14px;font-size:9.5pt;font-weight:700;color:#1a7a4a;border-bottom:1px solid #bbf7d0;}
+.info-grid{display:table;width:100%;padding:10px;}
+.info-row{display:table-row;}
+.info-item{display:table-cell;width:33.33%;padding:5px 6px;vertical-align:top;}
+.info-box{background:#f0fdf4;border-radius:6px;padding:7px 9px;}
+.info-lbl{font-size:6.5pt;color:#9ca3af;font-weight:700;margin-bottom:2px;}
+.info-val{font-size:8.5pt;font-weight:700;color:#1a1a2e;}
+
+/* ══ Table ══ */
+.data-table{width:100%;border-collapse:collapse;font-size:7.5pt;}
+.data-table th{padding:7px 8px;font-weight:700;text-align:right;font-size:7pt;background:#1a7a4a;color:#fff;}
+.data-table td{padding:6px 8px;border-bottom:1px solid #dcfce7;vertical-align:middle;}
+.data-table tr:last-child td{border-bottom:none;}
+.data-table tr:nth-child(even) td{background:#f0fdf4;}
+.data-table tfoot td{background:#dcfce7;font-weight:700;font-size:8pt;color:#1a7a4a;border-top:2px solid #1a7a4a;}
+
+/* type badges (print) */
+.tb{display:inline-block;padding:2px 8px;border-radius:50px;font-size:7pt;font-weight:700;}
+.tb-food{background:#fef3c7;color:#b45309;}
+.tb-medical{background:#fee2e2;color:#c53030;}
+.tb-financial{background:#dcfce7;color:#1a7a4a;}
+.tb-clothing{background:#ede9fe;color:#7c3aed;}
+.tb-furniture{background:#dbeafe;color:#2b6cb0;}
+.tb-education{background:#ccfbf1;color:#0f766e;}
+.tb-other{background:#f3f4f6;color:#6b7280;}
+
+.no-data{padding:18px;text-align:center;color:#9ca3af;font-size:8pt;}
+
+/* ══ Security ══ */
+.security-box{margin-top:16px;padding:10px 14px;background:#fff8e1;border:1px solid #f59e0b;border-radius:8px;font-size:7pt;color:#6b7280;line-height:1.8;}
+.security-box strong{color:#b45309;}
+
+/* ══ Signatures ══ */
+.signature-area{display:table;width:100%;margin-top:28px;padding-top:16px;border-top:1.5px dashed #bbf7d0;}
+.sig-cell{display:table-cell;width:33.33%;text-align:center;padding:0 10px;}
+.sig-line{border-bottom:1.5px solid #9ca3af;margin:40px 10px 7px;}
+.sig-label{font-size:7pt;color:#6b7280;font-weight:700;}
+
+/* ══ Footer ══ */
+.print-footer{margin-top:16px;padding-top:10px;border-top:1px solid #bbf7d0;display:table;width:100%;font-size:7pt;color:#9ca3af;}
+.footer-cell{display:table-cell;width:33.33%;}
+.footer-cell:last-child{text-align:left;}
+.footer-cell:nth-child(2){text-align:center;}
+
+/* ══ Print ══ */
+@media print{
+    #pwd-overlay{display:none !important;}
+    #protected-content{display:block !important;}
+    .wrapper{padding:8px 12px;}
+    .section{page-break-inside:avoid;}
+}
+</style>
+</head>
+<body>
+
+{% if not is_download %}
+<div id="pwd-overlay">
+    <div class="pwd-box">
+        <div class="pwd-logo">🔒</div>
+        <div class="pwd-title">وثيقة محمية</div>
+        <div class="pwd-sub">هذه الوثيقة محمية بكلمة سر خاصة بك.</div>
+        <div class="pwd-hint">🔑 آخر 4 أرقام من رقم هويتك</div>
+        <input type="password" id="pwdInput" class="pwd-input" maxlength="4"
+               placeholder="• • • •" inputmode="numeric" autocomplete="off"
+               onkeyup="if(event.key==='Enter')checkPwd()">
+        <button class="pwd-btn" onclick="checkPwd()">🔓 فتح الوثيقة</button>
+        <div class="pwd-error"    id="pwdError"></div>
+        <div class="pwd-attempts" id="pwdAttempts"></div>
+    </div>
+</div>
+{% endif %}
+
+<div id="protected-content">
+<div class="watermark">رُحَمَاء — وثيقة رسمية</div>
+<div class="wrapper">
+
+    <!-- Header -->
+    <div class="print-header">
+        <div class="hdr-r">
+            <div class="org-wrap">
+                <img src="{{ request.scheme }}://{{ request.get_host }}{% static 'images/logo.png' %}" alt="شعار">
+                <div class="org-text">
+                    <div class="org-name">رُحَمَاء</div>
+                    <div class="org-sub">جمعية رُحَمَاء الخيرية</div>
+                </div>
+            </div>
+        </div>
+        <div class="hdr-l">
+            <div class="print-meta">
+                <strong>الاسم:</strong> {{ user.get_full_name }}<br>
+                <strong>رقم التسجيل:</strong> {{ user.registration_number|default:"—" }}<br>
+                <strong>رقم الهوية:</strong> {{ user.id_number|default:"—" }}<br>
+                <strong>تاريخ التقرير:</strong> {{ report_date }}
+            </div>
+        </div>
+    </div>
+
+    <!-- عنوان -->
+    <div class="doc-title">
+        <h2>🎁 كشف المساعدات</h2>
+        <p>
+            {% if filter_from or filter_to %}
+                الفترة: {% if filter_from %}من {{ filter_from }}{% endif %} {% if filter_to %}إلى {{ filter_to }}{% endif %}
+            {% else %}جميع المساعدات المسجّلة{% endif %}
+            &nbsp;|&nbsp; الرقم التسلسلي: <strong>{{ serial }}</strong>
+        </p>
+    </div>
+
+    <!-- إحصائيات -->
+    <div class="stats-bar">
+        <div class="stat-cell"><span class="stat-num">{{ stats.count }}</span><span class="stat-lbl">إجمالي المساعدات</span></div>
+        <div class="stat-cell"><span class="stat-num">{{ stats.total_qty }}</span><span class="stat-lbl">إجمالي الكميات</span></div>
+        <div class="stat-cell"><span class="stat-num">{{ stats.type_stats.food|default:0 }}</span><span class="stat-lbl">🍱 غذائية</span></div>
+        <div class="stat-cell"><span class="stat-num">{{ stats.type_stats.medical|default:0 }}</span><span class="stat-lbl">🏥 طبية</span></div>
+        <div class="stat-cell"><span class="stat-num">{{ stats.type_stats.financial|default:0 }}</span><span class="stat-lbl">💰 مالية</span></div>
+        <div class="stat-cell"><span class="stat-num">{{ stats.type_stats.education|default:0 }}</span><span class="stat-lbl">📚 تعليمية</span></div>
+    </div>
+
+    <!-- بيانات المستفيد -->
+    <div class="section">
+        <div class="section-title">📋 بيانات المستفيد</div>
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-item"><div class="info-box"><div class="info-lbl">الاسم الكامل</div><div class="info-val">{{ user.get_full_name }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">رقم الهوية</div><div class="info-val">{{ user.id_number|default:"—" }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">رقم التسجيل</div><div class="info-val">{{ user.registration_number|default:"—" }}</div></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- جدول المساعدات -->
+    <div class="section">
+        <div class="section-title">🎁 تفصيل المساعدات</div>
+        {% if aids %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th><th>اسم المساعدة</th><th>النوع</th>
+                    <th>الكمية</th><th>الجهة المقدمة</th><th>التاريخ</th><th>ملاحظة</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in aids %}
+                <tr>
+                    <td style="color:#9ca3af;text-align:center">{{ forloop.counter }}</td>
+                    <td style="font-weight:700">{{ a.name }}</td>
+                    <td><span class="tb tb-{{ a.aid_type }}">{{ a.aid_type_label }}</span></td>
+                    <td style="text-align:center;font-weight:700;color:#1a7a4a">{{ a.quantity }}</td>
+                    <td>{{ a.provider }}</td>
+                    <td>{{ a.date }}</td>
+                    <td style="color:#6b7280;font-size:7pt">{{ a.note|default:"—"|truncatechars:30 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3" style="text-align:center">الإجمالي ({{ aids|length }} مساعدة)</td>
+                    <td style="text-align:center">{{ stats.total_qty }}</td>
+                    <td colspan="3"></td>
+                </tr>
+            </tfoot>
+        </table>
+        {% else %}
+        <div class="no-data">لا توجد مساعدات مسجّلة ضمن المعايير المحددة</div>
+        {% endif %}
+    </div>
+
+    <!-- الختم الأمني -->
+    <div class="security-box">
+        <strong>⚠ وثيقة رسمية محمية:</strong>
+        الرقم التسلسلي: <strong>{{ serial }}</strong> &nbsp;|&nbsp;
+        تاريخ التوليد: <strong>{{ report_date }}</strong> &nbsp;|&nbsp;
+        طُبع بواسطة: <strong>{{ user.get_full_name }}</strong><br>
+        أي تعديل على هذه الوثيقة يُعدّ تزويراً. للتحقق تواصل مع إدارة جمعية رُحَمَاء.
+    </div>
+
+    <!-- التوقيعات -->
+    <div class="signature-area">
+        <div class="sig-cell"><div class="sig-line"></div><div class="sig-label">توقيع المستفيد</div></div>
+        <div class="sig-cell"><div class="sig-line"></div><div class="sig-label">توقيع المراجع</div></div>
+        <div class="sig-cell"><div class="sig-line"></div><div class="sig-label">ختم الجمعية واعتمادها</div></div>
+    </div>
+
+    <!-- Footer -->
+    <div class="print-footer">
+        <div class="footer-cell">منصة رُحَمَاء — جميع الحقوق محفوظة</div>
+        <div class="footer-cell">{{ report_date }}</div>
+        <div class="footer-cell">رقم التسجيل: {{ user.registration_number|default:user.pk }}</div>
+    </div>
+
+</div>
+</div>
+
+{% if not is_download %}
+<script>
+(function(){
+    var HASH="{{ pwd_hash }}",MAX=5,attempts=0;
+    function simpleHash(s){var h=0;for(var i=0;i<s.length;i++)h=(Math.imul(31,h)+s.charCodeAt(i))|0;return(h>>>0).toString(16);}
+    window.checkPwd=function(){
+        var inp=document.getElementById('pwdInput'),val=inp.value.trim();
+        var err=document.getElementById('pwdError'),att=document.getElementById('pwdAttempts');
+        if(!val){err.textContent='أدخل كلمة السر أولاً';return;}
+        if(simpleHash(val)===HASH){
+            document.getElementById('pwd-overlay').style.display='none';
+            document.getElementById('protected-content').style.display='block';
+            setTimeout(function(){window.print();},800);
+        } else {
+            attempts++;inp.value='';inp.classList.add('error');
+            setTimeout(function(){inp.classList.remove('error');},500);
+            var left=MAX-attempts;
+            if(left<=0){
+                document.getElementById('pwd-overlay').innerHTML='<div class="pwd-box"><div style="font-size:48px;margin-bottom:16px">🚫</div><div class="pwd-title" style="color:#c53030">تم قفل الوثيقة</div><div class="pwd-sub">تجاوزت عدد المحاولات.<br>أغلق النافذة وحاول لاحقاً.</div></div>';
+            } else {
+                err.textContent='كلمة السر غير صحيحة.';
+                att.textContent='محاولات متبقية: '+left;
+            }
+        }
+    };
+    document.getElementById('pwdInput').focus();
+})();
+</script>
+{% endif %}
+
+</body>
+</html>

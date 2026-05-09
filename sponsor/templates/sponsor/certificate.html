@@ -1,0 +1,179 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>شهادة كفالة — {{ user.get_full_name }}</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+@page { size:A4; margin:0; }
+body { font-family:'Arial',sans-serif; background:#fff; direction:rtl; }
+.page { width:100%; position:relative; background:#fff; }
+.bg-top { width:100%; height:100px; background:linear-gradient(135deg,#1a7a4a 0%,#2ecc71 60%,#1a7a4a 100%); clip-path:ellipse(110% 100% at 50% 0%); }
+.bg-bottom { width:100%; height:60px; background:linear-gradient(135deg,#1a7a4a,#2ecc71); clip-path:ellipse(110% 100% at 50% 100%); margin-top:8px; }
+.circle-1,.circle-2,.circle-3,.circle-4 { display:none; }
+.content { position:relative; z-index:1; padding:12px 28px; }
+
+/* رأس */
+.cert-head { text-align:center; padding-bottom:10px; margin-bottom:14px; }
+.org-name-ar { font-size:26pt; font-weight:900; color:#fff; text-shadow:0 2px 8px rgba(0,0,0,0.2); }
+.org-sub-ar  { font-size:9pt; color:rgba(255,255,255,0.85); margin-top:3px; }
+
+/* بطاقة */
+.cert-card {
+    background:#fff; border-radius:16px;
+    box-shadow:0 4px 20px rgba(26,122,74,0.12);
+    padding:20px 26px; margin-bottom:12px;
+    border:2px solid rgba(46,204,113,0.2);
+    position:relative; overflow:hidden;
+}
+.cert-card::before { content:''; position:absolute; top:0; right:0; width:6px; height:100%; background:linear-gradient(135deg,#1a7a4a,#2ecc71); }
+.cert-card::after  { content:''; position:absolute; bottom:0; left:0; width:100%; height:4px; background:linear-gradient(90deg,transparent,#2ecc71,#1a7a4a,transparent); }
+.watermark { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) rotate(-25deg); font-size:72pt; font-weight:900; color:rgba(26,122,74,0.04); white-space:nowrap; pointer-events:none; z-index:0; }
+
+/* عنوان */
+.cert-title-wrap { text-align:center; margin-bottom:14px; position:relative; z-index:1; }
+.cert-badge { display:inline-block; background:linear-gradient(135deg,#1a7a4a,#2ecc71); color:#fff; padding:6px 20px; border-radius:50px; font-size:8.5pt; font-weight:700; letter-spacing:1px; margin-bottom:10px; }
+.cert-main-title { font-size:20pt; font-weight:900; color:#1a1a2e; margin-bottom:4px; }
+.cert-main-title span { color:#1a7a4a; }
+.divider { display:flex; align-items:center; gap:10px; justify-content:center; margin:10px 0; }
+.divider-line     { flex:1; max-width:80px; height:2px; background:linear-gradient(90deg,transparent,#2ecc71); }
+.divider-line-rev { flex:1; max-width:80px; height:2px; background:linear-gradient(90deg,#2ecc71,transparent); }
+
+/* نص */
+.cert-text { text-align:center; font-size:9.5pt; color:#4a5568; line-height:1.8; margin-bottom:12px; position:relative; z-index:1; }
+.cert-name-box { display:inline-block; background:linear-gradient(135deg,rgba(26,122,74,0.06),rgba(46,204,113,0.06)); border:2px solid rgba(26,122,74,0.25); border-radius:12px; padding:7px 22px; margin:6px 0; font-size:15pt; font-weight:900; color:#1a7a4a; }
+
+/* بيانات */
+.info-grid { display:table; width:100%; border-collapse:separate; border-spacing:7px; margin:12px 0; position:relative; z-index:1; }
+.info-row  { display:table-row; }
+.info-cell { display:table-cell; width:50%; vertical-align:top; }
+.info-box  { background:linear-gradient(135deg,#f0fdf4,#e8f5e9); border:1px solid #bbf7d0; border-radius:10px; padding:8px 12px; text-align:center; }
+.info-icon { font-size:12pt; margin-bottom:2px; }
+.info-lbl  { font-size:7pt; color:#6b9e77; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+.info-val  { font-size:9.5pt; font-weight:900; color:#1a7a4a; }
+
+/* جدول */
+.bene-section { margin-top:10px; position:relative; z-index:1; }
+.bene-title-bar { background:linear-gradient(135deg,#1a7a4a,#2ecc71); color:#fff; padding:8px 16px; border-radius:10px 10px 0 0; font-size:9.5pt; font-weight:700; }
+.bene-table { width:100%; border-collapse:collapse; font-size:8.5pt; }
+.bene-table thead tr { background:rgba(26,122,74,0.06); }
+.bene-table th { padding:8px 12px; font-weight:700; color:#1a7a4a; text-align:right; border-bottom:1px solid #bbf7d0; font-size:8pt; }
+.bene-table td { padding:8px 12px; border-bottom:1px solid #e8f5e9; }
+.bene-table tr:last-child td { border-bottom:none; }
+.bene-table tr:nth-child(even) td { background:rgba(26,122,74,0.02); }
+.bene-badge { display:inline-block; padding:2px 9px; border-radius:20px; font-size:7pt; font-weight:700; }
+.bb-orphan  { background:rgba(26,122,74,0.1);  color:#1a7a4a; }
+.bb-special { background:rgba(229,62,62,0.1);  color:#c53030; }
+.bb-family  { background:rgba(245,158,11,0.1); color:#b45309; }
+
+/* خاتمة */
+.cert-footer-text { text-align:center; margin:10px 0 8px; font-size:8pt; color:#6b7280; line-height:1.6; position:relative; z-index:1; }
+
+/* footer */
+.page-footer { padding-top:14px; position:relative; z-index:1; }
+.pf-inner { display:table; width:100%; background:rgba(255,255,255,0.9); border-radius:12px; padding:14px 20px; border:1px solid rgba(255,255,255,0.5); }
+.pf-right { display:table-cell; width:50%; vertical-align:middle; }
+.pf-left  { display:table-cell; width:50%; vertical-align:middle; text-align:left; }
+.pf-brand { font-size:12pt; font-weight:900; color:#1a7a4a; }
+.pf-sub   { font-size:7.5pt; color:#9ca3af; margin-top:2px; }
+.pf-seal  { display:inline-block; padding:5px 14px; border-radius:20px; background:linear-gradient(135deg,#1a7a4a,#2ecc71); color:#fff; font-size:7.5pt; font-weight:700; }
+.pf-date  { font-size:7.5pt; color:#6b7280; margin-top:4px; }
+</style>
+</head>
+<body>
+<div class="page">
+    <div class="bg-top"></div>
+    <div class="content">
+        <div class="cert-head">
+            <div class="org-name-ar">رُحَمَاء</div>
+            <div class="org-sub-ar">جمعية نسائم فلسطين الخيرية</div>
+        </div>
+
+        <div class="cert-card">
+            <div class="watermark">رُحَمَاء</div>
+
+            <div class="cert-title-wrap">
+                <div class="cert-badge">🏅 وثيقة رسمية معتمدة</div>
+                <div class="cert-main-title">شهادة <span>كفالة</span></div>
+                <div class="divider">
+                    <div class="divider-line"></div>
+                    <span style="font-size:12pt;color:#2ecc71">✦</span>
+                    <div class="divider-line-rev"></div>
+                </div>
+            </div>
+
+            <div class="cert-text">
+                <p>تُشهد منصة <strong>رُحَمَاء</strong> — جمعية نسائم فلسطين الخيرية</p>
+                <p>بأن الكريم/الكريمة</p>
+                <div class="cert-name-box">{{ user.get_full_name }}</div>
+                <p style="margin-top:10px">
+                    قد انتسب إلى برنامج الكفالة الخيرية بتاريخ
+                    <strong style="color:#1a7a4a">{{ join_date }}</strong>،
+                    وقد أكرمه الله بالتكفّل بـ
+                    <strong style="color:#1a7a4a;font-size:12pt">{{ total }} مستفيد/ة</strong>
+                    من الأيتام وذوي الاحتياجات الخاصة والأسر المحتاجة.
+                </p>
+                <p style="margin-top:10px;font-size:9.5pt;color:#6b9e77">
+                    جزاه الله خيراً وجعل ذلك في ميزان حسناته،<br>
+                    وهذه الشهادة صادرة بناءً على طلبه تحقيقاً للشفافية والمصداقية.
+                </p>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-row">
+                    <div class="info-cell"><div class="info-box"><div class="info-icon">🪪</div><div class="info-lbl">رقم التسجيل</div><div class="info-val">{{ user.registration_number|default:"—" }}</div></div></div>
+                    <div class="info-cell"><div class="info-box"><div class="info-icon">📅</div><div class="info-lbl">تاريخ الانضمام</div><div class="info-val">{{ join_date }}</div></div></div>
+                </div>
+                <div class="info-row" style="padding-top:10px">
+                    <div class="info-cell"><div class="info-box"><div class="info-icon">❤️</div><div class="info-lbl">إجمالي المكفولين</div><div class="info-val">{{ total }} مستفيد/ة</div></div></div>
+                    <div class="info-cell"><div class="info-box"><div class="info-icon">🗓️</div><div class="info-lbl">تاريخ إصدار الشهادة</div><div class="info-val">{{ issue_date }}</div></div></div>
+                </div>
+            </div>
+
+            {% if benes %}
+            <div class="bene-section">
+                <div class="bene-title-bar">❤️ قائمة المكفولين — {{ total }} مستفيد/ة</div>
+                <table class="bene-table">
+                    <thead>
+                        <tr><th>#</th><th>الاسم الكامل</th><th>رقم التسجيل</th><th>النوع</th><th>المدينة</th><th>تاريخ الكفالة</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for b in benes %}
+                        <tr>
+                            <td style="color:#9ca3af;font-size:8pt">{{ forloop.counter }}</td>
+                            <td><strong>{{ b.full_name }}</strong></td>
+                            <td style="font-size:7.5pt;direction:ltr;text-align:right">{{ b.reg_number }}</td>
+                            <td><span class="bene-badge {% if b.type_label == 'يتيم' %}bb-orphan{% elif b.type_label == 'ذو احتياج' %}bb-special{% else %}bb-family{% endif %}">{{ b.type_label }}</span></td>
+                            <td>{{ b.city }}</td>
+                            <td>{{ b.sponsorship_date }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            <div class="cert-footer-text">
+                <p>أُصدرت هذه الشهادة إلكترونياً من منصة رُحَمَاء في تاريخ <strong>{{ issue_date }}</strong></p>
+                <p style="font-size:8pt;margin-top:4px;color:#9ca3af">هذه الشهادة صادرة بصورة آلية ولا تحتاج إلى توقيع يدوي أو ختم ورقي</p>
+            </div>
+        </div>
+
+        <div class="page-footer">
+            <div class="pf-inner">
+                <div class="pf-right">
+                    <div class="pf-brand">رُحَمَاء</div>
+                    <div class="pf-sub">جمعية نسائم فلسطين الخيرية — برنامج الكفالة الخيرية</div>
+                </div>
+                <div class="pf-left">
+                    <div class="pf-seal">✦ وثيقة معتمدة إلكترونياً</div>
+                    <div class="pf-date">{{ issue_date }} — {{ user.registration_number|default:"—" }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="bg-bottom"></div>
+</div>
+</body>
+</html>

@@ -1,0 +1,26 @@
+# البيئة الافتراضية
+venv/
+env/
+
+# ملف البيئة (سري - لا يرفع أبداً)
+.env
+
+# Django
+*.pyc
+__pycache__/
+*.pyo
+db.sqlite3
+/media/
+/logs/
+*.log
+
+# Static files collected
+/staticfiles/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

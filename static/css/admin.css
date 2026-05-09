@@ -1,0 +1,25 @@
+body { font-family: 'Cairo', sans-serif; background-color: #f4f6f9; }
+
+/* ==================== Sidebar ==================== */
+.sidebar { position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+.sidebar .nav-link { padding: 0.5rem 0.75rem; font-size: 0.9rem; transition: background 0.2s; }
+.sidebar .nav-link:hover { background-color: rgba(255,255,255,0.1); border-radius: 8px; }
+
+/* ==================== Cards ==================== */
+.stat-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08) !important;
+}
+
+/* ==================== Table ==================== */
+.table th { font-size: 0.85rem; font-weight: 600; }
+.table td { font-size: 0.88rem; vertical-align: middle; }
+
+/* ==================== Responsive Sidebar ==================== */
+@media (max-width: 768px) {
+    #sidebar { display: none !important; }
+    main     { padding: 1rem !important; }
+}

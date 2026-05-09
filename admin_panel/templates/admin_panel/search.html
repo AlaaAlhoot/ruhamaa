@@ -1,0 +1,245 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% block title %}البحث{% endblock %}
+{% block page_title %}🔍 البحث المتقدم{% endblock %}
+
+{% block content %}
+
+<!-- حقول البحث -->
+<div class="card border-0 shadow-sm rounded-3 p-3 mb-4">
+    <div class="row g-2">
+        <div class="col-md-2">
+            <input type="text" id="srchId" class="form-control" placeholder="رقم الهوية">
+        </div>
+        <div class="col-md-2">
+            <input type="text" id="srchFirst" class="form-control" placeholder="الاسم الأول">
+        </div>
+        <div class="col-md-2">
+            <input type="text" id="srchSecond" class="form-control" placeholder="الاسم الثاني">
+        </div>
+        <div class="col-md-2">
+            <input type="text" id="srchThird" class="form-control" placeholder="الاسم الثالث">
+        </div>
+        <div class="col-md-2">
+            <input type="text" id="srchFamily" class="form-control" placeholder="اسم العائلة">
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <button class="btn btn-success flex-grow-1" onclick="doSearch()">بحث</button>
+            <button class="btn btn-outline-secondary" onclick="clearSearch()">مسح</button>
+        </div>
+    </div>
+</div>
+
+<!-- جدول النتائج -->
+<div class="card border-0 shadow-sm rounded-3 p-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0 text-success">النتائج <span id="resultsCount" class="badge bg-success">0</span></h6>
+        <button class="btn btn-warning btn-sm" onclick="exportSearch()">⬇️ تصدير</button>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle text-center">
+            <thead class="table-success">
+                <tr>
+                    <th>الاسم الكامل</th>
+                    <th>رقم الهوية</th>
+                    <th>النوع</th>
+                    <th>المنطقة</th>
+                    <th>عدد الأفراد</th>
+                    <th>التدقيق</th>
+                    <th>إجراءات</th>
+                </tr>
+            </thead>
+            <tbody id="searchResults">
+                <tr><td colspan="7" class="text-muted">ابحث للعرض</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal العرض -->
+<div class="modal fade" id="viewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0">
+                <h6 class="modal-title fw-bold text-success">بيانات المستفيد</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="viewModalBody">جار التحميل...</div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal التعديل -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0">
+                <h6 class="modal-title fw-bold text-success">تعديل البيانات</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editUserId">
+                <div class="row g-3">
+                    <div class="col-md-3"><label class="form-label">الاسم الأول</label>
+                        <input type="text" id="editFirst" class="form-control"></div>
+                    <div class="col-md-3"><label class="form-label">الاسم الثاني</label>
+                        <input type="text" id="editSecond" class="form-control"></div>
+                    <div class="col-md-3"><label class="form-label">الاسم الثالث</label>
+                        <input type="text" id="editThird" class="form-control"></div>
+                    <div class="col-md-3"><label class="form-label">اسم العائلة</label>
+                        <input type="text" id="editFamily" class="form-control"></div>
+                    <div class="col-md-6"><label class="form-label">البريد الإلكتروني</label>
+                        <input type="email" id="editEmail" class="form-control"></div>
+                    <div class="col-md-6"><label class="form-label">رقم الجوال</label>
+                        <input type="text" id="editPhone" class="form-control"></div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button class="btn btn-success" onclick="saveEdit()">حفظ التعديلات</button>
+                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal نجاح التعديل -->
+<div class="modal fade" id="successModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content rounded-4 border-0 shadow text-center p-4">
+            <div class="fs-1">✅</div>
+            <h6 class="fw-bold mt-2">تم الحفظ بنجاح</h6>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const SEARCH_URL  = "{% url 'admin_panel:search_ajax' %}";
+const DETAIL_URL  = "/admin-panel/search/detail/";
+const EDIT_URL    = "/admin-panel/search/edit/";
+const AUDIT_URL   = "/admin-panel/search/audit/";
+const CSRF        = "{{ csrf_token }}";
+let lastResults   = [];
+
+function doSearch() {
+    const params = new URLSearchParams({
+        id_number:   document.getElementById('srchId').value,
+        first_name:  document.getElementById('srchFirst').value,
+        second_name: document.getElementById('srchSecond').value,
+        third_name:  document.getElementById('srchThird').value,
+        family_name: document.getElementById('srchFamily').value,
+    });
+    fetch(`${SEARCH_URL}?${params}`)
+        .then(r => r.json())
+        .then(data => {
+            lastResults = data.results;
+            document.getElementById('resultsCount').textContent = data.results.length;
+            const tbody = document.getElementById('searchResults');
+            if (!data.results.length) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-muted">لا توجد نتائج</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.results.map(u => `
+                <tr>
+                    <td>${u.full_name}</td>
+                    <td>${u.id_number}</td>
+                    <td><span class="badge bg-success">${u.user_type}</span></td>
+                    <td>${u.region || '—'}</td>
+                    <td>${u.members || '—'}</td>
+                    <td>
+                        <span class="badge ${u.is_audited ? 'bg-success' : 'bg-secondary'}" id="audit_${u.id}">
+                            ${u.is_audited ? 'تم التدقيق' : 'قيد المراجعة'}
+                        </span>
+                    </td>
+                    <td class="d-flex gap-1 justify-content-center">
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewUser('${u.id}')">👁</button>
+                        <button class="btn btn-sm btn-outline-success" onclick="editUser('${u.id}','${u.full_name}')">✏️</button>
+                        <button class="btn btn-sm btn-outline-warning" onclick="toggleAudit('${u.id}')">✔</button>
+                    </td>
+                </tr>`).join('');
+        });
+}
+
+function clearSearch() {
+    ['srchId','srchFirst','srchSecond','srchThird','srchFamily'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('searchResults').innerHTML = '<tr><td colspan="7" class="text-muted">ابحث للعرض</td></tr>';
+    document.getElementById('resultsCount').textContent = '0';
+}
+
+function viewUser(id) {
+    fetch(`${DETAIL_URL}${id}/`)
+        .then(r => r.json())
+        .then(data => {
+            const u = data.user;
+            document.getElementById('viewModalBody').innerHTML = `
+                <div class="row g-2">
+                    ${Object.entries(u).map(([k,v]) =>
+                        `<div class="col-md-6"><strong>${k}:</strong> ${v ?? '—'}</div>`
+                    ).join('')}
+                </div>`;
+            new bootstrap.Modal(document.getElementById('viewModal')).show();
+        });
+}
+
+function editUser(id) {
+    fetch(`${DETAIL_URL}${id}/`)
+        .then(r => r.json())
+        .then(data => {
+            const u = data.user;
+            document.getElementById('editUserId').value  = id;
+            document.getElementById('editFirst').value   = u.first_name  || '';
+            document.getElementById('editSecond').value  = u.second_name || '';
+            document.getElementById('editThird').value   = u.third_name  || '';
+            document.getElementById('editFamily').value  = u.family_name || '';
+            document.getElementById('editEmail').value   = u.email       || '';
+            document.getElementById('editPhone').value   = u.phone       || '';
+            new bootstrap.Modal(document.getElementById('editModal')).show();
+        });
+}
+
+function saveEdit() {
+    const id = document.getElementById('editUserId').value;
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('first_name',  document.getElementById('editFirst').value);
+    fd.append('second_name', document.getElementById('editSecond').value);
+    fd.append('third_name',  document.getElementById('editThird').value);
+    fd.append('family_name', document.getElementById('editFamily').value);
+    fd.append('email',       document.getElementById('editEmail').value);
+    fd.append('phone',       document.getElementById('editPhone').value);
+
+    fetch(`${EDIT_URL}${id}/`, { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+                const sm = new bootstrap.Modal(document.getElementById('successModal'));
+                sm.show();
+                setTimeout(() => sm.hide(), 1500);
+                doSearch();
+            }
+        });
+}
+
+function toggleAudit(id) {
+    fetch(`${AUDIT_URL}${id}/`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': CSRF}
+    })
+    .then(r => r.json())
+    .then(data => {
+        const el = document.getElementById(`audit_${id}`);
+        if (el) {
+            el.className = `badge ${data.is_audited ? 'bg-success' : 'bg-secondary'}`;
+            el.textContent = data.is_audited ? 'تم التدقيق' : 'قيد المراجعة';
+        }
+    });
+}
+
+function exportSearch() {
+    alert('سيتم تصدير نتائج البحث الحالية');
+}
+</script>
+{% endblock %}

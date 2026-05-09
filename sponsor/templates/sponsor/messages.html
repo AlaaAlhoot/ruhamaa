@@ -1,0 +1,889 @@
+{% extends 'sponsor/base.html' %}
+{% block title %}التواصل{% endblock %}
+{% block page_title %}💬 التواصل{% endblock %}
+
+{% block extra_css %}
+<style>
+:root{
+    --green:#1a7a4a;--green-dim:rgba(26,122,74,0.1);
+    --blue:#185fa5;--blue-light:#63b3ed;--blue-dim:rgba(24,95,165,0.1);
+    --red:#c53030;--red-dim:rgba(229,62,62,0.1);
+    --card-bg:#fff;--card-border:rgba(26,122,74,0.1);--input-bg:#f4f9f6;
+}
+body.dark-mode{--card-bg:#0d1a12;--card-border:rgba(46,204,113,0.1);--input-bg:#111e16;}
+
+/* ══ Layout ══ */
+.chat-wrap{display:flex;gap:0;height:calc(100vh - 160px);min-height:480px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:18px;overflow:hidden;}
+
+/* ══ Sidebar ══ */
+.chat-sidebar{width:280px;flex-shrink:0;display:flex;flex-direction:column;border-left:1px solid var(--card-border);}
+.cs-header{padding:14px 16px;border-bottom:1px solid var(--card-border);font-size:0.88rem;font-weight:700;color:var(--text,#1a1a2e);}
+body.dark-mode .cs-header{color:#e8f5ee;}
+.cs-search{padding:8px 12px;border-bottom:1px solid var(--card-border);}
+.cs-search input{width:100%;padding:8px 12px;border:1.5px solid var(--card-border);border-radius:50px;font-family:'Tajawal',sans-serif;font-size:0.82rem;background:var(--input-bg);color:var(--text,#1a1a2e);outline:none;transition:all 0.2s;}
+body.dark-mode .cs-search input{color:#e8f5ee;}
+.cs-search input:focus{border-color:var(--blue-light);}
+.cs-list{flex:1;overflow-y:auto;}
+
+/* ══ Chat Item ══ */
+.chat-item{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;border-bottom:1px solid rgba(26,122,74,0.04);transition:background 0.2s;position:relative;}
+.chat-item:hover{background:rgba(24,95,165,0.04);}
+.chat-item.active{background:var(--blue-dim);border-right:3px solid var(--blue-light);}
+.ci-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;color:#fff;flex-shrink:0;position:relative;}
+.ci-online{position:absolute;bottom:1px;left:1px;width:10px;height:10px;border-radius:50%;background:#2ecc71;border:2px solid var(--card-bg);}
+.ci-body{flex:1;min-width:0;}
+.ci-name{font-size:0.84rem;font-weight:700;color:var(--text,#1a1a2e);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+body.dark-mode .ci-name{color:#e8f5ee;}
+.ci-last{font-size:0.7rem;color:#9ca3af;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ci-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
+.ci-time{font-size:0.65rem;color:#9ca3af;}
+.ci-badge{background:var(--blue-light);color:#fff;border-radius:50px;font-size:0.62rem;font-weight:700;padding:1px 7px;min-width:18px;text-align:center;}
+
+/* ══ Main Area ══ */
+.chat-main{flex:1;display:flex;flex-direction:column;min-width:0;}
+
+/* ══ Chat Header ══ */
+.chat-hdr{padding:12px 18px;border-bottom:1px solid var(--card-border);display:flex;align-items:center;gap:10px;background:rgba(24,95,165,0.02);}
+.ch-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem;color:#fff;flex-shrink:0;}
+.ch-name{font-size:0.9rem;font-weight:700;color:var(--text,#1a1a2e);flex:1;}
+body.dark-mode .ch-name{color:#e8f5ee;}
+.ch-status{font-size:0.7rem;color:#2ecc71;}
+.ch-actions{display:flex;gap:6px;}
+.ch-btn{width:32px;height:32px;border-radius:9px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.85rem;transition:all 0.2s;background:var(--input-bg);color:#6b7280;}
+.ch-btn:hover{background:var(--blue-dim);color:var(--blue-light);}
+.ch-btn.danger:hover{background:var(--red-dim);color:var(--red);}
+
+/* ══ Search Bar ══ */
+.msg-search-bar{padding:8px 14px;border-bottom:1px solid var(--card-border);display:none;background:var(--input-bg);align-items:center;gap:8px;}
+.msg-search-bar.show{display:flex;}
+.msg-search-bar input{flex:1;padding:6px 12px;border:1.5px solid var(--card-border);border-radius:8px;font-family:'Tajawal',sans-serif;font-size:0.82rem;background:var(--card-bg);color:var(--text,#1a1a2e);outline:none;}
+body.dark-mode .msg-search-bar input{color:#e8f5ee;background:#0d1a12;}
+.msg-search-bar input:focus{border-color:var(--blue-light);}
+.msg-search-nav{display:flex;gap:4px;align-items:center;}
+.msn-btn{width:26px;height:26px;border-radius:7px;border:none;background:var(--blue-dim);color:var(--blue-light);cursor:pointer;font-size:0.7rem;display:flex;align-items:center;justify-content:center;}
+.msn-count{font-size:0.72rem;color:#9ca3af;white-space:nowrap;}
+
+/* ══ Messages Area ══ */
+.chat-msgs{
+    flex:1;overflow-y:auto;
+    padding:16px 14px;
+    display:flex;flex-direction:column;gap:4px;
+    background:var(--input-bg);
+}
+body.dark-mode .chat-msgs{background:#0a1510;}
+
+/* ══ Message Row ══ */
+.msg-row{display:flex;gap:6px;align-items:flex-end;margin-bottom:2px;}
+.msg-row.me{flex-direction:row-reverse;}
+/* رسائل متتالية من نفس المرسل */
+.msg-row.consecutive{margin-bottom:1px;}
+
+/* ══ Avatar ══ */
+.msg-avatar{
+    width:28px;height:28px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:0.65rem;font-weight:700;color:#fff;
+    flex-shrink:0;margin-bottom:2px;
+}
+
+/* ══ Bubble ══ */
+.msg-bubble{
+    max-width:65%;
+    min-width:60px;
+    padding:8px 11px 4px 11px;
+    border-radius:18px;
+    font-size:0.875rem;
+    line-height:1.55;
+    word-break:break-word;
+    position:relative;
+    display:inline-block;
+}
+
+/* رسائل الآخرين */
+.msg-bubble.other{
+    background:var(--card-bg);
+    color:var(--text,#1a1a2e);
+    border-radius:4px 18px 18px 18px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.06);
+}
+body.dark-mode .msg-bubble.other{background:#0d1a12;color:#e8f5ee;}
+
+/* رسائلي */
+.msg-bubble.me{
+    background:linear-gradient(135deg,#185fa5,#63b3ed);
+    color:#fff;
+    border-radius:18px 4px 18px 18px;
+    box-shadow:0 2px 6px rgba(24,95,165,0.25);
+}
+
+/* ══ نص الرسالة ══ */
+.msg-text{
+    display:block;
+    margin-bottom:4px;
+    line-height:1.55;
+}
+
+/* ══ Footer — الوقت والحالة ══ */
+.msg-footer{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:3px;
+    float:left;
+    margin-left: -4px;
+    margin-bottom:-2px;
+    padding-right:2px;
+    clear:both;
+    opacity:0.85;
+}
+.msg-row.me .msg-footer{ direction:ltr; }
+
+.msg-time{
+    font-size:0.6rem;
+    white-space:nowrap;
+    direction:ltr;
+    display:inline-block;
+    color:rgba(255,255,255,0.75);
+}
+.msg-bubble.other .msg-time{ color:#9ca3af; }
+
+/* ══ حالة الرسالة ✓ ✓✓ ══ */
+.msg-status{
+    font-size:0.72rem;
+    line-height:1;
+    display:inline-flex;
+    align-items:center;
+}
+.msg-status.sent     { color:rgba(255,255,255,0.55); }
+.msg-status.delivered{ color:rgba(255,255,255,0.8);  }
+.msg-status.read     { color:#7dd3fc; }
+
+/* clearfix بعد الفوتر */
+.msg-bubble::after{ content:''; display:block; clear:both; }
+
+/* ══ المرفقات ══ */
+.msg-attachment{ margin-top:5px; margin-bottom:3px; }
+.att-img{ max-width:200px;max-height:180px;border-radius:10px;cursor:pointer;display:block; }
+.att-file{
+    display:inline-flex;align-items:center;gap:6px;
+    background:rgba(0,0,0,0.14);border-radius:8px;
+    padding:5px 10px;font-size:0.76rem;cursor:pointer;
+    transition:background 0.15s;
+}
+.att-file:hover{background:rgba(0,0,0,0.22);}
+
+/* ══ Highlight بحث ══ */
+.hl-search{background:rgba(255,200,0,0.45);border-radius:3px;padding:0 1px;}
+.msg-row.search-focus .msg-bubble{box-shadow:0 0 0 2px #fbbf24 !important;}
+
+/* ══ Date Divider ══ */
+.date-divider{
+    text-align:center;margin:10px 0;
+    font-size:0.68rem;color:#9ca3af;
+    position:relative;display:flex;align-items:center;gap:8px;
+}
+.date-divider::before,.date-divider::after{
+    content:'';flex:1;height:1px;background:var(--card-border);
+}
+.date-divider span{
+    background:var(--input-bg);padding:2px 10px;
+    border-radius:20px;border:1px solid var(--card-border);
+    white-space:nowrap;
+}
+body.dark-mode .date-divider span{background:#0a1510;}
+
+/* ══ Input ══ */
+.chat-input-wrap{padding:10px 14px;border-top:1px solid var(--card-border);display:flex;gap:8px;align-items:flex-end;background:var(--card-bg);}
+.attach-btn{width:38px;height:38px;border-radius:10px;border:1.5px solid var(--card-border);background:var(--input-bg);color:#9ca3af;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;transition:all 0.2s;}
+.attach-btn:hover{border-color:var(--blue-light);color:var(--blue-light);}
+.attach-preview{display:none;padding:6px 12px;border-top:1px solid var(--card-border);background:var(--input-bg);align-items:center;gap:8px;font-size:0.78rem;color:#6b7280;}
+.attach-preview.show{display:flex;}
+.attach-preview .ap-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.attach-remove{background:none;border:none;cursor:pointer;color:var(--red);font-size:0.9rem;padding:0;}
+.chat-input{flex:1;resize:none;border-radius:12px;border:1.5px solid var(--card-border);padding:9px 14px;font-family:'Tajawal',sans-serif;font-size:0.88rem;background:var(--input-bg);color:var(--text,#1a1a2e);max-height:120px;transition:border-color 0.2s;outline:none;line-height:1.5;}
+body.dark-mode .chat-input{background:#111e16;color:#e8f5ee;}
+.chat-input:focus{border-color:var(--blue-light);}
+.btn-send{background:linear-gradient(135deg,#185fa5,#63b3ed);color:#fff;border:none;border-radius:12px;width:40px;height:40px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;transition:all 0.2s;}
+.btn-send:hover{transform:scale(1.06);}
+.btn-send:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+
+/* ══ Empty State ══ */
+.chat-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#9ca3af;text-align:center;padding:32px;}
+.chat-empty .ce-icon{font-size:3rem;margin-bottom:12px;}
+.chat-empty .ce-txt{font-size:0.88rem;}
+
+/* ══ Blocked State ══ */
+.blocked-bar{padding:10px 16px;background:var(--red-dim);border-top:1px solid rgba(229,62,62,0.15);font-size:0.82rem;color:var(--red);text-align:center;display:none;}
+.blocked-bar.show{display:block;}
+
+/* ══ Modals ══ */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:var(--card-bg);border-radius:18px;width:100%;max-width:400px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.18);animation:mIn 0.25s cubic-bezier(0.34,1.56,0.64,1) both;}
+@keyframes mIn{from{opacity:0;transform:scale(0.93)}to{opacity:1;transform:scale(1)}}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--card-border);}
+.modal-title{font-size:0.92rem;font-weight:700;color:var(--text,#1a1a2e);}
+body.dark-mode .modal-title{color:#e8f5ee;}
+.modal-close{width:28px;height:28px;border-radius:8px;border:none;background:var(--red-dim);color:var(--red);cursor:pointer;font-size:0.82rem;display:flex;align-items:center;justify-content:center;}
+.modal-body{padding:20px;text-align:center;}
+.modal-ftr{padding:12px 18px;border-top:1px solid var(--card-border);display:flex;gap:8px;justify-content:center;}
+.btn-red{background:var(--red);color:#fff;border:none;padding:9px 20px;border-radius:11px;font-family:'Tajawal',sans-serif;font-size:0.84rem;font-weight:700;cursor:pointer;}
+.btn-sec{background:var(--input-bg);color:#6b7280;border:1.5px solid var(--card-border);padding:9px 20px;border-radius:11px;font-family:'Tajawal',sans-serif;font-size:0.84rem;font-weight:600;cursor:pointer;}
+
+/* ══ Typing ══ */
+.typing-indicator{display:none;padding:6px 16px;}
+.typing-indicator.show{display:flex;align-items:center;gap:8px;}
+.ti-bubble{background:var(--card-bg);border-radius:18px;padding:8px 14px;display:inline-flex;gap:4px;box-shadow:0 1px 3px rgba(0,0,0,0.06);}
+body.dark-mode .ti-bubble{background:#0d1a12;}
+.ti-dot{width:7px;height:7px;border-radius:50%;background:#9ca3af;animation:tidot 1.2s infinite;}
+.ti-dot:nth-child(2){animation-delay:0.2s;}
+.ti-dot:nth-child(3){animation-delay:0.4s;}
+@keyframes tidot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+
+@media(max-width:768px){
+    .chat-wrap{flex-direction:column;height:auto;border-radius:14px;}
+    .chat-sidebar{width:100%;height:auto;max-height:160px;border-left:none;border-bottom:1px solid var(--card-border);}
+    .cs-search{display:none;}
+    .cs-list{flex-direction:row;display:flex;overflow-x:auto;overflow-y:hidden;}
+    .chat-item{min-width:120px;flex-direction:column;text-align:center;gap:4px;border-bottom:none;border-left:1px solid rgba(26,122,74,0.04);}
+    .chat-item.active{border-right:none;border-bottom:3px solid var(--blue-light);}
+    .ci-body{text-align:center;}
+    .ci-meta{display:none;}
+    .chat-main{min-height:400px;}
+    .msg-bubble{max-width:82%;}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="chat-wrap fade-in">
+
+    <!-- ══ Sidebar ══ -->
+    <div class="chat-sidebar">
+        <div class="cs-header">💬 المحادثات</div>
+        <div class="cs-search">
+            <input type="text" placeholder="🔍 بحث في المحادثات…" oninput="filterChats(this.value)">
+        </div>
+        <div class="cs-list" id="chatList">
+
+            <div class="chat-item active" id="tab-admin" onclick="switchChat('admin')" data-name="الإدارة">
+                <div class="ci-avatar" style="background:linear-gradient(135deg,#185fa5,#63b3ed)">إد
+                    <span class="ci-online"></span>
+                </div>
+                <div class="ci-body">
+                    <div class="ci-name">الإدارة</div>
+                    <div class="ci-last" id="adminLastMsg">دائماً متاح</div>
+                </div>
+                <div class="ci-meta">
+                    <span class="ci-time" id="adminLastTime"></span>
+                    <span class="ci-badge" id="adminUnread" style="display:none">0</span>
+                </div>
+            </div>
+
+            {% for bc in bene_chats %}
+            <div class="chat-item" id="tab-bene{{ bc.user.pk }}"
+                 onclick="switchChat('bene{{ bc.user.pk }}')"
+                 data-name="{{ bc.user.get_full_name }}">
+                <div class="ci-avatar" style="background:linear-gradient(135deg,#1a7a4a,#2ecc71)">
+                    {{ bc.user.first_name|first }}{{ bc.user.family_name|first }}
+                </div>
+                <div class="ci-body">
+                    <div class="ci-name">{{ bc.user.get_full_name }}</div>
+                    <div class="ci-last" id="beneLastMsg{{ bc.user.pk }}">مستفيد</div>
+                </div>
+                <div class="ci-meta">
+                    <span class="ci-time" id="beneLastTime{{ bc.user.pk }}"></span>
+                    <span class="ci-badge" id="beneUnread{{ bc.user.pk }}" style="display:none">0</span>
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if not can_contact and not bene_chats %}
+            <div class="chat-item" style="opacity:0.5;cursor:default;pointer-events:none">
+                <div class="ci-avatar" style="background:#9ca3af">🔒</div>
+                <div class="ci-body">
+                    <div class="ci-name">المستفيدون</div>
+                    <div class="ci-last">بانتظار إذن الإدارة</div>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <!-- ══ Main Chat Area ══ -->
+    <div class="chat-main">
+
+        <!-- ══ محادثة الإدارة ══ -->
+        <div id="chat-admin" style="display:flex;flex-direction:column;height:100%">
+            <div class="chat-hdr">
+                <div class="ch-avatar" style="background:linear-gradient(135deg,#185fa5,#63b3ed)">إد</div>
+                <div style="flex:1">
+                    <div class="ch-name">الإدارة</div>
+                    <div class="ch-status">● متاح دائماً</div>
+                </div>
+                <div class="ch-actions">
+                    <button class="ch-btn" title="بحث في المحادثة" onclick="toggleMsgSearch('admin')">🔍</button>
+                </div>
+            </div>
+
+            <div class="msg-search-bar" id="msgSearch-admin">
+                <input type="text" placeholder="ابحث في الرسائل…"
+                       oninput="searchInMessages('admin',this.value)"
+                       id="msgSearchInput-admin">
+                <div class="msg-search-nav">
+                    <span class="msn-count" id="searchCount-admin"></span>
+                    <button class="msn-btn" onclick="navSearch('admin',-1)">▲</button>
+                    <button class="msn-btn" onclick="navSearch('admin',1)">▼</button>
+                </div>
+                <button class="ch-btn" onclick="toggleMsgSearch('admin')" style="margin-right:4px">✕</button>
+            </div>
+
+            <div class="chat-msgs" id="msgs-admin">
+                {% for msg in admin_messages %}
+                <div class="date-divider" style="{% if not forloop.first %}display:none{% endif %}">
+                    <span>{{ msg.created_at|date:"Y/m/d" }}</span>
+                </div>
+                <div class="msg-row {% if msg.sender == request.user %}me{% else %}other{% endif %}"
+                     id="msg-{{ msg.pk }}" data-text="{{ msg.message }}">
+                    {% if msg.sender != request.user %}
+                    <div class="msg-avatar" style="background:linear-gradient(135deg,#185fa5,#63b3ed)">إد</div>
+                    {% endif %}
+                    <div class="msg-bubble {% if msg.sender == request.user %}me{% else %}other{% endif %}">
+                        <span class="msg-text">{{ msg.message }}</span>
+                        {% if msg.attachment %}
+                        <div class="msg-attachment">
+                            {% with ext=msg.attachment.name|lower %}
+                            {% if ".jpg" in ext or ".png" in ext or ".gif" in ext or ".webp" in ext %}
+                            <img src="{{ msg.attachment.url }}" class="att-img"
+                                 onclick="viewImg('{{ msg.attachment.url }}')">
+                            {% else %}
+                            <div class="att-file" onclick="window.open('{{ msg.attachment.url }}')">
+                                📎 {{ msg.attachment.name|slice:"25:" }}
+                            </div>
+                            {% endif %}
+                            {% endwith %}
+                        </div>
+                        {% endif %}
+                        <div class="msg-footer">
+                            <span class="msg-time">{{ msg.created_at|date:"H:i" }}</span>
+                            {% if msg.sender == request.user %}
+                            <span class="msg-status {% if msg.is_read %}read{% elif msg.is_delivered %}delivered{% else %}sent{% endif %}">
+                                {% if msg.is_read %}✓✓{% elif msg.is_delivered %}✓✓{% else %}✓{% endif %}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="chat-empty">
+                    <div class="ce-icon">💬</div>
+                    <div class="ce-txt">ابدأ محادثة مع الإدارة</div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="typing-indicator" id="typing-admin">
+                <div class="ti-bubble">
+                    <div class="ti-dot"></div>
+                    <div class="ti-dot"></div>
+                    <div class="ti-dot"></div>
+                </div>
+            </div>
+
+            <div class="attach-preview" id="attachPreview-admin">
+                <span>📎</span>
+                <span class="ap-name" id="attachName-admin"></span>
+                <button class="attach-remove" onclick="removeAttach('admin')">✕</button>
+            </div>
+
+            <div class="chat-input-wrap">
+                <input type="file" id="attachInput-admin" style="display:none"
+                       accept="image/*,.pdf,.doc,.docx"
+                       onchange="onAttachChange('admin',this)">
+                <button class="attach-btn" onclick="document.getElementById('attachInput-admin').click()" title="إرفاق ملف">📎</button>
+                <textarea class="chat-input" id="input-admin"
+                          placeholder="اكتب رسالتك… (Ctrl+Enter للإرسال)"
+                          rows="1" oninput="autoResize(this)"
+                          onkeydown="if(event.ctrlKey&&event.key==='Enter'){sendMsg('admin','{{ admin.pk|default:'' }}');return false;}"></textarea>
+                <button class="btn-send" id="sendBtn-admin"
+                        onclick="sendMsg('admin','{{ admin.pk|default:'' }}')">➤</button>
+            </div>
+        </div>
+
+        <!-- ══ محادثات المستفيدين ══ -->
+        {% for bc in bene_chats %}
+        <div id="chat-bene{{ bc.user.pk }}" style="display:none;flex-direction:column;height:100%">
+            <div class="chat-hdr">
+                <div class="ch-avatar" style="background:linear-gradient(135deg,#1a7a4a,#2ecc71)">
+                    {{ bc.user.first_name|first }}{{ bc.user.family_name|first }}
+                </div>
+                <div style="flex:1">
+                    <div class="ch-name">{{ bc.user.get_full_name }}</div>
+                    <div style="font-size:0.7rem;color:#9ca3af">مستفيد</div>
+                </div>
+                <div class="ch-actions">
+                    <button class="ch-btn" title="بحث في المحادثة"
+                            onclick="toggleMsgSearch('bene{{ bc.user.pk }}')">🔍</button>
+                    <button class="ch-btn danger" title="حظر المستخدم"
+                            onclick="askBlock('{{ bc.user.pk }}','{{ bc.user.get_full_name }}')">🚫</button>
+                </div>
+            </div>
+
+            <div class="msg-search-bar" id="msgSearch-bene{{ bc.user.pk }}">
+                <input type="text" placeholder="ابحث في الرسائل…"
+                       oninput="searchInMessages('bene{{ bc.user.pk }}',this.value)"
+                       id="msgSearchInput-bene{{ bc.user.pk }}">
+                <div class="msg-search-nav">
+                    <span class="msn-count" id="searchCount-bene{{ bc.user.pk }}"></span>
+                    <button class="msn-btn" onclick="navSearch('bene{{ bc.user.pk }}',-1)">▲</button>
+                    <button class="msn-btn" onclick="navSearch('bene{{ bc.user.pk }}',1)">▼</button>
+                </div>
+                <button class="ch-btn" onclick="toggleMsgSearch('bene{{ bc.user.pk }}')" style="margin-right:4px">✕</button>
+            </div>
+
+            <div class="chat-msgs" id="msgs-bene{{ bc.user.pk }}">
+                {% for msg in bc.messages %}
+                <div class="msg-row {% if msg.sender == request.user %}me{% else %}other{% endif %}"
+                     id="msg-{{ msg.pk }}" data-text="{{ msg.message }}">
+                    {% if msg.sender != request.user %}
+                    <div class="msg-avatar" style="background:linear-gradient(135deg,#1a7a4a,#2ecc71)">
+                        {{ bc.user.first_name|first }}
+                    </div>
+                    {% endif %}
+                    <div class="msg-bubble {% if msg.sender == request.user %}me{% else %}other{% endif %}">
+                        <span class="msg-text">{{ msg.message }}</span>
+                        {% if msg.attachment %}
+                        <div class="msg-attachment">
+                            {% with ext=msg.attachment.name|lower %}
+                            {% if ".jpg" in ext or ".png" in ext or ".gif" in ext or ".webp" in ext %}
+                            <img src="{{ msg.attachment.url }}" class="att-img"
+                                 onclick="viewImg('{{ msg.attachment.url }}')">
+                            {% else %}
+                            <div class="att-file" onclick="window.open('{{ msg.attachment.url }}')">
+                                📎 {{ msg.attachment.name|slice:"25:" }}
+                            </div>
+                            {% endif %}
+                            {% endwith %}
+                        </div>
+                        {% endif %}
+                        <div class="msg-footer">
+                            <span class="msg-time">{{ msg.created_at|date:"H:i" }}</span>
+                            {% if msg.sender == request.user %}
+                            <span class="msg-status {% if msg.is_read %}read{% elif msg.is_delivered %}delivered{% else %}sent{% endif %}">
+                                {% if msg.is_read %}✓✓{% elif msg.is_delivered %}✓✓{% else %}✓{% endif %}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="chat-empty">
+                    <div class="ce-icon">💬</div>
+                    <div class="ce-txt">ابدأ محادثة</div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="typing-indicator" id="typing-bene{{ bc.user.pk }}">
+                <div class="ti-bubble">
+                    <div class="ti-dot"></div>
+                    <div class="ti-dot"></div>
+                    <div class="ti-dot"></div>
+                </div>
+            </div>
+
+            <div class="blocked-bar" id="blocked-bene{{ bc.user.pk }}"></div>
+
+            <div class="attach-preview" id="attachPreview-bene{{ bc.user.pk }}">
+                <span>📎</span>
+                <span class="ap-name" id="attachName-bene{{ bc.user.pk }}"></span>
+                <button class="attach-remove" onclick="removeAttach('bene{{ bc.user.pk }}')">✕</button>
+            </div>
+
+            <div class="chat-input-wrap" id="inputWrap-bene{{ bc.user.pk }}">
+                <input type="file" id="attachInput-bene{{ bc.user.pk }}" style="display:none"
+                       accept="image/*,.pdf,.doc,.docx"
+                       onchange="onAttachChange('bene{{ bc.user.pk }}',this)">
+                <button class="attach-btn"
+                        onclick="document.getElementById('attachInput-bene{{ bc.user.pk }}').click()">📎</button>
+                <textarea class="chat-input" id="input-bene{{ bc.user.pk }}"
+                          placeholder="اكتب رسالتك… (Ctrl+Enter للإرسال)"
+                          rows="1" oninput="autoResize(this)"
+                          onkeydown="if(event.ctrlKey&&event.key==='Enter'){sendMsg('bene{{ bc.user.pk }}','{{ bc.user.pk }}');return false;}"></textarea>
+                <button class="btn-send" id="sendBtn-bene{{ bc.user.pk }}"
+                        onclick="sendMsg('bene{{ bc.user.pk }}','{{ bc.user.pk }}')">➤</button>
+            </div>
+        </div>
+        {% endfor %}
+
+    </div>
+</div>
+
+<!-- ══ مودال تأكيد الحظر ══ -->
+<div class="modal-overlay" id="blockModal" onclick="closeBg('blockModal',event)">
+<div class="modal-box">
+    <div class="modal-hdr">
+        <span class="modal-title">🚫 تأكيد الحظر</span>
+        <button class="modal-close" onclick="closeModal('blockModal')">✕</button>
+    </div>
+    <div class="modal-body">
+        <div style="width:56px;height:56px;border-radius:50%;background:var(--red-dim);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:1.6rem">🚫</div>
+        <div style="font-size:0.9rem;font-weight:700;color:var(--text,#1a1a2e);margin-bottom:8px" id="blockTitle">—</div>
+        <div style="font-size:0.8rem;color:#9ca3af;line-height:1.7;background:var(--input-bg);border-radius:10px;padding:10px 14px">
+            سيتم إيقاف التواصل مع هذا المستفيد.<br>يمكن للإدارة إعادة تفعيله لاحقاً.
+        </div>
+    </div>
+    <div class="modal-ftr">
+        <button class="btn-sec" onclick="closeModal('blockModal')">إلغاء</button>
+        <button class="btn-red" id="blockConfirmBtn">🚫 تأكيد الحظر</button>
+    </div>
+</div>
+</div>
+
+<!-- ══ مودال عرض الصورة ══ -->
+<div class="modal-overlay" id="imgModal" onclick="closeModal('imgModal')">
+<div style="max-width:90vw;margin:auto">
+    <img id="imgModalSrc" style="max-width:100%;max-height:85vh;border-radius:12px;display:block;margin:auto">
+</div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let activeChat    = 'admin';
+let searchResults = {};
+let searchIndex   = {};
+let lastMsgId     = {{ last_msg_id }};
+const seenMsgIds  = new Set();
+
+// ══ تبديل المحادثة ══
+function switchChat(id) {
+    activeChat = id;
+    document.querySelectorAll('[id^="chat-"]').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.chat-item').forEach(el => el.classList.remove('active'));
+    const chatEl = document.getElementById(`chat-${id}`);
+    const tabEl  = document.getElementById(`tab-${id}`);
+    if (chatEl) { chatEl.style.display = 'flex'; scrollToBottom(id); }
+    if (tabEl)  tabEl.classList.add('active');
+
+    // إخفاء badge وتسجيل الرسائل كمرئية
+    const badgeId = id === 'admin' ? 'adminUnread' : `beneUnread${id.replace('bene','')}`;
+    const badge   = document.getElementById(badgeId);
+    if (badge) { badge.textContent = ''; badge.style.display = 'none'; }
+
+    // سجّل كل رسائل هذه المحادثة كمرئية
+    document.querySelectorAll(`#msgs-${id} .msg-row[id^="msg-"]`).forEach(el => {
+        const mid = parseInt(el.id.replace('msg-', ''));
+        if (mid) seenMsgIds.add(mid);
+    });
+
+    markRead(id);
+}
+
+// ══ إرسال رسالة ══
+async function sendMsg(chatId, recipientId) {
+    const input     = document.getElementById(`input-${chatId}`);
+    const fileInput = document.getElementById(`attachInput-${chatId}`);
+    const text      = input?.value.trim();
+    const file      = fileInput?.files[0];
+    if (!text && !file) return;
+    if (!recipientId) return;
+
+    const btn = document.getElementById(`sendBtn-${chatId}`);
+    if (btn) btn.disabled = true;
+
+    const fd = new FormData();
+    fd.append('recipient_id', recipientId);
+    if (text) fd.append('message', text);
+    if (file) fd.append('attachment', file);
+
+    try {
+        const r   = await fetch('/sponsor/messages/send/', {
+            method:'POST', headers:{'X-CSRFToken':csrf()}, body:fd
+        });
+        const res = await r.json();
+
+        if (res.status === 'success') {
+            lastMsgId = Math.max(lastMsgId, res.id);
+            seenMsgIds.add(res.id);
+            appendMsg(chatId, {
+                id:         res.id,
+                text:       text || '',
+                time:       res.time || 'الآن',
+                attachment: res.attachment || null,
+                att_type:   res.att_type  || null,
+            });
+            input.value = '';
+            input.style.height = 'auto';
+            removeAttach(chatId);
+        }
+    } catch(e) { console.error(e); }
+    finally { if (btn) btn.disabled = false; }
+}
+
+// ══ إضافة رسالة للـ DOM ══
+function appendMsg(chatId, msg) {
+    const container = document.getElementById(`msgs-${chatId}`);
+    if (!container) return;
+    container.querySelector('.chat-empty')?.remove();
+
+    let attHtml = '';
+    if (msg.attachment) {
+        attHtml = msg.att_type === 'image'
+            ? `<div class="msg-attachment"><img src="${msg.attachment}" class="att-img" onclick="viewImg('${msg.attachment}')"></div>`
+            : `<div class="msg-attachment"><div class="att-file" onclick="window.open('${msg.attachment}')">📎 مرفق</div></div>`;
+    }
+
+    const div = document.createElement('div');
+    div.className = 'msg-row me';
+    div.id        = `msg-${msg.id}`;
+    div.setAttribute('data-text', msg.text);
+    div.innerHTML = `
+        <div>
+            <div class="msg-bubble me">
+                ${msg.text}
+                ${attHtml}
+                <div class="msg-footer">
+                    <span class="msg-time">${msg.time}</span>
+                    <span class="msg-status sent">✓</span>
+                </div>
+            </div>
+        </div>`;
+    container.appendChild(div);
+    scrollToBottom(chatId);
+}
+
+// ══ البحث داخل المحادثة ══
+function toggleMsgSearch(chatId) {
+    const bar    = document.getElementById(`msgSearch-${chatId}`);
+    const isOpen = bar.classList.contains('show');
+    bar.classList.toggle('show', !isOpen);
+    if (!isOpen) document.getElementById(`msgSearchInput-${chatId}`)?.focus();
+    else clearSearch(chatId);
+}
+
+function searchInMessages(chatId, q) {
+    const container = document.getElementById(`msgs-${chatId}`);
+    if (!container) return;
+
+    container.querySelectorAll('.hl-search').forEach(el => { el.outerHTML = el.textContent; });
+    container.querySelectorAll('.msg-row').forEach(r => r.classList.remove('search-focus'));
+
+    if (!q.trim()) {
+        document.getElementById(`searchCount-${chatId}`).textContent = '';
+        searchResults[chatId] = [];
+        return;
+    }
+
+    const matches = [];
+    [...container.querySelectorAll('.msg-row')].forEach(row => {
+        const txt = row.getAttribute('data-text') || '';
+        if (txt.toLowerCase().includes(q.toLowerCase())) {
+            matches.push(row);
+            const esc    = q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+            const bubble = row.querySelector('.msg-bubble');
+            if (bubble) {
+                bubble.childNodes.forEach(node => {
+                    if (node.nodeType === 3) {
+                        const span = document.createElement('span');
+                        span.innerHTML = node.textContent.replace(
+                            new RegExp(`(${esc})`,'gi'),
+                            '<span class="hl-search">$1</span>'
+                        );
+                        bubble.replaceChild(span, node);
+                    }
+                });
+            }
+        }
+    });
+
+    searchResults[chatId] = matches;
+    searchIndex[chatId]   = 0;
+    document.getElementById(`searchCount-${chatId}`).textContent =
+        matches.length ? `${matches.length} نتيجة` : 'لا نتائج';
+
+    if (matches.length) {
+        matches[0].classList.add('search-focus');
+        matches[0].scrollIntoView({behavior:'smooth', block:'center'});
+    }
+}
+
+function navSearch(chatId, dir) {
+    const results = searchResults[chatId];
+    if (!results?.length) return;
+    results[searchIndex[chatId]]?.classList.remove('search-focus');
+    searchIndex[chatId] = (searchIndex[chatId] + dir + results.length) % results.length;
+    results[searchIndex[chatId]]?.classList.add('search-focus');
+    results[searchIndex[chatId]]?.scrollIntoView({behavior:'smooth', block:'center'});
+    document.getElementById(`searchCount-${chatId}`).textContent =
+        `${searchIndex[chatId]+1} / ${results.length}`;
+}
+
+function clearSearch(chatId) {
+    const container = document.getElementById(`msgs-${chatId}`);
+    container?.querySelectorAll('.hl-search').forEach(el => { el.outerHTML = el.textContent; });
+    container?.querySelectorAll('.msg-row').forEach(r => r.classList.remove('search-focus'));
+    const inp = document.getElementById(`msgSearchInput-${chatId}`);
+    if (inp) inp.value = '';
+    const cnt = document.getElementById(`searchCount-${chatId}`);
+    if (cnt) cnt.textContent = '';
+    searchResults[chatId] = [];
+}
+
+// ══ مرفقات ══
+function onAttachChange(chatId, input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) { alert('حجم الملف يتجاوز 3MB'); input.value=''; return; }
+    document.getElementById(`attachName-${chatId}`).textContent = file.name;
+    document.getElementById(`attachPreview-${chatId}`).classList.add('show');
+}
+
+function removeAttach(chatId) {
+    const inp = document.getElementById(`attachInput-${chatId}`);
+    if (inp) inp.value = '';
+    document.getElementById(`attachPreview-${chatId}`)?.classList.remove('show');
+}
+
+// ══ حظر ══
+function askBlock(userId, name) {
+    document.getElementById('blockTitle').textContent = `هل تريد حظر ${name}؟`;
+    document.getElementById('blockConfirmBtn').onclick = () => confirmBlock(userId);
+    openModal('blockModal');
+}
+
+async function confirmBlock(userId) {
+    const fd = new FormData();
+    fd.append('user_id', userId);
+    const r   = await fetch('/sponsor/messages/block/', {method:'POST',headers:{'X-CSRFToken':csrf()},body:fd});
+    const res = await r.json();
+    closeModal('blockModal');
+    if (res.status === 'success') {
+        const wrap = document.getElementById(`inputWrap-bene${userId}`);
+        if (wrap) {
+            wrap.innerHTML = `<div style="padding:12px;text-align:center;font-size:0.82rem;color:var(--red)">🚫 تم حظر هذا المستخدم</div>`;
+        }
+    }
+}
+
+// ══ تحديد مقروءة ══
+async function markRead(chatId) {
+    const senderId = chatId === 'admin'
+        ? '{{ admin.pk|default:"" }}'
+        : chatId.replace('bene','');
+    if (!senderId) return;
+    const fd = new FormData();
+    fd.append('sender_id', senderId);
+    fetch('/sponsor/messages/mark-read/', {method:'POST',headers:{'X-CSRFToken':csrf()},body:fd});
+}
+
+// ══ فلتر قائمة الجانب ══
+function filterChats(q) {
+    document.querySelectorAll('.chat-item').forEach(item => {
+        const name = item.getAttribute('data-name') || '';
+        item.style.display = name.includes(q) ? '' : 'none';
+    });
+}
+
+// ══ عرض الصورة ══
+function viewImg(url) {
+    document.getElementById('imgModalSrc').src = url;
+    openModal('imgModal');
+}
+
+// ══ Scroll ══
+function scrollToBottom(chatId) {
+    const container = document.getElementById(`msgs-${chatId}`);
+    if (container) container.scrollTop = container.scrollHeight;
+}
+
+// ══ Auto resize ══
+function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+// ══ Polling ══
+setInterval(() => {
+    fetch(`/sponsor/messages/poll/?last_id=${lastMsgId}`)
+    .then(r => r.json())
+    .then(data => {
+        if (!data.messages?.length) return;
+
+        data.messages.forEach(msg => {
+            lastMsgId = Math.max(lastMsgId, msg.id);
+
+            const chatId = msg.sender_type === 'admin'
+                ? 'admin'
+                : `bene${msg.sender_id}`;
+
+            if (document.getElementById(`msg-${msg.id}`)) return;
+
+            // المحادثة مفتوحة — أضف الرسالة
+            if (chatId === activeChat) {
+                seenMsgIds.add(msg.id);
+                const container = document.getElementById(`msgs-${chatId}`);
+                if (!container) return;
+                container.querySelector('.chat-empty')?.remove();
+
+                let attHtml = '';
+                if (msg.attachment) {
+                    attHtml = msg.att_type === 'image'
+                        ? `<div class="msg-attachment"><img src="${msg.attachment}" class="att-img" onclick="viewImg('${msg.attachment}')"></div>`
+                        : `<div class="msg-attachment"><div class="att-file" onclick="window.open('${msg.attachment}')">📎 مرفق</div></div>`;
+                }
+
+                const div = document.createElement('div');
+                div.className = 'msg-row other';
+                div.id        = `msg-${msg.id}`;
+                div.setAttribute('data-text', msg.text || '');
+                div.innerHTML = `
+                    <div class="msg-bubble other">
+                        <span class="msg-text">${msg.text || ''}</span>
+                        ${attHtml}
+                        <div class="msg-footer">
+                            <span class="msg-time">${msg.time}</span>
+                        </div>
+                    </div>`;
+                container.appendChild(div);
+                scrollToBottom(chatId);
+                markRead(chatId);
+
+            } else {
+                // المحادثة مش مفتوحة — badge
+                if (seenMsgIds.has(msg.id)) return;
+
+                const badgeId = chatId === 'admin'
+                    ? 'adminUnread'
+                    : `beneUnread${msg.sender_id}`;
+                const badge = document.getElementById(badgeId);
+                if (badge) {
+                    badge.textContent = (parseInt(badge.textContent) || 0) + 1;
+                    badge.style.display = 'inline';
+                }
+            }
+        });
+    })
+    .catch(() => {});
+}, 3000);
+
+// ══ Helpers ══
+function openModal(id)  { document.getElementById(id).classList.add('show'); document.body.style.overflow='hidden'; }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); document.body.style.overflow=''; }
+function closeBg(id,e)  { if(e.target===document.getElementById(id)) closeModal(id); }
+function csrf() { return document.cookie.split(';').find(c=>c.trim().startsWith('csrftoken='))?.split('=')[1]||''; }
+
+// ══ تحميل ══
+window.addEventListener('load', () => {
+    scrollToBottom('admin');
+    // سجّل كل الرسائل المحملة كمرئية
+    document.querySelectorAll('.msg-row[id^="msg-"]').forEach(el => {
+        const mid = parseInt(el.id.replace('msg-', ''));
+        if (mid) seenMsgIds.add(mid);
+    });
+});
+</script>
+{% endblock %}

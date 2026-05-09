@@ -1,0 +1,517 @@
+{% extends 'sponsor/base.html' %}
+{% load static %}
+{% block title %}مقارنة المستفيدين{% endblock %}
+{% block page_title %}⚖️ مقارنة المستفيدين{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ══ Hero ══ */
+.cmp-hero{background:linear-gradient(135deg,#1a7a4a,#059669);border-radius:16px;padding:22px 20px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.cmp-hero-text h2{font-family:'Tajawal',sans-serif;font-size:1.1rem;font-weight:900;color:#fff;margin-bottom:3px;}
+.cmp-hero-text p{font-family:'Tajawal',sans-serif;font-size:0.8rem;color:rgba(255,255,255,0.75);}
+.cmp-hero-hint{background:rgba(255,255,255,0.15);border-radius:10px;padding:9px 14px;font-family:'Tajawal',sans-serif;font-size:0.76rem;color:#fff;display:flex;align-items:center;gap:7px;}
+
+/* ══ لوحة الاختيار ══ */
+.cmp-selector{background:#fff;border:1px solid #ede9fe;border-radius:16px;padding:16px 18px;margin-bottom:18px;}
+body.dark-mode .cmp-selector{background:#0f0b1e;border-color:rgba(139,92,246,0.12);}
+.cmp-selector-top{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
+.cmp-search-wrap{display:flex;align-items:center;background:#f8f7ff;border:1.5px solid #ede9fe;border-radius:10px;padding:8px 12px;gap:7px;flex:1;min-width:180px;transition:border 0.2s;}
+.cmp-search-wrap:focus-within{border-color:#1a7a4a;box-shadow:0 0 0 3px rgba(26,122,74,0.1);}
+body.dark-mode .cmp-search-wrap{background:#130f24;border-color:rgba(139,92,246,0.2);}
+.cmp-search-wrap input{border:none;outline:none;font-family:'Tajawal',sans-serif;font-size:0.85rem;color:#1a1a2e;background:transparent;flex:1;min-width:0;}
+body.dark-mode .cmp-search-wrap input{color:#e8f5ee;}
+.cmp-search-wrap input::placeholder{color:#9ca3af;}
+.cmp-type-sel{background:#f8f7ff;border:1.5px solid #ede9fe;border-radius:10px;padding:9px 12px;font-family:'Tajawal',sans-serif;font-size:0.83rem;color:#1a1a2e;outline:none;cursor:pointer;}
+body.dark-mode .cmp-type-sel{background:#130f24;border-color:rgba(139,92,246,0.2);color:#e8f5ee;}
+
+/* قائمة المستفيدين */
+.cmp-user-list{max-height:240px;overflow-y:auto;border:1px solid #ede9fe;border-radius:10px;}
+body.dark-mode .cmp-user-list{border-color:rgba(139,92,246,0.12);}
+.cmp-user-item{display:flex;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid rgba(124,58,237,0.05);cursor:pointer;transition:background 0.18s;user-select:none;}
+.cmp-user-item:last-child{border-bottom:none;}
+.cmp-user-item:hover{background:rgba(26,122,74,0.04);}
+.cmp-user-item.selected{background:rgba(26,122,74,0.08);}
+body.dark-mode .cmp-user-item.selected{background:rgba(26,122,74,0.12);}
+.cmp-user-item.disabled{opacity:0.5;cursor:not-allowed;}
+.cmp-user-name{flex:1;font-family:'Tajawal',sans-serif;font-size:0.85rem;font-weight:600;color:#1a1a2e;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+body.dark-mode .cmp-user-name{color:#e8f5ee;}
+.cmp-user-meta{font-family:'Tajawal',sans-serif;font-size:0.7rem;color:#9ca3af;flex-shrink:0;}
+.cmp-check{width:18px;height:18px;border-radius:5px;border:2px solid #ede9fe;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s;font-size:0.65rem;color:#fff;}
+.cmp-user-item.selected .cmp-check{background:#1a7a4a;border-color:#1a7a4a;}
+.cmp-user-item.selected .cmp-check::after{content:'✓';}
+.cmp-list-empty{padding:20px;text-align:center;color:#9ca3af;font-family:'Tajawal',sans-serif;font-size:0.82rem;}
+
+/* chips */
+.cmp-selected-wrap{margin-top:12px;display:flex;gap:7px;flex-wrap:wrap;align-items:center;}
+.cmp-selected-chip{display:flex;align-items:center;gap:5px;background:rgba(26,122,74,0.1);border:1.5px solid rgba(26,122,74,0.2);border-radius:20px;padding:4px 11px;font-family:'Tajawal',sans-serif;font-size:0.76rem;font-weight:700;color:#1a7a4a;}
+.cmp-chip-remove{cursor:pointer;color:#c53030;font-size:0.78rem;line-height:1;padding:1px 3px;border-radius:4px;transition:background 0.2s;}
+.cmp-chip-remove:hover{background:rgba(229,62,62,0.1);}
+.cmp-max-warning{font-family:'Tajawal',sans-serif;font-size:0.76rem;color:#c53030;font-weight:600;padding:4px 9px;background:rgba(229,62,62,0.08);border-radius:8px;}
+.cmp-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:10px;border:none;font-family:'Tajawal',sans-serif;font-size:0.86rem;font-weight:700;cursor:pointer;transition:all 0.2s;}
+.cmp-btn-green{background:#1a7a4a;color:#fff;}
+.cmp-btn-green:hover{opacity:0.9;transform:translateY(-1px);}
+.cmp-btn-green:disabled{background:#9ca3af;cursor:not-allowed;transform:none;}
+.cmp-btn-outline{background:transparent;border:1.5px solid #9ca3af;color:#6b7280;}
+.cmp-btn-outline:hover{border-color:#c53030;color:#c53030;}
+
+/* ══ نتائج المقارنة ══ */
+.cmp-result{background:#fff;border:1px solid #ede9fe;border-radius:16px;overflow:hidden;animation:fadeUp 0.35s ease;}
+body.dark-mode .cmp-result{background:#0f0b1e;border-color:rgba(139,92,246,0.12);}
+@keyframes fadeUp{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
+.cmp-result-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:12px 16px;border-bottom:1px solid #f0ebff;background:linear-gradient(135deg,rgba(26,122,74,0.05),transparent);}
+body.dark-mode .cmp-result-hdr{border-color:rgba(139,92,246,0.1);}
+.cmp-result-title{font-family:'Tajawal',sans-serif;font-size:0.92rem;font-weight:700;color:#1a1a2e;}
+body.dark-mode .cmp-result-title{color:#e8f5ee;}
+
+/* ══ جدول المقارنة — DESKTOP ══ */
+.cmp-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.cmp-table{width:100%;border-collapse:collapse;font-size:0.83rem;min-width:480px;}
+.cmp-table th{background:#f8f7ff;padding:11px 13px;font-family:'Tajawal',sans-serif;font-size:0.76rem;font-weight:700;color:#6b7280;text-align:center;border-bottom:2px solid #ede9fe;min-width:140px;}
+body.dark-mode .cmp-table th{background:#130f24;border-color:rgba(139,92,246,0.12);}
+.cmp-table th.label-col{text-align:right;background:#f3f0ff;color:#7c3aed;min-width:120px;width:120px;position:sticky;right:0;z-index:2;}
+body.dark-mode .cmp-table th.label-col{background:#1a0f3a;}
+.cmp-table td{padding:10px 13px;text-align:center;border-bottom:1px solid rgba(124,58,237,0.05);color:#1a1a2e;font-family:'Tajawal',sans-serif;vertical-align:middle;}
+body.dark-mode .cmp-table td{color:#e8f5ee;}
+.cmp-table tr:last-child td{border-bottom:none;}
+.cmp-table tr:hover td{background:rgba(124,58,237,0.02);}
+.cmp-table td.label-cell{text-align:right;background:#fafaf9;font-weight:700;font-size:0.76rem;color:#6b7280;position:sticky;right:0;z-index:1;}
+body.dark-mode .cmp-table td.label-cell{background:#130f24;}
+
+/* صف المستفيد */
+.cmp-table tr.user-row th{padding:14px 13px;background:#fff;border-bottom:2px solid #ede9fe;}
+body.dark-mode .cmp-table tr.user-row th{background:#0f0b1e;}
+.cmp-avatar{width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid #ede9fe;display:block;margin:0 auto 5px;}
+.no-avatar{width:44px;height:44px;border-radius:50%;background:#f3f0ff;border:2px solid #ede9fe;display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 5px;}
+.cmp-user-header-name{font-weight:900;font-size:0.84rem;color:#1a1a2e;font-family:'Tajawal',sans-serif;}
+body.dark-mode .cmp-user-header-name{color:#e8f5ee;}
+.cmp-user-header-type{font-size:0.7rem;color:#9ca3af;margin-top:2px;}
+
+/* ══ بطاقات المقارنة — MOBILE ══ */
+.cmp-cards-wrap{display:none;padding:12px;}
+.cmp-section-title-mobile{font-family:'Tajawal',sans-serif;font-size:0.78rem;font-weight:900;color:var(--adm);background:rgba(124,58,237,0.06);padding:8px 12px;border-radius:8px;margin-bottom:8px;margin-top:10px;}
+.cmp-row-mobile{display:grid;gap:6px;margin-bottom:8px;}
+.cmp-row-label{font-family:'Tajawal',sans-serif;font-size:0.72rem;font-weight:700;color:#6b7280;margin-bottom:4px;}
+.cmp-row-cells{display:flex;gap:6px;flex-wrap:wrap;}
+.cmp-cell-mobile{flex:1;min-width:100px;background:var(--bg-secondary,#f4f9f6);border-radius:8px;padding:8px 10px;border:1px solid rgba(124,58,237,0.06);}
+body.dark-mode .cmp-cell-mobile{background:#130f24;}
+.cmp-cell-mobile-name{font-size:0.65rem;color:#9ca3af;font-family:'Tajawal',sans-serif;margin-bottom:3px;font-weight:700;border-bottom:1px solid rgba(124,58,237,0.06);padding-bottom:3px;}
+.cmp-cell-mobile-val{font-size:0.8rem;color:var(--text,#1a1a2e);font-family:'Tajawal',sans-serif;font-weight:600;}
+body.dark-mode .cmp-cell-mobile-val{color:#e8f5ee;}
+
+/* ألوان وبادج */
+.cell-green{color:#1a7a4a!important;font-weight:700;}
+.cell-red{color:#c53030!important;font-weight:700;}
+.cell-orange{color:#b45309!important;font-weight:700;}
+.cell-blue{color:#2b6cb0!important;font-weight:700;}
+.cbadge{display:inline-block;padding:2px 8px;border-radius:9px;font-size:0.7rem;font-weight:700;}
+.cbadge-green{background:rgba(26,122,74,0.1);color:#1a7a4a;}
+.cbadge-red{background:rgba(229,62,62,0.1);color:#c53030;}
+.cbadge-orange{background:rgba(245,158,11,0.1);color:#b45309;}
+.cbadge-blue{background:rgba(43,108,176,0.1);color:#2b6cb0;}
+.cbadge-gray{background:rgba(107,114,128,0.1);color:#6b7280;}
+
+/* قسم فاصل */
+.cmp-section-row td{background:#f8f7ff!important;color:var(--adm)!important;font-weight:900!important;font-size:0.76rem!important;padding:7px 13px!important;border-bottom:1px solid #ede9fe!important;letter-spacing:0.5px;}
+body.dark-mode .cmp-section-row td{background:#1a0f3a!important;}
+
+/* loading */
+.cmp-loading{text-align:center;padding:36px;}
+.cmp-spinner{width:36px;height:36px;border:3px solid #ede9fe;border-top-color:#1a7a4a;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* تبديل الوضع */
+.cmp-view-toggle{display:flex;gap:6px;align-items:center;}
+.cmp-toggle-btn{padding:5px 11px;border-radius:8px;border:1.5px solid rgba(124,58,237,0.2);background:transparent;font-family:'Tajawal',sans-serif;font-size:0.76rem;font-weight:700;cursor:pointer;color:#6b7280;transition:all 0.2s;}
+.cmp-toggle-btn.active{background:var(--adm);color:#fff;border-color:var(--adm);}
+
+/* ══ Responsive ══ */
+@media(max-width:1024px){
+    .cmp-table th{min-width:120px;}
+    .cmp-table th.label-col{min-width:100px;width:100px;}
+}
+
+@media(max-width:768px){
+    .cmp-hero{flex-direction:column;padding:16px;}
+    .cmp-hero-hint{width:100%;}
+    .cmp-selector-top{flex-direction:column;}
+    .cmp-search-wrap{min-width:100%;}
+    .cmp-type-sel{width:100%;}
+    .cmp-selector{padding:14px;}
+    /* إخفاء الجدول وإظهار الكارد */
+    .cmp-table-wrap{display:none;}
+    .cmp-cards-wrap{display:block;}
+}
+
+@media(max-width:480px){
+    .cmp-hero-text h2{font-size:1rem;}
+    .cmp-btn{padding:8px 14px;font-size:0.82rem;}
+    .cmp-selected-chip{font-size:0.72rem;padding:3px 9px;}
+    .cmp-result-hdr{padding:10px 12px;}
+    .cmp-cell-mobile{min-width:calc(50% - 6px);}
+}
+
+@media(max-width:360px){
+    .cmp-cell-mobile{min-width:100%;}
+    .cmp-row-cells{flex-direction:column;}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══ Hero ══ -->
+<div class="cmp-hero fade-in">
+    <div class="cmp-hero-text">
+        <h2>⚖️ مقارنة المستفيدين</h2>
+        <p>اختر من 2 إلى 4 مستفيدين لمقارنة بياناتهم جنباً إلى جنب</p>
+    </div>
+    <div class="cmp-hero-hint">
+        💡 الحد الأقصى <strong style="margin:0 3px">4</strong> مستفيدين
+    </div>
+</div>
+
+<!-- ══ لوحة الاختيار ══ -->
+<div class="cmp-selector fade-in fade-in-d1">
+    <div style="font-family:'Tajawal',sans-serif;font-size:0.88rem;font-weight:700;color:var(--text,#1a1a2e);margin-bottom:10px">
+        🔎 اختيار المستفيدين
+    </div>
+    <div class="cmp-selector-top">
+        <div class="cmp-search-wrap">
+            <span style="color:#9ca3af;flex-shrink:0">🔍</span>
+            <input type="text" id="cmpSearch"
+                   placeholder="ابحث بالاسم أو رقم الهوية أو رقم الاستمارة..."
+                   oninput="onSearch()">
+        </div>
+        <select class="cmp-type-sel" id="cmpType" onchange="loadList()">
+            <option value="">كل الأنواع</option>
+            <option value="orphan">👦 الأيتام</option>
+            <option value="family">👨‍👩‍👧 الأسر</option>
+            <option value="special">♿ ذوو احتياجات</option>
+        </select>
+    </div>
+
+    <div class="cmp-user-list" id="cmpUserList">
+        <div class="cmp-list-empty">⏳ جار التحميل...</div>
+    </div>
+
+    <div class="cmp-selected-wrap" id="cmpSelectedWrap" style="margin-top:12px">
+        <span style="font-family:'Tajawal',sans-serif;font-size:0.76rem;color:#9ca3af;font-weight:600;flex-shrink:0">المختارون:</span>
+        <span id="cmpEmptyMsg" style="font-family:'Tajawal',sans-serif;font-size:0.76rem;color:#9ca3af">لم تختر أحداً بعد</span>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;align-items:center">
+        <button class="cmp-btn cmp-btn-green" id="cmpSubmitBtn" onclick="doCompare()" disabled>
+            ⚖️ قارن الآن
+        </button>
+        <button class="cmp-btn cmp-btn-outline" onclick="clearAll()">
+            🔄 مسح الكل
+        </button>
+        <span id="cmpCountInfo" style="font-family:'Tajawal',sans-serif;font-size:0.78rem;color:#9ca3af">0 / 4 مختار</span>
+    </div>
+</div>
+
+<!-- ══ نتائج المقارنة ══ -->
+<div id="cmpResults"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+'use strict';
+const CSRF    = document.cookie.split(';').find(c=>c.trim().startsWith('csrftoken='))?.split('=')[1]||'';
+const MAX_SEL = 4;
+let allUsers   = [];
+let selected   = new Map();
+let searchTimer= null;
+let viewMode   = 'table'; // table | cards
+
+/* ══ تحميل القائمة ══ */
+async function loadList() {
+    const q    = document.getElementById('cmpSearch').value.trim();
+    const type = document.getElementById('cmpType').value;
+    document.getElementById('cmpUserList').innerHTML = '<div class="cmp-list-empty">⏳ جار التحميل...</div>';
+    try {
+        const r = await fetch(`/sponsor/compare/list/?q=${encodeURIComponent(q)}&type=${type}`, {
+    headers: {'X-Requested-With': 'XMLHttpRequest'}
+});
+        const data = await r.json();
+        allUsers   = data.users || [];
+        renderList();
+    } catch {
+        document.getElementById('cmpUserList').innerHTML = '<div class="cmp-list-empty">⚠️ خطأ في التحميل</div>';
+    }
+}
+
+function onSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(loadList, 350);
+}
+
+/* ══ عرض القائمة ══ */
+function renderList() {
+    const list = document.getElementById('cmpUserList');
+    if (!allUsers.length) { list.innerHTML = '<div class="cmp-list-empty">لا توجد نتائج</div>'; return; }
+    const TYPE_ICONS = {orphan:'👦', family:'👨‍👩‍👧', special:'♿'};
+    list.innerHTML = allUsers.map(u => {
+        const isSel   = selected.has(u.id);
+        const isMaxed = selected.size >= MAX_SEL && !isSel;
+        return `
+        <div class="cmp-user-item ${isSel?'selected':''} ${isMaxed?'disabled':''}"
+             onclick="${isMaxed?'showMaxWarn()':'toggleUser(\''+u.id+'\')'}"
+             id="item_${u.id}">
+            <div class="cmp-check"></div>
+            <div style="font-size:1rem;flex-shrink:0">${TYPE_ICONS[u.user_type]||'👤'}</div>
+            <div class="cmp-user-name">${u.full_name}</div>
+            <div class="cmp-user-meta">${u.type_label} — ${u.reg_number}</div>
+        </div>`;
+    }).join('');
+}
+
+function showMaxWarn() {
+    const w = document.getElementById('cmpMaxWarn');
+    if (w) { w.style.display='inline-block'; setTimeout(()=>w.style.display='none',2000); }
+}
+
+/* ══ اختيار / إلغاء ══ */
+function toggleUser(id) {
+    const user = allUsers.find(u => u.id === id);
+    if (!user) return;
+    if (selected.has(id)) { selected.delete(id); }
+    else {
+        if (selected.size >= MAX_SEL) { showMaxWarn(); return; }
+        selected.set(id, user);
+    }
+    renderList(); renderChips(); updateBtn();
+}
+
+function removeUser(id) {
+    selected.delete(id);
+    renderList(); renderChips(); updateBtn();
+}
+
+function clearAll() {
+    selected.clear();
+    renderList(); renderChips(); updateBtn();
+    document.getElementById('cmpResults').innerHTML = '';
+}
+
+/* ══ chips ══ */
+function renderChips() {
+    const wrap     = document.getElementById('cmpSelectedWrap');
+    const emptyMsg = document.getElementById('cmpEmptyMsg');
+    const countEl  = document.getElementById('cmpCountInfo');
+    wrap.querySelectorAll('.cmp-selected-chip').forEach(c => c.remove());
+    emptyMsg.style.display = selected.size === 0 ? 'inline' : 'none';
+    [...selected.values()].forEach(u => {
+        const chip = document.createElement('span');
+        chip.className = 'cmp-selected-chip';
+        chip.innerHTML = `${u.full_name} <span class="cmp-chip-remove" onclick="removeUser('${u.id}')">✕</span>`;
+        wrap.appendChild(chip);
+    });
+    countEl.textContent = `${selected.size} / ${MAX_SEL} مختار`;
+    let warn = document.getElementById('cmpMaxWarn');
+    if (!warn) {
+        warn = document.createElement('span');
+        warn.id = 'cmpMaxWarn';
+        warn.className = 'cmp-max-warning';
+        warn.style.display = 'none';
+        warn.textContent = '⚠️ الحد الأقصى 4 مستفيدين';
+        document.querySelector('.cmp-btn-outline').after(warn);
+    }
+}
+
+function updateBtn() {
+    document.getElementById('cmpSubmitBtn').disabled = selected.size < 2;
+}
+
+/* ══ المقارنة ══ */
+async function doCompare() {
+    if (selected.size < 2) return;
+    const ids = [...selected.keys()].join(',');
+    document.getElementById('cmpResults').innerHTML = `
+        <div class="cmp-result">
+            <div class="cmp-loading">
+                <div class="cmp-spinner"></div>
+                <div style="font-family:'Tajawal',sans-serif;color:#9ca3af;font-size:0.82rem">جار تحميل بيانات المقارنة...</div>
+            </div>
+        </div>`;
+    try {
+        const r    = await fetch(`/sponsor/compare/data/?ids=${ids}`, {headers:{'X-Requested-With':'XMLHttpRequest'}});
+        const data = await r.json();
+        renderCompare(data.users || []);
+    } catch {
+        document.getElementById('cmpResults').innerHTML =
+            `<div class="cmp-result" style="padding:22px;text-align:center;color:#c53030;font-family:'Tajawal',sans-serif">⚠️ خطأ في تحميل بيانات المقارنة</div>`;
+    }
+}
+
+/* ══ بناء بيانات الصفوف ══ */
+function _buildRows(users) {
+    return [
+        {section: '👤 البيانات الشخصية'},
+        {label:'رقم الاستمارة', fn: u=>`<span style="font-weight:700">${u.reg_number}</span>`},
+        {label:'رقم الهوية',    fn: u=>u.id_number},
+        {label:'الجنس',         fn: u=>u.gender},
+        {label:'الجنسية',       fn: u=>u.nationality},
+        {label:'تاريخ التسجيل', fn: u=>u.date_joined},
+        {label:'آخر دخول',      fn: u=>u.last_login},
+
+        {section: '📋 حالة الحساب'},
+        {label:'حالة الحساب',    fn: u=>u.is_active?`<span class="cbadge cbadge-green">✅ نشط</span>`:`<span class="cbadge cbadge-red">🔴 معطّل</span>`},
+        {label:'الاعتماد',       fn: u=>u.is_approved?`<span class="cbadge cbadge-green">✅ معتمد</span>`:`<span class="cbadge cbadge-orange">⏳ قيد المراجعة</span>`},
+        {label:'التواصل المباشر',fn: u=>u.allow_comm?`<span class="cbadge cbadge-green">مفعّل</span>`:`<span class="cbadge cbadge-gray">معطّل</span>`},
+        {label:'حالة الاستمارة', fn: u=>u.status},
+        {label:'الكافل',         fn: u=>u.sponsor_name!=='غير مكفول'?`<span class="cbadge cbadge-blue">🤝 ${u.sponsor_name}</span>`:`<span class="cbadge cbadge-gray">غير مكفول</span>`},
+
+        {section: '🏠 المعلومات الاجتماعية'},
+        {label:'الحالة الصحية',   fn: u=>u.health},
+        {label:'المستوى التعليمي',fn: u=>u.education},
+        {label:'نوع السكن',       fn: u=>u.housing},
+        {label:'المدينة',         fn: u=>u.city},
+
+        {section: '💰 المدفوعات'},
+        {label:'إجمالي المدفوعات ₪',fn: u=>`<span class="cell-green">${u.total_pays}₪</span>`},
+        {label:'هذا الشهر ₪',       fn: u=>`<span class="cell-blue">${u.month_pays}₪</span>`},
+        {label:'عدد الدفعات',        fn: u=>u.pays_count},
+        {label:'دفعات متأخرة',       fn: u=>u.late_pays>0?`<span class="cell-red">${u.late_pays}</span>`:`<span class="cell-green">0</span>`},
+        {label:'آخر دفعة',           fn: u=>u.last_pay},
+
+        {section: '🎁 المساعدات'},
+        {label:'إجمالي المساعدات',fn: u=>`<span class="cell-orange">${u.total_aids}</span>`},
+        {label:'أنواع المساعدات', fn: u=>{
+            const types=Object.entries(u.aids_by_type||{});
+            if(!types.length) return '—';
+            return types.map(([k,v])=>`<span class="cbadge cbadge-orange" style="margin:1px">${k}: ${v}</span>`).join(' ');
+        }},
+    ];
+}
+
+/* ══ عرض جدول المقارنة ══ */
+function renderCompare(users) {
+    if (!users.length) return;
+    const n    = users.length;
+    const rows = _buildRows(users);
+    const isMobile = window.innerWidth < 768;
+
+    // رأس الجدول
+    let headerCols = `<th class="label-col">المؤشر</th>`;
+    users.forEach(u => {
+        headerCols += `<th>
+            ${u.photo?`<img src="${u.photo}" class="cmp-avatar" alt="">`:`<div class="no-avatar">${_typeIcon(u.user_type)}</div>`}
+            <div class="cmp-user-header-name">${u.full_name}</div>
+            <div class="cmp-user-header-type">${u.type_label}</div>
+        </th>`;
+    });
+
+    // صفوف الجدول
+    let tableRows = '';
+    rows.forEach(r => {
+        if (r.section) {
+            tableRows += `<tr class="cmp-section-row"><td colspan="${n+1}">${r.section}</td></tr>`;
+        } else {
+            const cells = users.map(u => `<td>${r.fn(u)||'—'}</td>`).join('');
+            tableRows  += `<tr><td class="label-cell">${r.label}</td>${cells}</tr>`;
+        }
+    });
+
+    // بطاقات الموبايل
+    let cardsHtml = '';
+    // رؤوس المستفيدين
+    cardsHtml += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        ${users.map(u=>`<div style="flex:1;min-width:100px;text-align:center">
+            ${u.photo?`<img src="${u.photo}" class="cmp-avatar" alt="">`:`<div class="no-avatar">${_typeIcon(u.user_type)}</div>`}
+            <div style="font-weight:700;font-size:0.8rem;font-family:'Tajawal',sans-serif;color:var(--text,#1a1a2e)">${u.full_name}</div>
+            <div style="font-size:0.68rem;color:#9ca3af">${u.type_label}</div>
+        </div>`).join('')}
+    </div>`;
+
+    let currentSection = '';
+    rows.forEach(r => {
+        if (r.section) {
+            currentSection = r.section;
+            cardsHtml += `<div class="cmp-section-title-mobile">${r.section}</div>`;
+        } else {
+            cardsHtml += `<div class="cmp-row-mobile">
+                <div class="cmp-row-label">${r.label}</div>
+                <div class="cmp-row-cells">
+                    ${users.map(u=>`
+                    <div class="cmp-cell-mobile">
+                        <div class="cmp-cell-mobile-name">${u.full_name.split(' ')[0]}</div>
+                        <div class="cmp-cell-mobile-val">${r.fn(u)||'—'}</div>
+                    </div>`).join('')}
+                </div>
+            </div>`;
+        }
+    });
+
+    document.getElementById('cmpResults').innerHTML = `
+    <div class="cmp-result">
+        <div class="cmp-result-hdr">
+            <div class="cmp-result-title">⚖️ نتيجة المقارنة — ${n} مستفيدين</div>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                <div class="cmp-view-toggle">
+                    <button class="cmp-toggle-btn ${!isMobile?'active':''}" id="btnTable" onclick="switchView('table')">🗂️ جدول</button>
+                    <button class="cmp-toggle-btn ${isMobile?'active':''}"  id="btnCards" onclick="switchView('cards')">📇 بطاقات</button>
+                </div>
+                <button class="cmp-btn cmp-btn-outline" style="padding:5px 12px;font-size:0.76rem" onclick="document.getElementById('cmpResults').innerHTML=''">✕ إغلاق</button>
+            </div>
+        </div>
+        <!-- جدول — للشاشات الكبيرة -->
+        <div class="cmp-table-wrap" id="cmpTableView" style="${isMobile?'display:none':''}">
+            <table class="cmp-table">
+                <thead><tr class="user-row">${headerCols}</tr></thead>
+                <tbody>${tableRows}</tbody>
+            </table>
+        </div>
+        <!-- بطاقات — للموبايل -->
+        <div class="cmp-cards-wrap" id="cmpCardsView" style="${isMobile?'':'display:none'}">
+            ${cardsHtml}
+        </div>
+    </div>`;
+
+    document.getElementById('cmpResults').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function switchView(mode) {
+    viewMode = mode;
+    const tableView = document.getElementById('cmpTableView');
+    const cardsView = document.getElementById('cmpCardsView');
+    const btnTable  = document.getElementById('btnTable');
+    const btnCards  = document.getElementById('btnCards');
+    if (mode === 'table') {
+        tableView.style.display = '';
+        cardsView.style.display = 'none';
+        btnTable.classList.add('active');
+        btnCards.classList.remove('active');
+    } else {
+        tableView.style.display = 'none';
+        cardsView.style.display = '';
+        btnTable.classList.remove('active');
+        btnCards.classList.add('active');
+    }
+}
+
+function _typeIcon(type) {
+    return {orphan:'👦', family:'👨‍👩‍👧', special:'♿', sponsor:'🤝'}[type]||'👤';
+}
+
+// تحديث العرض عند تغيير حجم الشاشة
+window.addEventListener('resize', () => {
+    const resultEl = document.getElementById('cmpResults');
+    if (!resultEl.innerHTML) return;
+    const tableView = document.getElementById('cmpTableView');
+    const cardsView = document.getElementById('cmpCardsView');
+    if (!tableView || !cardsView) return;
+    if (window.innerWidth < 768 && viewMode === 'table') {
+        switchView('cards');
+    } else if (window.innerWidth >= 768 && viewMode === 'cards' && !document.getElementById('btnCards')?.classList.contains('active')) {
+        switchView('table');
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadList();
+    renderChips();
+});
+</script>
+{% endblock %}

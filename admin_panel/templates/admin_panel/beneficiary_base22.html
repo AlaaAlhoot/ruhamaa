@@ -1,0 +1,3351 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% block title %}{% block page_title_text %}المستفيدون{% endblock %}{% endblock %}
+{% block page_title %}{% block page_icon %}👦{% endblock %} {% block page_title_text2 %}المستفيدون{% endblock %}{% endblock %}
+
+{% block extra_css %}
+<style>
+#editBeneModal .dd-dropdown { display: none; }
+#editBeneModal .dd-dropdown.show { display: block; }
+/* ══ dropdown المودل ══ */
+#editBeneModal .dd-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    cursor: pointer;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.84rem;
+    color: var(--text, #1a1a2e);
+    border-bottom: 1px solid rgba(124,58,237,0.04);
+    transition: background 0.15s;
+}
+#editBeneModal .dd-item:hover,
+#editBeneModal .dd-item.selected {
+    background: rgba(124,58,237,0.07);
+}
+#editBeneModal .dd-item:last-child { border-bottom: none; }
+#editBeneModal .dd-item-flag  { font-size: 1.1rem; flex-shrink: 0; }
+#editBeneModal .dd-item-name  { flex: 1; font-weight: 600; }
+#editBeneModal .dd-item-sub   { font-size: 0.75rem; color: #9ca3af; }
+body.dark-mode #editBeneModal .dd-item { color: #e8f5ee; }
+body.dark-mode #editBeneModal .dd-item:hover { background: rgba(124,58,237,0.12); }
+/* ══════════════════════════════════════════════
+   إحصائيات
+══════════════════════════════════════════════ */
+.b-stats {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.b-stat {
+    background: #ffffff;
+    border: 1px solid #ede9fe;
+    border-radius: 16px;
+    padding: 16px 14px;
+    transition: all 0.28s cubic-bezier(0.34,1.56,0.64,1);
+    cursor: default;
+    position: relative;
+    overflow: hidden;
+}
+.b-stat::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--adm), #a78bfa);
+    border-radius: 0 16px 16px 0;
+    opacity: 0;
+    transition: opacity 0.25s;
+}
+.b-stat:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(124,58,237,0.13);
+    border-color: rgba(124,58,237,0.22);
+}
+.b-stat:hover::after { opacity: 1; }
+
+body.dark-mode .b-stat {
+    background: #110d1f;
+    border-color: rgba(139,92,246,0.14);
+}
+body.dark-mode .b-stat:hover {
+    border-color: rgba(139,92,246,0.3);
+    box-shadow: 0 12px 28px rgba(124,58,237,0.2);
+}
+
+.b-stat-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    margin-bottom: 10px;
+}
+.b-stat-val {
+    font-size: 1.65rem;
+    font-weight: 900;
+    font-family: 'Cairo', sans-serif;
+    background: linear-gradient(135deg, var(--adm), #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+}
+body.dark-mode .b-stat-val {
+    background: linear-gradient(135deg, #a78bfa, #c4b5fd);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+.b-stat-lbl {
+    font-size: 0.71rem;
+    color: #9ca3af;
+    margin-top: 4px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+}
+
+
+/* ══════════════════════════════════════════════
+   شريط الأدوات
+══════════════════════════════════════════════ */
+.b-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 14px;
+}
+.b-search {
+    display: flex;
+    align-items: center;
+    background: #f8f7ff;
+    border: 1.5px solid #ede9fe;
+    border-radius: 11px;
+    padding: 8px 13px;
+    gap: 7px;
+    flex: 1;
+    min-width: 180px;
+    max-width: 300px;
+    transition: border 0.2s, box-shadow 0.2s;
+}
+.b-search:focus-within {
+    border-color: var(--adm);
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.08);
+}
+body.dark-mode .b-search {
+    background: #130f24;
+    border-color: rgba(139,92,246,0.2);
+}
+.b-search input {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.86rem;
+    color: #1a1a2e;
+    width: 100%;
+}
+body.dark-mode .b-search input { color: #e8f5ee; }
+
+.b-select {
+    background: #f8f7ff;
+    border: 1.5px solid #ede9fe;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.83rem;
+    color: #1a1a2e;
+    outline: none;
+    cursor: pointer;
+    transition: border 0.2s;
+}
+.b-select:focus { border-color: var(--adm); }
+body.dark-mode .b-select {
+    background: #130f24;
+    border-color: rgba(139,92,246,0.2);
+    color: #e8f5ee;
+}
+
+.b-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    border: 1.5px solid;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.81rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.b-btn-green  { background: rgba(26,122,74,0.08);  color: #1a7a4a;  border-color: rgba(26,122,74,0.2);  }
+.b-btn-green:hover  { background: rgba(26,122,74,0.16);  transform: translateY(-1px); }
+.b-btn-purple { background: rgba(124,58,237,0.08); color: var(--adm); border-color: rgba(124,58,237,0.2); }
+.b-btn-purple:hover { background: rgba(124,58,237,0.16); transform: translateY(-1px); }
+.b-btn-orange { background: rgba(245,158,11,0.08); color: #b45309; border-color: rgba(245,158,11,0.2); }
+.b-btn-orange:hover { background: rgba(245,158,11,0.16); transform: translateY(-1px); }
+.b-btn-red    { background: rgba(229,62,62,0.08);  color: #c53030;  border-color: rgba(229,62,62,0.2);  }
+.b-btn-red:hover    { background: rgba(229,62,62,0.16);  transform: translateY(-1px); }
+
+
+/* ══════════════════════════════════════════════
+   تبويبات مكفول / غير مكفول
+══════════════════════════════════════════════ */
+.b-tabs {
+    display: flex;
+    background: #f8f7ff;
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 14px;
+    width: fit-content;
+    gap: 4px;
+    border: 1px solid #ede9fe;
+}
+body.dark-mode .b-tabs {
+    background: #130f24;
+    border-color: rgba(139,92,246,0.15);
+}
+.b-tab {
+    padding: 7px 18px;
+    border-radius: 9px;
+    border: none;
+    background: transparent;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.83rem;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.b-tab.active {
+    background: var(--adm);
+    color: #fff;
+    box-shadow: 0 3px 12px rgba(124,58,237,0.28);
+}
+.b-tab-count {
+    background: rgba(255,255,255,0.25);
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+.b-tab:not(.active) .b-tab-count {
+    background: rgba(124,58,237,0.1);
+    color: var(--adm);
+}
+
+
+/* ══════════════════════════════════════════════
+   الجدول
+══════════════════════════════════════════════ */
+.b-table-wrap { overflow-x: auto; }
+.b-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+.b-table th {
+    background: #f8f7ff;
+    color: #7c6ea8;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    padding: 11px 12px;
+    text-align: right;
+    white-space: nowrap;
+    border-bottom: 2px solid #ede9fe;
+}
+body.dark-mode .b-table th {
+    background: #130f24;
+    color: #7c6ea8;
+    border-color: rgba(124,58,237,0.12);
+}
+.b-table td {
+    padding: 12px 12px;
+    border-bottom: 1px solid rgba(124,58,237,0.05);
+    color: #1a1a2e;
+    vertical-align: middle;
+}
+body.dark-mode .b-table td {
+    color: #e8f5ee;
+    border-color: rgba(139,92,246,0.06);
+}
+.b-table tr:last-child td { border-bottom: none; }
+.b-table tr:hover td {
+    background: rgba(124,58,237,0.025);
+}
+.b-table tr.disabled td { opacity: 0.45; }
+
+/* تلوين الصفوف */
+body.dark-mode .b-table tr[style*="rgba(229,62,62"] td {
+    background: rgba(229,62,62,0.08) !important;
+}
+
+
+/* ══════════════════════════════════════════════
+   أزرار الإجراءات
+══════════════════════════════════════════════ */
+.act-btns {
+    display: grid;
+    grid-template-columns: repeat(4, 28px);
+    gap: 4px;
+    justify-content: center;
+}
+.act-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82rem;
+    transition: all 0.2s;
+    position: relative;
+}
+.act-btn:hover { transform: scale(1.18); }
+.act-btn[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    right: 50%;
+    transform: translateX(50%);
+    background: #1a1a2e;
+    color: #fff;
+    font-size: 0.65rem;
+    padding: 4px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+    pointer-events: none;
+    font-family: 'Tajawal', sans-serif;
+    z-index: 99;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+}
+.ab-view   { background: rgba(124,58,237,0.1);  color: var(--adm); }
+.ab-toggle { background: rgba(245,158,11,0.1);  color: #b45309; }
+.ab-delete { background: rgba(229,62,62,0.1);   color: #c53030; }
+.ab-note   { background: rgba(43,108,176,0.1);  color: #2b6cb0; }
+.ab-pay    { background: rgba(26,122,74,0.1);   color: #1a7a4a; }
+.ab-aid    { background: rgba(245,158,11,0.1);  color: #b45309; }
+.ab-status { background: rgba(107,114,128,0.1); color: #6b7280; }
+.ab-log    { background: rgba(124,58,237,0.1);  color: var(--adm); }
+.ab-comm   { background: rgba(26,122,74,0.1);   color: #1a7a4a; }
+.ab-msg    { background: rgba(43,108,176,0.1);  color: #2b6cb0; }
+.ab-print  { background: rgba(107,114,128,0.1); color: #6b7280; }
+
+
+/* ══════════════════════════════════════════════
+   Badges
+══════════════════════════════════════════════ */
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: 5px;
+}
+.dot-green  { background: #1a7a4a; }
+.dot-orange { background: #ed8936; }
+.dot-red    { background: #e53e3e; }
+.dot-gray   { background: #9ca3af; }
+
+
+/* ══════════════════════════════════════════════
+   المودلات
+══════════════════════════════════════════════ */
+.m-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15,10,30,0.6);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    backdrop-filter: blur(3px);
+}
+.m-overlay.show { display: flex; }
+.m-box {
+    background: #fff;
+    border-radius: 20px;
+    width: 100%;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.18);
+    animation: mIn 0.28s cubic-bezier(0.34,1.56,0.64,1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+body.dark-mode .m-box {
+    background: #0f0b1e;
+    border: 1px solid rgba(139,92,246,0.12);
+}
+@keyframes mIn {
+    from { transform: scale(0.93) translateY(10px); opacity: 0; }
+    to   { transform: scale(1)    translateY(0);    opacity: 1; }
+}
+.m-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #f0ebff;
+    flex-shrink: 0;
+}
+body.dark-mode .m-hdr { border-color: rgba(139,92,246,0.1); }
+.m-title {
+    font-size: 0.96rem;
+    font-weight: 700;
+    color: #1a1a2e;
+}
+body.dark-mode .m-title { color: #e8f5ee; }
+.m-close {
+    background: rgba(124,58,237,0.07);
+    border: none;
+    font-size: 0.9rem;
+    cursor: pointer;
+    color: #9ca3af;
+    padding: 6px 8px;
+    border-radius: 8px;
+    line-height: 1;
+    transition: all 0.2s;
+}
+.m-close:hover { background: rgba(124,58,237,0.14); color: var(--adm); }
+.m-body {
+    padding: 18px 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+.m-footer {
+    padding: 12px 20px;
+    border-top: 1px solid #f0ebff;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    flex-shrink: 0;
+}
+body.dark-mode .m-footer { border-color: rgba(139,92,246,0.1); }
+
+
+/* ══════════════════════════════════════════════
+   تابات المودل
+══════════════════════════════════════════════ */
+.m-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    background: #f8f7ff;
+    padding: 4px;
+    border-radius: 11px;
+    border: 1px solid #ede9fe;
+}
+body.dark-mode .m-tabs {
+    background: #130f24;
+    border-color: rgba(139,92,246,0.15);
+}
+.m-tab {
+    padding: 6px 13px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.m-tab.active { background: var(--adm); color: #fff; box-shadow: 0 2px 8px rgba(124,58,237,0.25); }
+.m-panel { display: none; }
+.m-panel.active { display: block; }
+
+
+/* ══════════════════════════════════════════════
+   حقول النموذج
+══════════════════════════════════════════════ */
+.f-group { margin-bottom: 13px; }
+.f-label {
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #6b7280;
+    display: block;
+    margin-bottom: 5px;
+}
+.f-input {
+    width: 100%;
+    border: 1.5px solid #ede9fe;
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.88rem;
+    outline: none;
+    background: #ffffff;
+    color: #1a1a2e;
+    transition: border 0.2s, box-shadow 0.2s;
+}
+body.dark-mode .f-input {
+    background: #130f24;
+    color: #e8f5ee;
+    border-color: rgba(139,92,246,0.2);
+}
+.f-input:focus {
+    border-color: var(--adm);
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.1);
+}
+.f-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.f-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+
+/* ══════════════════════════════════════════════
+   Info Grid
+══════════════════════════════════════════════ */
+.i-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+    gap: 10px;
+}
+.i-item {
+    background: #f8f7ff;
+    border-radius: 9px;
+    padding: 9px 11px;
+    border: 1px solid #f0ebff;
+    transition: border 0.2s;
+}
+.i-item:hover { border-color: #c4b5fd; }
+body.dark-mode .i-item {
+    background: #130f24;
+    border-color: rgba(139,92,246,0.1);
+}
+.i-lbl {
+    font-size: 0.62rem;
+    color: #9ca3af;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
+}
+.i-val {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #1a1a2e;
+}
+body.dark-mode .i-val { color: #e8f5ee; }
+.i-full { grid-column: 1/-1; }
+
+
+/* ══════════════════════════════════════════════
+   Pagination
+══════════════════════════════════════════════ */
+.b-pages {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+}
+.b-page {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1.5px solid #ede9fe;
+    background: transparent;
+    cursor: pointer;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+body.dark-mode .b-page { color: #e8f5ee; border-color: rgba(139,92,246,0.15); }
+.b-page:hover, .b-page.active {
+    background: var(--adm);
+    color: #fff;
+    border-color: var(--adm);
+    box-shadow: 0 2px 8px rgba(124,58,237,0.25);
+}
+.b-page:disabled { opacity: 0.4; cursor: not-allowed; }
+
+
+/* ══════════════════════════════════════════════
+   Toast
+══════════════════════════════════════════════ */
+.toast-wrap {
+    position: fixed;
+    bottom: 22px;
+    left: 22px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+.b-toast {
+    background: #fff;
+    border: 1px solid #ede9fe;
+    border-radius: 12px;
+    padding: 11px 15px;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.84rem;
+    font-weight: 600;
+    box-shadow: 0 8px 24px rgba(124,58,237,0.1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: tIn 0.28s cubic-bezier(0.34,1.56,0.64,1);
+    min-width: 220px;
+}
+body.dark-mode .b-toast { background: #0f0b1e; border-color: rgba(139,92,246,0.15); }
+@keyframes tIn {
+    from { transform: translateY(16px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+.b-toast.success { border-right: 3px solid #1a7a4a; }
+.b-toast.error   { border-right: 3px solid #e53e3e; }
+.b-toast.info    { border-right: 3px solid var(--adm); }
+
+
+/* ══════════════════════════════════════════════
+   Skeleton
+══════════════════════════════════════════════ */
+.skel {
+    background: linear-gradient(
+        90deg,
+        rgba(124,58,237,0.05) 25%,
+        rgba(124,58,237,0.11) 50%,
+        rgba(124,58,237,0.05) 75%
+    );
+    background-size: 200% 100%;
+    animation: sk 1.5s infinite;
+    border-radius: 6px;
+    height: 13px;
+}
+@keyframes sk {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+
+/* ══════════════════════════════════════════════
+   Responsive
+══════════════════════════════════════════════ */
+@media(max-width:1280px) {
+    .b-stats { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media(max-width:1024px) {
+    .b-stats { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media(max-width:768px) {
+    .b-stats   { grid-template-columns: repeat(2, 1fr); }
+    .b-toolbar { flex-direction: column; align-items: stretch; }
+    .b-search  { max-width: 100%; }
+
+    /* الجدول → كاردات */
+    .b-table-wrap table,
+    .b-table-wrap thead,
+    .b-table-wrap tbody,
+    .b-table-wrap th,
+    .b-table-wrap td,
+    .b-table-wrap tr { display: block; }
+
+    .b-table-wrap thead { display: none; }
+
+    .b-table-wrap tr {
+        background: #fff;
+        border: 1px solid #ede9fe;
+        border-radius: 14px;
+        margin-bottom: 10px;
+        padding: 12px;
+        box-shadow: 0 2px 8px rgba(124,58,237,0.06);
+    }
+    body.dark-mode .b-table-wrap tr {
+        background: #0f0b1e;
+        border-color: rgba(139,92,246,0.12);
+    }
+
+    .b-table-wrap td {
+        border: none !important;
+        border-bottom: 1px solid rgba(124,58,237,0.05) !important;
+        padding: 7px 4px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.82rem;
+    }
+    .b-table-wrap tr td:last-child { border-bottom: none !important; }
+
+    .b-table-wrap td::before {
+        content: attr(data-label);
+        font-size: 0.65rem;
+        color: #9ca3af;
+        font-weight: 700;
+        min-width: 90px;
+        flex-shrink: 0;
+        margin-left: 8px;
+    }
+
+    .act-btns {
+        justify-content: flex-start;
+        grid-template-columns: repeat(5, 28px);
+        gap: 4px;
+        flex-wrap: wrap;
+    }
+
+    .m-box    { max-height: 92vh; }
+    .f-grid,
+    .f-grid-3 { grid-template-columns: 1fr; }
+}
+
+@media(max-width:480px) {
+    .b-stats  { grid-template-columns: 1fr 1fr; }
+    .act-btns { grid-template-columns: repeat(4, 28px); }
+
+    .b-stat-val  { font-size: 1.4rem; }
+    .b-stat-icon { width: 32px; height: 32px; font-size: 0.9rem; }
+}
+
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div id="toastWrap" class="toast-wrap"></div>
+
+<!-- ══ إحصائيات ══ -->
+<div class="b-stats fade-in" id="statsGrid">
+    <div class="b-stat">
+        <div class="b-stat-icon" style="background:rgba(124,58,237,0.1)">📋</div>
+        <div class="b-stat-val" id="s_total">—</div>
+        <div class="b-stat-lbl">إجمالي {% block type_label %}المستفيدين{% endblock %}</div>
+    </div>
+    <div class="b-stat">
+        <div class="b-stat-icon" style="background:rgba(26,122,74,0.1)">🤝</div>
+        <div class="b-stat-val" id="s_sponsored">—</div>
+        <div class="b-stat-lbl">مكفولون</div>
+    </div>
+    <div class="b-stat">
+        <div class="b-stat-icon" style="background:rgba(245,158,11,0.1)">⏳</div>
+        <div class="b-stat-val" id="s_unsponsored">—</div>
+        <div class="b-stat-lbl">غير مكفولين</div>
+    </div>
+    <div class="b-stat">
+        <div class="b-stat-icon" style="background:rgba(43,108,176,0.1)">📅</div>
+        <div class="b-stat-val" id="s_month">—</div>
+        <div class="b-stat-lbl">هذا الشهر</div>
+    </div>
+    <div class="b-stat">
+        <div class="b-stat-icon" style="background:rgba(229,62,62,0.1)">🔴</div>
+        <div class="b-stat-val" id="s_disabled">—</div>
+        <div class="b-stat-lbl">معطّلون</div>
+    </div>
+    <div class="b-stat">
+<div style="font-size:0.72rem;font-weight:700;color:#6b7280;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(124,58,237,0.08);text-align:center">
+    📊 الإجماليات
+</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="text-align:center">
+            <div class="b-stat-icon" style="background:rgba(26,122,74,0.1);margin:0 auto 6px">💰</div>
+            <div class="b-stat-val" id="s_payments">—</div>
+            <div class="b-stat-lbl">المدفوعات</div>
+        </div>
+        <div style="text-align:center;border-right:1px solid rgba(124,58,237,0.08);padding-right:4px">
+            <div class="b-stat-icon" style="background:rgba(245,158,11,0.1);margin:0 auto 6px">🎁</div>
+            <div class="b-stat-val" id="s_aids">—</div>
+            <div class="b-stat-lbl">المساعدات</div>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- ══ شريط الأدوات ══ -->
+<div class="dash-card fade-in fade-in-d1" style="margin-bottom:12px;padding:12px 16px">
+    <div class="b-toolbar">
+        <div class="b-search">
+            <span>🔍</span>
+            <input type="text" id="searchInp" placeholder="بحث بالاسم أو الهوية أو رقم الاستمارة..."
+                   oninput="debounce(applyFilters,350)()">
+            <button onclick="clearSearch()" style="background:none;border:none;cursor:pointer;color:#9ca3af;font-size:0.78rem">✕</button>
+        </div>
+        <select class="b-select" id="statusFilter" onchange="applyFilters()">
+            <option value="">كل الحالات</option>
+            <option value="مسودة">مسودة</option>
+            <option value="مرسلة">مرسلة</option>
+            <option value="قيد المراجعة">قيد المراجعة</option>
+            <option value="مقبولة">مقبولة</option>
+            <option value="تم التدقيق">تم التدقيق</option>
+            <option value="تم التكفل">تم التكفل</option>
+            <option value="مرفوضة">مرفوضة</option>
+        </select>
+        <select class="b-select" id="dateFilter" onchange="applyFilters()">
+            <option value="">كل الوقت</option>
+            <option value="today">اليوم</option>
+            <option value="week">هذا الأسبوع</option>
+            <option value="month">هذا الشهر</option>
+        </select>
+        <select class="b-select" id="sortFilter" onchange="applyFilters()">
+            <option value="-date">الأحدث أولاً</option>
+            <option value="date">الأقدم أولاً</option>
+            <option value="name">الاسم</option>
+        </select>
+        <button class="b-btn b-btn-purple" onclick="clearAllFilters()">🔄 مسح</button>
+        <div style="margin-right:auto;display:flex;gap:7px">
+            <button class="b-btn b-btn-green" onclick="exportExcel('all')" id="btnExportAll">📊 تصدير الكل</button>
+            <button class="b-btn b-btn-green" id="btnExportSponsored" onclick="exportExcel('sponsored')" style="display:none">📊 المكفولين</button>
+            <button class="b-btn b-btn-orange" id="btnExportUnsponsored" onclick="exportExcel('unsponsored')" style="display:none">📊 الغير مكفولين</button>
+        </div>
+    </div>
+
+    <!-- تبويبات مكفول/غير مكفول -->
+    <div class="b-tabs">
+        <button class="b-tab active" id="tabAll" onclick="switchSponsorTab('all')">
+            الكل <span class="b-tab-count" id="tc_all">0</span>
+        </button>
+        <button class="b-tab" id="tabSponsored" onclick="switchSponsorTab('sponsored')">
+            🤝 مكفولون <span class="b-tab-count" id="tc_sponsored">0</span>
+        </button>
+        <button class="b-tab" id="tabUnsponsored" onclick="switchSponsorTab('unsponsored')">
+            ⏳ غير مكفولين <span class="b-tab-count" id="tc_unsponsored">0</span>
+        </button>
+    </div>
+<div style="display:flex;gap:12px;align-items:center;padding:8px 0;margin-bottom:10px;flex-wrap:wrap">
+    <span style="font-size:0.72rem;color:#9ca3af;font-family:'Tajawal',sans-serif;font-weight:700">مفتاح الألوان:</span>
+    <span style="display:flex;align-items:center;gap:5px;font-size:0.76rem;font-family:'Tajawal',sans-serif">
+        <span style="width:12px;height:12px;border-radius:3px;background:#1a7a4a;display:inline-block"></span> نشط
+    </span>
+    <span style="display:flex;align-items:center;gap:5px;font-size:0.76rem;font-family:'Tajawal',sans-serif">
+        <span style="width:12px;height:12px;border-radius:3px;background:rgba(229,62,62,0.5);display:inline-block"></span> معطّل
+    </span>
+    <span style="display:flex;align-items:center;gap:5px;font-size:0.76rem;font-family:'Tajawal',sans-serif">
+        <span style="width:12px;height:12px;border-radius:3px;background:rgba(26,122,74,0.15);display:inline-block"></span> مكفول
+    </span>
+    <span style="display:flex;align-items:center;gap:5px;font-size:0.76rem;font-family:'Tajawal',sans-serif">
+        <span style="width:12px;height:12px;border-radius:3px;background:rgba(245,158,11,0.15);display:inline-block"></span> غير مكفول
+    </span>
+</div>
+</div>
+
+<!-- ══ الجدول ══ -->
+<div class="dash-card fade-in fade-in-d2">
+    <div class="b-table-wrap" id="tableWrap">
+        <table class="b-table" id="mainTable">
+            <thead>
+                <tr>
+                    <th>رقم الاستمارة</th>
+                    <th>الاسم / الهوية</th>
+                    <th>الكافل</th>
+                    <th>الحالة</th>
+                    <th>المبلغ الشهري</th>
+                    <th>حالة الحساب</th>
+                    <th>التواصل</th>
+                    <th>آخر دخول</th>
+                    <th style="text-align:center">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                {% for i in "12345" %}
+                <tr>{% for j in "12345678" %}<td><div class="skel" style="width:{% if forloop.counter == 8 %}90{% else %}{{ forloop.counter|add:"50" }}{% endif %}px"></div></td>{% endfor %}</tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="b-pages" id="pagination"></div>
+    <div style="text-align:center;padding:6px 0;font-size:0.76rem;color:#9ca3af;font-family:'Tajawal',sans-serif" id="pageInfo"></div>
+</div>
+
+
+<!-- ══════════════ المودلات ══════════════ -->
+
+<!-- مودل العرض التفصيلي -->
+<div class="m-overlay" id="viewModal">
+    <div class="m-box" style="max-width:720px;max-height:88vh">
+        <div class="m-hdr">
+            <span class="m-title" id="viewTitle">تفاصيل المستفيد</span>
+            <div style="display:flex;align-items:center;gap:6px">
+                <button class="act-btn ab-print" onclick="quickPrint()" title="طباعة">🖨️</button>
+                <button class="m-close" onclick="closeModal('viewModal')">✕</button>
+            </div>
+        </div>
+        <div class="m-body">
+            <div class="m-tabs" id="viewTabs"></div>
+            <div id="viewContent"></div>
+        </div>
+        <div class="m-footer">
+            <button class="b-btn b-btn-red" onclick="closeModal('viewModal');openToggleModal(currentId,currentName,currentActive)">
+                🔴 تعطيل/تفعيل
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- مودل التعطيل/التفعيل -->
+<div class="m-overlay" id="toggleModal">
+    <div class="m-box" style="max-width:400px">
+        <div class="m-hdr">
+            <span class="m-title" id="toggleTitle">تعطيل الحساب</span>
+            <button class="m-close" onclick="closeModal('toggleModal')">✕</button>
+        </div>
+        <div class="m-body" style="text-align:center;padding:24px">
+            <div style="font-size:3rem;margin-bottom:12px" id="toggleIcon">🔴</div>
+            <p style="font-family:'Tajawal',sans-serif;font-size:0.9rem;color:var(--text,#1a1a2e)">
+                هل تريد <strong id="toggleAction"></strong> حساب <strong id="toggleName"></strong>؟
+            </p>
+            <input type="hidden" id="toggleId">
+            <input type="hidden" id="toggleCurrent">
+        </div>
+        <div class="m-footer">
+            <button class="b-btn" style="background:var(--bg-secondary,#f4f9f6);border-color:transparent;color:#6b7280" onclick="closeModal('toggleModal')">إلغاء</button>
+            <button class="b-btn b-btn-orange" onclick="confirmToggle()">تأكيد</button>
+        </div>
+    </div>
+</div>
+
+<!-- مودل الحذف -->
+<div class="m-overlay" id="deleteModal">
+    <div class="m-box" style="max-width:400px">
+        <div class="m-hdr">
+            <span class="m-title">🗑️ حذف المستخدم</span>
+            <button class="m-close" onclick="closeModal('deleteModal')">✕</button>
+        </div>
+        <div class="m-body" style="text-align:center;padding:24px">
+            <div style="font-size:3rem;margin-bottom:12px">⚠️</div>
+            <p style="font-family:'Tajawal',sans-serif;font-size:0.9rem;color:var(--text,#1a1a2e)">
+                هل تريد حذف <strong id="deleteName"></strong> نهائياً من كل النظام؟<br>
+                <small style="color:#e53e3e">لا يمكن التراجع عن هذا الإجراء</small>
+            </p>
+            <input type="hidden" id="deleteId">
+        </div>
+        <div class="m-footer">
+            <button class="b-btn" style="background:var(--bg-secondary,#f4f9f6);border-color:transparent;color:#6b7280" onclick="closeModal('deleteModal')">إلغاء</button>
+            <button class="b-btn b-btn-red" onclick="confirmDelete()">🗑️ حذف نهائياً</button>
+        </div>
+    </div>
+</div>
+
+<!-- مودل الملاحظات -->
+<!-- مودل الملاحظات -->
+<div class="m-overlay" id="notesModal">
+    <div class="m-box" style="max-width:560px;max-height:85vh">
+        <div class="m-hdr">
+            <span class="m-title">📝 الملاحظات — <span id="notesUserName"></span></span>
+            <div style="display:flex;gap:6px;align-items:center">
+                <button class="b-btn b-btn-green" onclick="exportNotesExcel()" style="padding:5px 10px;font-size:0.78rem">📊 تصدير</button>
+                <button class="m-close" onclick="closeModal('notesModal')">✕</button>
+            </div>
+        </div>
+        <div class="m-body">
+            <!-- تابات -->
+            <div class="m-tabs">
+                <button class="m-tab active" id="noteTab1" onclick="switchNoteTab('add',this)">➕ إضافة ملاحظة</button>
+                <button class="m-tab" id="noteTab2" onclick="switchNoteTab('list',this)">📋 جميع الملاحظات <span id="notesCount" style="background:rgba(124,58,237,0.1);padding:1px 7px;border-radius:10px;font-size:0.72rem">0</span></button>
+            </div>
+
+            <!-- تاب الإضافة -->
+            <div class="m-panel active" id="notePanel_add">
+                <div style="background:var(--bg-secondary,#f4f9f6);border-radius:10px;padding:14px">
+                    <div class="f-group">
+                        <label class="f-label">نص الملاحظة</label>
+                        <textarea id="newNoteText" class="f-input" rows="5"
+                            placeholder="اكتب ملاحظتك الداخلية هنا..."></textarea>
+                    </div>
+                    <button class="b-btn b-btn-purple" onclick="saveNote()"
+                        style="width:100%;justify-content:center;padding:10px">
+                        💾 حفظ الملاحظة
+                    </button>
+                </div>
+            </div>
+
+            <!-- تاب القائمة -->
+            <div class="m-panel" id="notePanel_list">
+                <div id="notesList"></div>
+                <div id="notesPagination" style="display:flex;justify-content:center;gap:5px;margin-top:10px;flex-wrap:wrap"></div>
+            </div>
+        </div>
+        <input type="hidden" id="notesUserId">
+    </div>
+</div>
+
+<!-- مودل المدفوعات -->
+<!-- مودل المدفوعات -->
+<div class="m-overlay" id="payModal">
+    <div class="m-box" style="max-width:660px;max-height:88vh">
+        <div class="m-hdr">
+            <span class="m-title">💰 المدفوعات — <span id="payUserName"></span></span>
+            <div style="display:flex;gap:6px;align-items:center">
+                <button class="b-btn b-btn-green" onclick="exportPaymentsExcel()" style="padding:5px 10px;font-size:0.78rem">📊 تصدير</button>
+                <button class="m-close" onclick="closeModal('payModal')">✕</button>
+            </div>
+        </div>
+        <div class="m-body">
+
+            <!-- ملخص -->
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px" id="paySummary"></div>
+
+            <!-- تابات -->
+            <div class="m-tabs">
+                <button class="m-tab active" id="payTab1" onclick="switchPayTab('add',this)">➕ إضافة دفعة</button>
+                <button class="m-tab" id="payTab2" onclick="switchPayTab('list',this)">
+                    📋 جميع الدفعات
+                    <span id="paysCount" style="background:rgba(124,58,237,0.1);padding:1px 7px;border-radius:10px;font-size:0.72rem">0</span>
+                </button>
+            </div>
+
+            <!-- تاب الإضافة -->
+            <div class="m-panel active" id="payPanel_add">
+                <div style="background:var(--bg-secondary,#f4f9f6);border-radius:10px;padding:13px">
+
+                    <!-- سعر الصرف -->
+                    <div id="exchangeRateInfo" style="font-size:0.76rem;color:#9ca3af;font-family:'Tajawal',sans-serif;margin-bottom:12px;text-align:center;background:rgba(124,58,237,0.05);padding:6px;border-radius:7px">
+                        🔄 جار تحميل سعر الصرف...
+                    </div>
+
+                    <!-- القيمة والعملة -->
+                    <div class="f-grid">
+                        <div class="f-group">
+                            <label class="f-label">القيمة</label>
+                            <input type="number" id="payAmount" class="f-input"
+                                   placeholder="0.00" step="0.01" min="0"
+                                   oninput="convertPayAmount()">
+                        </div>
+                        <div class="f-group">
+                            <label class="f-label">نوع العملة</label>
+                            <select id="payCurrency" class="f-input" onchange="convertPayAmount()">
+                                <option value="ils">₪ شيقل</option>
+                                <option value="usd">$ دولار</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- المبالغ المحسوبة -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+                        <div style="background:rgba(26,122,74,0.06);border-radius:8px;padding:9px;text-align:center">
+                            <div style="font-size:0.68rem;color:#9ca3af;font-family:'Tajawal',sans-serif;margin-bottom:3px">المبلغ بالشيقل</div>
+                            <div id="payDisplayIls" style="font-size:1rem;font-weight:700;color:#1a7a4a;font-family:'Cairo',sans-serif">0.00 ₪</div>
+                        </div>
+                        <div style="background:rgba(43,108,176,0.06);border-radius:8px;padding:9px;text-align:center">
+                            <div style="font-size:0.68rem;color:#9ca3af;font-family:'Tajawal',sans-serif;margin-bottom:3px">المبلغ بالدولار</div>
+                            <div id="payDisplayUsd" style="font-size:1rem;font-weight:700;color:#2b6cb0;font-family:'Cairo',sans-serif">$0.00</div>
+                        </div>
+                    </div>
+
+                    <div class="f-grid">
+                        <div class="f-group">
+                            <label class="f-label">التاريخ</label>
+                            <input type="date" id="payDate" class="f-input">
+                        </div>
+                        <div class="f-group">
+                            <label class="f-label">الحالة</label>
+                            <select id="payStatus" class="f-input">
+                                <option value="paid">مدفوعة</option>
+                                <option value="pending">معلّقة</option>
+                                <option value="late">متأخرة</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="f-group">
+                        <label class="f-label">مصدر الدفع</label>
+                        <select id="payPaidBy" class="f-input" onchange="toggleSponsorField()">
+                            <option value="sponsor">كافل</option>
+                            <option value="admin">إدارة</option>
+                            <option value="external">جهة خارجية</option>
+                        </select>
+                    </div>
+                    <div class="f-group" id="payExternalField" style="display:none">
+                        <label class="f-label">اسم الجهة الخارجية</label>
+                        <input type="text" id="payExternalName" class="f-input" placeholder="اسم الجهة...">
+                    </div>
+                    <div class="f-group">
+                        <label class="f-label">ملاحظة (اختياري)</label>
+                        <input type="text" id="payNote" class="f-input" placeholder="ملاحظة على الدفعة...">
+                    </div>
+
+                    <input type="hidden" id="payAmountIls">
+                    <input type="hidden" id="payAmountUsd">
+
+                    <button class="b-btn b-btn-green" onclick="savePayment()"
+                            style="width:100%;justify-content:center;padding:10px">
+                        💾 حفظ الدفعة
+                    </button>
+                </div>
+            </div>
+
+            <!-- تاب القائمة -->
+            <div class="m-panel" id="payPanel_list">
+                <div id="payList"></div>
+                <div id="payPagination" style="display:flex;justify-content:center;gap:5px;margin-top:10px;flex-wrap:wrap"></div>
+            </div>
+
+            <input type="hidden" id="payUserId">
+            <input type="hidden" id="editPayId">
+        </div>
+    </div>
+</div>
+
+<!-- مودل المساعدات -->
+<div class="m-overlay" id="aidModal">
+    <div class="m-box" style="max-width:560px;max-height:88vh">
+        <div class="m-hdr">
+            <span class="m-title">🎁 المساعدات — <span id="aidUserName"></span></span>
+            <div style="display:flex;gap:6px;align-items:center">
+                <button class="b-btn b-btn-green" onclick="exportAidsExcel()" style="padding:5px 10px;font-size:0.78rem">📊 تصدير</button>
+                <button class="m-close" onclick="closeModal('aidModal')">✕</button>
+            </div>
+        </div>
+        <div class="m-body">
+            <!-- تابات -->
+            <div class="m-tabs">
+                <button class="m-tab active" id="aidTab1" onclick="switchAidTab('add',this)">➕ إضافة مساعدة</button>
+                <button class="m-tab" id="aidTab2" onclick="switchAidTab('list',this)">
+                    📋 جميع المساعدات
+                    <span id="aidsCount" style="background:rgba(124,58,237,0.1);padding:1px 7px;border-radius:10px;font-size:0.72rem">0</span>
+                </button>
+            </div>
+
+            <!-- تاب الإضافة -->
+            <div class="m-panel active" id="aidPanel_add">
+                <div style="background:var(--bg-secondary,#f4f9f6);border-radius:10px;padding:13px">
+                    <div class="f-grid">
+                        <div class="f-group">
+                            <label class="f-label">اسم المساعدة</label>
+                            <input type="text" id="aidName" class="f-input" placeholder="مثال: سلة غذائية">
+                        </div>
+                        <div class="f-group">
+                            <label class="f-label">نوع المساعدة</label>
+                            <select id="aidType" class="f-input">
+                                <option value="food">غذائية</option>
+                                <option value="medical">طبية</option>
+                                <option value="financial">مالية</option>
+                                <option value="clothing">ملابس</option>
+                                <option value="furniture">أثاث</option>
+                                <option value="education">تعليمية</option>
+                                <option value="other">أخرى</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="f-grid">
+                        <div class="f-group">
+                            <label class="f-label">العدد / الكمية</label>
+                            <input type="number" id="aidQty" class="f-input" value="1" min="1">
+                        </div>
+                        <div class="f-group">
+                            <label class="f-label">الجهة المقدمة</label>
+                            <input type="text" id="aidProvider" class="f-input" placeholder="اسم الجهة...">
+                        </div>
+                    </div>
+                    <div class="f-group">
+                        <label class="f-label">تاريخ المساعدة</label>
+                        <input type="date" id="aidDate" class="f-input">
+                    </div>
+                    <div class="f-group">
+                        <label class="f-label">ملاحظة (اختياري)</label>
+                        <input type="text" id="aidNote" class="f-input" placeholder="ملاحظة...">
+                    </div>
+                    <button class="b-btn b-btn-orange" onclick="saveAid()"
+                            style="width:100%;justify-content:center;padding:10px">
+                        💾 حفظ المساعدة
+                    </button>
+                </div>
+            </div>
+
+            <!-- تاب القائمة -->
+            <div class="m-panel" id="aidPanel_list">
+                <div id="aidList"></div>
+                <div id="aidPagination" style="display:flex;justify-content:center;gap:5px;margin-top:10px;flex-wrap:wrap"></div>
+            </div>
+
+            <input type="hidden" id="aidUserId">
+        </div>
+    </div>
+</div>
+
+<!-- مودل الحالة -->
+<div class="m-overlay" id="statusModal">
+    <div class="m-box" style="max-width:380px">
+        <div class="m-hdr">
+            <span class="m-title">🔄 تحديث الحالة</span>
+            <button class="m-close" onclick="closeModal('statusModal')">✕</button>
+        </div>
+        <div class="m-body">
+            <p style="font-family:'Tajawal',sans-serif;font-size:0.88rem;color:#6b7280;margin-bottom:14px">
+                تحديث حالة استمارة: <strong id="statusUserName"></strong>
+            </p>
+            <div class="f-group">
+                <label class="f-label">الحالة الجديدة</label>
+                <select id="newStatus" class="f-input">
+                    <option value="مسودة">مسودة</option>
+                    <option value="مرسلة">مرسلة</option>
+                    <option value="قيد المراجعة">قيد المراجعة</option>
+                    <option value="مقبولة">مقبولة</option>
+                    <option value="تم التدقيق">تم التدقيق</option>
+                    <option value="تم التكفل">تم التكفل</option>
+                    <option value="مرفوضة">مرفوضة</option>
+                </select>
+            </div>
+            <input type="hidden" id="statusUserId">
+            <input type="hidden" id="statusBeneId">
+        </div>
+        <div class="m-footer">
+            <button class="b-btn" style="background:var(--bg-secondary,#f4f9f6);border-color:transparent;color:#6b7280" onclick="closeModal('statusModal')">إلغاء</button>
+            <button class="b-btn b-btn-purple" onclick="confirmStatus()">✅ تحديث</button>
+        </div>
+    </div>
+</div>
+
+<!-- مودل سجل النشاط -->
+<div class="m-overlay" id="logModal">
+    <div class="m-box" style="max-width:680px;max-height:88vh">
+        <div class="m-hdr">
+            <span class="m-title">📜 سجل النشاط — <span id="logUserName"></span></span>
+            <div style="display:flex;gap:6px;align-items:center">
+                <button class="b-btn b-btn-green" onclick="exportLogExcel('all')" style="padding:5px 10px;font-size:0.78rem">📊 الكل</button>
+                <button class="b-btn b-btn-purple" onclick="exportLogExcel('filtered')" style="padding:5px 10px;font-size:0.78rem">📊 المحدد</button>
+                <button class="m-close" onclick="closeModal('logModal')">✕</button>
+            </div>
+        </div>
+        <div class="m-body">
+            <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+                <input type="text" id="logSearch" class="f-input" placeholder="بحث في السجل..." style="flex:1;min-width:160px" oninput="filterLogs()">
+                <select id="logActionFilter" class="f-input" style="width:160px" onchange="filterLogs()">
+                    <option value="">كل الإجراءات</option>
+                    <option value="LOGIN">دخول</option>
+                    <option value="UPDATE">تعديل</option>
+                    <option value="MESSAGE">رسالة</option>
+                    <option value="PAYMENT">دفعة</option>
+                    <option value="VIEW">عرض</option>
+                </select>
+            </div>
+            <div id="logList"></div>
+            <input type="hidden" id="logUserId">
+        </div>
+    </div>
+</div>
+
+<!-- مودل التواصل -->
+<div class="m-overlay" id="commModal">
+    <div class="m-box" style="max-width:420px">
+        <div class="m-hdr">
+            <span class="m-title">💬 إدارة التواصل</span>
+            <button class="m-close" onclick="closeModal('commModal')">✕</button>
+        </div>
+        <div class="m-body" style="text-align:center;padding:24px">
+            <div style="font-size:3rem;margin-bottom:12px" id="commIcon">💬</div>
+            <p style="font-family:'Tajawal',sans-serif;font-size:0.9rem;color:var(--text,#1a1a2e);margin-bottom:8px">
+                <strong id="commUserName"></strong>
+            </p>
+            <p style="font-family:'Tajawal',sans-serif;font-size:0.84rem;color:#6b7280" id="commStatus"></p>
+            <input type="hidden" id="commUserId">
+            <input type="hidden" id="commBeneId">
+        </div>
+        <div class="m-footer">
+            <button class="b-btn" style="background:var(--bg-secondary,#f4f9f6);border-color:transparent;color:#6b7280" onclick="closeModal('commModal')">إلغاء</button>
+            <button class="b-btn b-btn-green" id="commConfirmBtn" onclick="confirmComm()">✅ تأكيد</button>
+        </div>
+    </div>
+</div>
+
+<!-- مودل المراسلة -->
+
+<div class="m-overlay" id="msgModal">
+    <div class="m-box" style="max-width:560px;max-height:88vh">
+        <div class="m-hdr">
+            <span class="m-title">✉️ المراسلة — <span id="msgUserName"></span></span>
+            <div style="display:flex;gap:6px;align-items:center">
+                <button class="b-btn b-btn-green" onclick="exportMsgsExcel()" style="padding:5px 10px;font-size:0.78rem">📊 تصدير</button>
+                <button class="m-close" onclick="closeModal('msgModal')">✕</button>
+            </div>
+        </div>
+        <div class="m-body">
+            <!-- تابات -->
+            <div class="m-tabs">
+                <button class="m-tab active" id="msgTab1" onclick="switchMsgTab('add',this)">✉️ إرسال رسالة</button>
+                <button class="m-tab" id="msgTab2" onclick="switchMsgTab('list',this)">
+                    📋 الرسائل السابقة
+                    <span id="msgsCount" style="background:rgba(124,58,237,0.1);padding:1px 7px;border-radius:10px;font-size:0.72rem">0</span>
+                </button>
+            </div>
+
+            <!-- تاب الإرسال -->
+            <div class="m-panel active" id="msgPanel_add">
+                <div class="f-group">
+                    <label class="f-label">عنوان الرسالة</label>
+                    <input type="text" id="msgSubject" class="f-input" placeholder="موضوع الرسالة...">
+                </div>
+                <div class="f-group">
+                    <label class="f-label">نص الرسالة</label>
+                    <textarea id="msgBody" class="f-input" rows="6" placeholder="اكتب رسالتك..."></textarea>
+                </div>
+                <button class="b-btn b-btn-purple" onclick="sendMsg()" style="width:100%;justify-content:center;padding:10px">
+                    ✉️ إرسال الرسالة
+                </button>
+            </div>
+
+            <!-- تاب القائمة -->
+            <div class="m-panel" id="msgPanel_list">
+                <div id="msgList"></div>
+                <div id="msgPagination" style="display:flex;justify-content:center;gap:5px;margin-top:10px;flex-wrap:wrap"></div>
+            </div>
+
+            <input type="hidden" id="msgUserId">
+        </div>
+    </div>
+</div>
+
+<!-- مودل النجاح -->
+<div class="m-overlay" id="successModal">
+    <div class="m-box" style="max-width:340px">
+        <div class="m-body" style="text-align:center;padding:28px 24px 20px">
+            <div style="font-size:3rem;margin-bottom:10px" id="successIcon">✅</div>
+            <h5 style="font-weight:700;color:var(--text,#1a1a2e);margin-bottom:6px;font-family:'Tajawal',sans-serif" id="successTitle">تم</h5>
+            <p style="color:#6b7280;font-size:0.86rem;font-family:'Tajawal',sans-serif;margin-bottom:16px" id="successMsg"></p>
+            <!-- شريط تقدم عكسي -->
+            <div style="height:4px;background:rgba(124,58,237,0.1);border-radius:4px;overflow:hidden">
+                <div id="successProgressBar" style="height:100%;background:linear-gradient(90deg,var(--adm),#a78bfa);border-radius:4px;width:100%"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- مودل تقدم التصدير -->
+<div class="m-overlay" id="exportProgressModal">
+    <div class="m-box" style="max-width:400px">
+        <div class="m-hdr">
+            <span class="m-title">📤 جار التصدير...</span>
+            <button class="m-close" onclick="closeModal('exportProgressModal')">✕</button>
+        </div>
+        <div class="m-body" style="text-align:center;padding:24px">
+            <div style="font-size:2.5rem;margin-bottom:14px">📄</div>
+            <p style="font-family:'Tajawal',sans-serif;font-size:0.88rem;color:#6b7280;margin-bottom:14px" id="expProgMsg">جار التجهيز...</p>
+            <div style="height:8px;background:rgba(124,58,237,0.1);border-radius:8px;overflow:hidden;margin-bottom:6px">
+                <div id="expProgFill" style="height:100%;background:linear-gradient(90deg,var(--adm),#a78bfa);border-radius:8px;transition:width 0.4s;width:0%"></div>
+            </div>
+            <small id="expProgPct" style="color:#9ca3af;font-family:'Tajawal',sans-serif">0%</small>
+            <button id="expProgDlBtn" style="display:none;margin-top:16px;width:100%;justify-content:center" class="b-btn b-btn-green">
+                ⬇️ تحميل الملف يدوياً
+            </button>
+        </div>
+    </div>
+</div>
+<!-- مودل الخطأ -->
+<div class="m-overlay" id="errorModal">
+    <div class="m-box" style="max-width:340px">
+        <div class="m-body" style="text-align:center;padding:28px 24px 20px">
+            <div style="font-size:3rem;margin-bottom:10px">⚠️</div>
+            <h5 style="font-weight:700;color:#c53030;margin-bottom:6px;font-family:'Tajawal',sans-serif" id="errorTitle">خطأ</h5>
+            <p style="color:#6b7280;font-size:0.86rem;font-family:'Tajawal',sans-serif;margin-bottom:16px" id="errorMsg"></p>
+            <div style="height:4px;background:rgba(229,62,62,0.1);border-radius:4px;overflow:hidden">
+                <div id="errorProgressBar" style="height:100%;background:linear-gradient(90deg,#c53030,#fc8181);border-radius:4px;width:100%"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- مودل تأكيد الحذف -->
+<div class="m-overlay" id="confirmDeleteModal">
+    <div class="m-box" style="max-width:380px">
+        <div class="m-hdr">
+            <span class="m-title" id="confirmDeleteTitle">تأكيد الحذف</span>
+            <button class="m-close" onclick="closeModal('confirmDeleteModal')">✕</button>
+        </div>
+        <div class="m-body" style="text-align:center;padding:22px">
+            <div style="font-size:3rem;margin-bottom:12px" id="confirmDeleteIcon">⚠️</div>
+            <p style="font-family:'Tajawal',sans-serif;font-size:0.9rem;color:var(--text,#1a1a2e)" id="confirmDeleteMsg"></p>
+        </div>
+        <div class="m-footer">
+            <button class="b-btn" style="background:var(--bg-secondary,#f4f9f6);border-color:transparent;color:#6b7280"
+                onclick="closeModal('confirmDeleteModal')">إلغاء</button>
+            <button class="b-btn b-btn-red" id="confirmDeleteBtn">🗑️ حذف</button>
+        </div>
+    </div>
+</div>
+<!-- مودل التعديل -->
+<div class="m-overlay" id="editBeneModal">
+    <div class="m-box" style="max-width:640px;max-height:90vh">
+        <div class="m-hdr">
+            <span class="m-title">✏️ تعديل — <span id="editBeneName"></span></span>
+            <button class="m-close" onclick="closeModal('editBeneModal')">✕</button>
+        </div>
+        <div class="m-body">
+            <!-- التابات تتغير حسب النوع -->
+            <div class="m-tabs" id="editBeneTabs"></div>
+            <div id="editBenePanels"></div>
+        </div>
+        <div class="m-footer">
+            <button class="b-btn" style="background:var(--bg-secondary);border-color:transparent;color:#6b7280"
+                onclick="closeModal('editBeneModal')">إلغاء</button>
+            <button class="b-btn b-btn-purple" id="editBeneSaveBtn"
+                onclick="saveEditBene()" disabled>
+                💾 حفظ التعديلات
+            </button>
+        </div>
+        <input type="hidden" id="editBeneId">
+        <input type="hidden" id="editBeneType">
+    </div>
+</div>
+{% endblock %}
+
+
+
+{% block extra_js %}
+
+
+<script src="{% static 'js/dropdown.js' %}"></script>
+<script>
+'use strict';
+
+/* ══════════════════════════════════════════════
+   ثوابت وحالة عامة
+══════════════════════════════════════════════ */
+const BENE_TYPE = '{% block bene_type %}orphan{% endblock %}';
+const PER_PAGE  = 30;
+const CSRF      = document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='))?.split('=')[1] || '';
+
+let allData    = [], filtered = [], currentPage = 1, sponsorTab = 'all';
+let currentId  = null, currentName = '', currentActive = true, currentBeneId = null;
+let allLogs    = [], filteredLogs = [];
+let exchangeRate = 3.7;
+
+/* ══════════════════════════════════════════════
+   تحميل البيانات
+══════════════════════════════════════════════ */
+async function loadData() {
+    try {
+        const r    = await fetch(`/admin-panel/beneficiaries/data/?type=${BENE_TYPE}`, {
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        });
+        const data = await r.json();
+        allData      = data.users || [];
+        exchangeRate = data.exchange_rate || 3.7;
+        updateStats(data.stats || {});
+        applyFilters();
+    } catch { toast('خطأ في تحميل البيانات', 'error'); }
+}
+
+function updateStats(s) {
+    document.getElementById('s_total').textContent        = s.total        || 0;
+    document.getElementById('s_sponsored').textContent    = s.sponsored    || 0;
+    document.getElementById('s_unsponsored').textContent  = s.unsponsored  || 0;
+    document.getElementById('s_month').textContent        = s.this_month   || 0;
+    document.getElementById('s_disabled').textContent     = s.disabled     || 0;
+    document.getElementById('tc_all').textContent         = s.total        || 0;
+    document.getElementById('tc_sponsored').textContent   = s.sponsored    || 0;
+    document.getElementById('tc_unsponsored').textContent = s.unsponsored  || 0;
+    document.getElementById('s_payments').textContent     = s.total_payments || 0;
+    document.getElementById('s_aids').textContent         = s.total_aids   || 0;
+}
+
+/* ══════════════════════════════════════════════
+   الفلاتر والترتيب
+══════════════════════════════════════════════ */
+function applyFilters() {
+    const q      = document.getElementById('searchInp').value.trim().toLowerCase();
+    const status = document.getElementById('statusFilter').value;
+    const date   = document.getElementById('dateFilter').value;
+    const sort   = document.getElementById('sortFilter').value;
+    const now    = new Date();
+
+    filtered = allData.filter(u => {
+        const matchQ  = !q || [u.full_name, u.id_number, u.reg_number].some(v => v && v.toLowerCase().includes(q));
+        const matchS  = !status || u.status === status;
+        const matchST = sponsorTab === 'all' || (sponsorTab === 'sponsored' ? u.has_sponsor : !u.has_sponsor);
+        let   matchD  = true;
+        if (date && u.date_joined) {
+            const d = new Date(u.date_joined);
+            if      (date === 'today') matchD = d.toDateString() === now.toDateString();
+            else if (date === 'week')  matchD = (now - d) < 7 * 86400000;
+            else if (date === 'month') matchD = d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        }
+        return matchQ && matchS && matchST && matchD;
+    });
+
+    filtered.sort((a, b) => {
+        if (sort === '-date') return new Date(b.date_joined) - new Date(a.date_joined);
+        if (sort === 'date')  return new Date(a.date_joined) - new Date(b.date_joined);
+        if (sort === 'name')  return (a.full_name || '').localeCompare(b.full_name || '', 'ar');
+        return 0;
+    });
+
+    currentPage = 1;
+    renderTable();
+}
+
+function switchSponsorTab(tab) {
+    sponsorTab = tab;
+    ['All', 'Sponsored', 'Unsponsored'].forEach(t => {
+        document.getElementById('tab' + t).classList.toggle('active', tab === t.toLowerCase());
+    });
+    document.getElementById('btnExportSponsored').style.display   = tab !== 'unsponsored' ? '' : 'none';
+    document.getElementById('btnExportUnsponsored').style.display = tab !== 'sponsored'   ? '' : 'none';
+    applyFilters();
+}
+
+function clearSearch()     { document.getElementById('searchInp').value = ''; applyFilters(); }
+function clearAllFilters() {
+    document.getElementById('searchInp').value = '';
+    ['statusFilter', 'dateFilter', 'sortFilter'].forEach(id =>
+        document.getElementById(id).value = document.getElementById(id).options[0].value
+    );
+    switchSponsorTab('all');
+}
+
+/* ══════════════════════════════════════════════
+   رسم الجدول
+══════════════════════════════════════════════ */
+function renderTable() {
+    const start = (currentPage - 1) * PER_PAGE;
+    const page  = filtered.slice(start, start + PER_PAGE);
+    const tbody = document.getElementById('tableBody');
+
+    if (!page.length) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:36px;color:#9ca3af;font-family:'Tajawal',sans-serif">لا توجد نتائج</td></tr>`;
+        document.getElementById('pagination').innerHTML = '';
+        document.getElementById('pageInfo').textContent = '';
+        return;
+    }
+
+    tbody.innerHTML = page.map(u => `
+    <tr id="row_${u.id}" style="background:${
+        !u.is_active  ? 'rgba(229,62,62,0.04)'  :
+        u.has_sponsor ? 'rgba(26,122,74,0.03)'  : 'rgba(245,158,11,0.03)'
+    };transition:background 0.2s">
+        <td data-label="رقم الاستمارة">
+            <div style="font-weight:700;font-size:0.8rem;color:var(--adm)">${u.reg_number || '—'}</div>
+        </td>
+        <td data-label="الاسم">
+            <div style="font-weight:700">${u.full_name}</div>
+            <div style="font-size:0.7rem;color:#9ca3af">${u.id_number || ''}</div>
+        </td>
+        <td data-label="الكافل">
+            ${u.sponsor_name
+                ? `<span style="font-size:0.82rem;color:#1a7a4a;font-weight:600">🤝 ${u.sponsor_name}</span>`
+                : `<span style="font-size:0.78rem;color:#9ca3af">غير مكفول</span>`}
+        </td>
+        <td data-label="الحالة">${_statusBadge(u.status)}</td>
+        <td data-label="المبلغ الشهري">
+            ${u.monthly_amount_ils
+                ? `<div style="font-size:0.8rem;font-weight:700;color:#1a7a4a">${u.monthly_amount_ils}₪</div>
+                   <div style="font-size:0.7rem;color:#9ca3af">$${u.monthly_amount_usd}</div>`
+                : `<span style="color:#9ca3af;font-size:0.78rem">—</span>`}
+        </td>
+        <td data-label="حالة الحساب">
+            <span class="status-dot ${u.is_active ? 'dot-green' : 'dot-red'}"></span>
+            <span style="font-size:0.8rem">${u.is_active ? 'نشط' : 'معطّل'}</span>
+        </td>
+        <td data-label="التواصل">
+            <span style="font-size:0.8rem;font-weight:700;color:${u.allow_comm ? '#1a7a4a' : '#e53e3e'}">
+                ${u.allow_comm ? '✅ مفعّل' : '🔴 معطّل'}
+            </span>
+        </td>
+        <td data-label="آخر دخول" style="font-size:0.78rem;color:#9ca3af">${_fmtDate(u.last_login)}</td>
+        <td data-label="الإجراءات">
+            <div class="act-btns">
+                <button class="act-btn ab-view"   onclick="openView('${u.id}')"                                                         title="عرض">👁</button>
+                <button class="act-btn" style="background:${u.is_active?'rgba(229,62,62,0.1)':'rgba(26,122,74,0.1)'};color:${u.is_active?'#c53030':'#1a7a4a'}"
+                    onclick="openToggleModal('${u.id}','${_esc(u.full_name)}',${u.is_active})"
+                    title="${u.is_active ? 'تعطيل الحساب' : 'تفعيل الحساب'}">
+                    ${u.is_active ? '🔴' : '✅'}
+                </button>
+                <button class="act-btn" style="background:rgba(43,108,176,0.1);color:#2b6cb0"
+                    onclick="openEditModal('${u.id}','${u.user_type}')"                              title="تعديل">✏️</button>
+                <button class="act-btn ab-delete" onclick="openDeleteModal('${u.id}','${_esc(u.full_name)}')" title="حذف">🗑️</button>
+                <button class="act-btn ab-note"   onclick="openNotesModal('${u.id}','${_esc(u.full_name)}')" title="ملاحظات">📝</button>
+                <button class="act-btn ab-pay"    onclick="openPayModal('${u.id}','${_esc(u.full_name)}')"   title="المدفوعات">💰</button>
+                <button class="act-btn ab-aid"    onclick="openAidModal('${u.id}','${_esc(u.full_name)}')"   title="مساعدة">🎁</button>
+                <button class="act-btn ab-status" onclick="openStatusModal('${u.id}','${_esc(u.full_name)}','${u.bene_id}','${u.status}')" title="الحالة">🔄</button>
+                <button class="act-btn ab-log"    onclick="openLogModal('${u.id}','${_esc(u.full_name)}')"   title="السجل">📜</button>
+                <button class="act-btn ab-comm"   onclick="openCommModal('${u.id}','${_esc(u.full_name)}','${u.bene_id}',${u.allow_comm})" title="التواصل">💬</button>
+                <button class="act-btn ab-msg"    onclick="openMsgModal('${u.id}','${_esc(u.full_name)}')"   title="مراسلة">✉️</button>
+                <button class="act-btn ab-print"  onclick="quickPrintUser('${u.id}')"                        title="طباعة">🖨️</button>
+            </div>
+        </td>
+    </tr>`).join('');
+
+    renderPagination();
+    document.getElementById('pageInfo').textContent =
+        `عرض ${start + 1}–${Math.min(start + PER_PAGE, filtered.length)} من ${filtered.length}`;
+}
+
+function renderPagination() {
+    const total = Math.ceil(filtered.length / PER_PAGE);
+    if (total <= 1) { document.getElementById('pagination').innerHTML = ''; return; }
+    let html = `<button class="b-page" ${currentPage === 1 ? 'disabled' : ''} onclick="goPage(${currentPage - 1})">←</button>`;
+    for (let i = 1; i <= total; i++) {
+        if (i === 1 || i === total || Math.abs(i - currentPage) <= 2)
+            html += `<button class="b-page ${i === currentPage ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
+        else if (Math.abs(i - currentPage) === 3)
+            html += `<span style="color:#9ca3af">…</span>`;
+    }
+    html += `<button class="b-page" ${currentPage === total ? 'disabled' : ''} onclick="goPage(${currentPage + 1})">→</button>`;
+    document.getElementById('pagination').innerHTML = html;
+}
+
+function goPage(p) { currentPage = p; renderTable(); window.scrollTo({top: 0, behavior: 'smooth'}); }
+
+/* ══════════════════════════════════════════════
+   مودل العرض
+══════════════════════════════════════════════ */
+async function openView(userId) {
+    currentId     = userId;
+    const u       = allData.find(x => x.id === userId);
+    if (!u) return;
+    currentName   = u.full_name;
+    currentActive = u.is_active;
+    currentBeneId = u.bene_id;
+
+    document.getElementById('viewTitle').textContent    = `تفاصيل: ${u.full_name}`;
+    document.getElementById('viewTabs').innerHTML       = '';
+    document.getElementById('viewContent').innerHTML   =
+        '<div style="text-align:center;padding:24px"><div class="skel" style="height:200px;border-radius:10px"></div></div>';
+    openModal('viewModal');
+
+    try {
+        const r    = await fetch(`/admin-panel/beneficiaries/detail/?id=${userId}&type=${BENE_TYPE}`, {
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        });
+        const data = await r.json();
+        _renderViewTabs(data, u);
+    } catch {
+        document.getElementById('viewContent').innerHTML =
+            '<p style="color:#e53e3e;font-family:Tajawal,sans-serif">خطأ في تحميل البيانات</p>';
+    }
+}
+
+function _renderViewTabs(data, u) {
+    const tabs = [{id: 'basic', label: '📋 أساسي'}];
+    if (BENE_TYPE === 'orphan')  tabs.push({id: 'orphan',  label: '👦 اليتيم'},  {id: 'mother', label: '👩 الأم'},   {id: 'father', label: '👨 الأب'});
+    if (BENE_TYPE === 'special') tabs.push({id: 'special', label: '♿ المريض'});
+    if (BENE_TYPE === 'family')  tabs.push({id: 'family',  label: '👨‍👩‍👧 الأسرة'}, {id: 'wife',   label: '👩 الزوجة'});
+    tabs.push(
+        {id: 'guardian',    label: '🧑 المعيل'},
+        {id: 'members',     label: '👥 الأفراد'},
+        {id: 'sponsor_tab', label: '🤝 الكافل'},
+        {id: 'docs',        label: '📎 الوثائق'},
+        {id: 'export',      label: '📤 تصدير'},
+    );
+
+    document.getElementById('viewTabs').innerHTML = tabs.map((t, i) =>
+        `<button class="m-tab ${i === 0 ? 'active' : ''}" onclick="switchMTab('${t.id}',this)">${t.label}</button>`
+    ).join('');
+
+    document.getElementById('viewContent').innerHTML = tabs.map((t,i)=>
+        `<div class="m-panel ${i===0?'active':''}" id="mp_${t.id}">${_buildPanel(t.id,data,u)}</div>`
+    ).join('');
+}
+
+function switchMTab(id, btn) {
+    document.querySelectorAll('#viewTabs .m-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#viewContent .m-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('mp_' + id)?.classList.add('active');
+}
+
+function _buildPanel(id, data, u) {
+    const d = data.detail || {};
+    const _r = (l, v) => `<div class="i-item"><div class="i-lbl">${l}</div><div class="i-val">${v || '—'}</div></div>`;
+    if (id === 'basic') return `
+        <div class="i-grid">
+            ${_r('رقم التسجيل',   u.reg_number)}
+            ${_r('الاسم الكامل',  u.full_name)}
+            ${_r('البريد',        u.email)}
+            ${_r('الجوال',        u.phone)}
+            ${d.phone2   ? _r('الجوال 2', d.phone2)   : ''}
+            ${d.whatsapp ? _r('الواتساب', d.whatsapp) : ''}
+            ${_r('الهوية',        u.id_number)}
+            ${_r('الجنسية',       u.nationality)}
+            ${_r('الجنس',         u.gender)}
+            ${_r('تاريخ التسجيل', _fmtDate(u.date_joined))}
+            ${_r('آخر دخول',      _fmtDate(u.last_login))}
+            ${_r('حالة الحساب',   u.is_active ? 'نشط ✅' : 'معطّل 🔴')}
+            ${u.photo ? `<div class="i-item i-full"><div class="i-lbl">الصورة</div><img src="${u.photo}" style="width:70px;height:70px;border-radius:50%;object-fit:cover;border:3px solid var(--adm)"></div>` : ''}
+        </div>`;
+
+    if (id === 'sponsor_tab') return `
+        <div style="font-family:'Tajawal',sans-serif">
+            ${u.sponsor_name
+                ? `<div class="i-grid" style="margin-bottom:14px">
+                       ${_r('اسم الكافل', u.sponsor_name)}
+                       ${_r('رقم استمارة الكافل', u.sponsor_reg || '—')}
+                   </div>`
+                : `<p style="color:#9ca3af;font-size:0.88rem;margin-bottom:14px">لا يوجد كافل حالياً</p>`}
+            <div class="f-group">
+                <label class="f-label">تغيير الكافل</label>
+                <select id="sponsorSelect_${u.id}" class="f-input">
+                    <option value="">— اختر كافلاً —</option>
+                    ${(data.sponsors || []).map(s =>
+                        `<option value="${s.id}" ${s.id === u.sponsor_id ? 'selected' : ''}>${s.name} (${s.reg || ''})</option>`
+                    ).join('')}
+                </select>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:8px">
+                <button class="b-btn b-btn-green" onclick="changeSponsor('${u.id}')" style="flex:1;justify-content:center">💾 حفظ</button>
+                ${u.sponsor_name ? `<button class="b-btn b-btn-red" onclick="removeSponsor('${u.id}')" style="justify-content:center">❌ إزالة الكافل</button>` : ''}
+            </div>
+        </div>`;
+
+    if (id === 'export') return `
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:8px 0">
+            <button onclick="exportUser('word','${u.id}')"  style="background:rgba(43,108,176,0.1);color:#2b6cb0;border:2px solid rgba(43,108,176,0.2);border-radius:12px;padding:18px;cursor:pointer;font-family:'Tajawal',sans-serif;font-weight:700;font-size:0.88rem;display:flex;flex-direction:column;align-items:center;gap:6px;transition:all 0.2s"><span style="font-size:1.8rem">📝</span>Word</button>
+            <button onclick="exportUser('pdf','${u.id}')"   style="background:rgba(229,62,62,0.1);color:#c53030;border:2px solid rgba(229,62,62,0.2);border-radius:12px;padding:18px;cursor:pointer;font-family:'Tajawal',sans-serif;font-weight:700;font-size:0.88rem;display:flex;flex-direction:column;align-items:center;gap:6px;transition:all 0.2s"><span style="font-size:1.8rem">📋</span>PDF</button>
+            <button onclick="exportUser('excel','${u.id}')" style="background:rgba(26,122,74,0.1);color:#1a7a4a;border:2px solid rgba(26,122,74,0.2);border-radius:12px;padding:18px;cursor:pointer;font-family:'Tajawal',sans-serif;font-weight:700;font-size:0.88rem;display:flex;flex-direction:column;align-items:center;gap:6px;transition:all 0.2s"><span style="font-size:1.8rem">📊</span>Excel</button>
+        </div>`;
+
+    if (id === 'orphan'   && d.orphan)   return `<div class="i-grid">${_r('تاريخ الميلاد',d.orphan.birth_date)}${_r('نوع اليتم',d.orphan.orphan_type)}${_r('الصحة',d.orphan.health_status)}${_r('التعليم',d.orphan.education_level)}${_r('المدرسة',d.orphan.school_name)}${_r('المدينة',d.orphan.current_city)}${_r('السكن',d.orphan.housing_type+' — '+d.orphan.housing_ownership)}<div class="i-item i-full"><div class="i-lbl">القصة</div><div class="i-val" style="font-weight:400;font-size:0.84rem">${d.orphan.story||'—'}</div></div></div>`;
+    if (id === 'mother'   && d.mother)   return `<div class="i-grid">${_r('الاسم',d.mother.full_name)}${_r('الهوية',d.mother.id_number)}${_r('الحالة',d.mother.is_alive?'على قيد الحياة':'متوفية')}${_r('الصحة',d.mother.health_status)}${_r('التعليم',d.mother.education_level)}${_r('المهنة',d.mother.job)}${_r('الدخل',d.mother.monthly_income+'₪')}</div>`;
+    if (id === 'father'   && d.father)   return `<div class="i-grid">${_r('الاسم',d.father.full_name)}${_r('الهوية',d.father.id_number)}${_r('الحالة',d.father.is_alive?'على قيد الحياة':'متوفي')}${_r('سبب الوفاة',d.father.death_reason)}${_r('الصحة',d.father.health_status)}${_r('عدد الأبناء',d.father.children_count)}</div>`;
+    if (id === 'special'  && d.special)  return `<div class="i-grid">${_r('تاريخ الميلاد',d.special.birth_date)}${_r('الصحة',d.special.health_status)}${_r('التعليم',d.special.education_level)}${_r('المدينة',d.special.current_city)}${_r('السكن',d.special.housing_type)}<div class="i-item i-full"><div class="i-lbl">تفاصيل الحالة</div><div class="i-val" style="font-weight:400">${d.special.case_details||'—'}</div></div></div>`;
+    if (id === 'family'   && d.family)   return `<div class="i-grid">${_r('تاريخ الميلاد',d.family.birth_date)}${_r('الحالة الاجتماعية',d.family.marital_status)}${_r('الصحة',d.family.health_status)}${_r('التعليم',d.family.education_level)}${_r('المهنة',d.family.job)}${_r('المدينة',d.family.current_city)}${_r('السكن',d.family.housing_type)}<div class="i-item i-full"><div class="i-lbl">الوضع العام</div><div class="i-val" style="font-weight:400">${d.family.general_status||'—'}</div></div></div>`;
+    if (id === 'wife'     && d.wife)     return `<div class="i-grid">${_r('الاسم',d.wife.full_name)}${_r('الهوية',d.wife.id_number)}${_r('الميلاد',d.wife.birth_date)}${_r('الصحة',d.wife.health_status)}${_r('التعليم',d.wife.education_level)}</div>`;
+    if (id === 'guardian' && d.guardian) return `<div class="i-grid">${_r('الاسم',d.guardian.full_name)}${_r('الهوية',d.guardian.id_number)}${_r('القرابة',d.guardian.relation)}${_r('المهنة',d.guardian.job)}${_r('الصحة',d.guardian.health_status)}${_r('الدخل',d.guardian.monthly_income+'₪')}${_r('المُعالون',d.guardian.dependents)}</div>`;
+    if (id === 'members'  && d.members?.length) return d.members.map((m, i) =>
+        `<div style="margin-bottom:10px"><strong style="font-size:0.78rem;color:var(--adm)">فرد #${i + 1}</strong><div class="i-grid" style="margin-top:6px">${_r('الاسم',m.full_name)}${_r('الجنس',m.gender)}${_r('الميلاد',m.birth_date)}${_r('الصلة',m.relation)}${_r('الصحة',m.health_status)}</div></div>`
+    ).join('');
+    if (id === 'docs' && d.docs?.length) return `
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">
+            ${d.docs.map(doc => `
+            <div style="border:1px solid rgba(124,58,237,0.12);border-radius:10px;padding:10px;text-align:center">
+                <div style="font-size:1.8rem;margin-bottom:5px">${doc.name.endsWith('.pdf') ? '📋' : '🖼️'}</div>
+                <div style="font-size:0.72rem;color:#6b7280;font-family:'Tajawal',sans-serif;margin-bottom:8px">${doc.type}</div>
+                <div style="display:flex;gap:4px;justify-content:center">
+                    <button onclick="openDoc('${doc.url}','${doc.type}')" style="background:rgba(124,58,237,0.1);color:var(--adm);border:none;border-radius:6px;padding:3px 8px;font-size:0.7rem;cursor:pointer;font-family:'Tajawal',sans-serif">👁 عرض</button>
+                    <button onclick="downloadDoc('${doc.url}','${_esc(u?.full_name||'')}','${u?.id_number||''}','${doc.type}')" style="background:rgba(26,122,74,0.1);color:#1a7a4a;border:none;border-radius:6px;padding:3px 8px;font-size:0.7rem;cursor:pointer;font-family:'Tajawal',sans-serif">⬇️</button>
+                </div>
+            </div>`).join('')}
+        </div>`;
+
+    return `<div style="text-align:center;padding:20px;color:#9ca3af;font-family:'Tajawal',sans-serif">لا توجد بيانات</div>`;
+}
+
+function openDoc(url, type) {
+    const ext = url.split('.').pop().toLowerCase();
+    const html = `
+    <div class="m-overlay show" id="docViewer" onclick="if(event.target===this)this.remove()">
+        <div class="m-box" style="max-width:800px;max-height:90vh">
+            <div class="m-hdr"><span class="m-title">${type}</span><button class="m-close" onclick="document.getElementById('docViewer').remove()">✕</button></div>
+            <div class="m-body" style="text-align:center">
+                ${ext === 'pdf'
+                    ? `<iframe src="${url}" style="width:100%;height:500px;border:none;border-radius:8px"></iframe>`
+                    : `<img src="${url}" style="max-width:100%;border-radius:8px" alt="${type}">`}
+            </div>
+        </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function downloadDoc(url, name, idNum, type) {
+    const ext   = url.split('.').pop().toLowerCase();
+    const fname = `${name.replace(/\s+/g, '_')}-${idNum}-${type.replace(/\s+/g, '_')}.${ext}`;
+    const a     = document.createElement('a');
+    a.href = url; a.download = fname; a.target = '_blank'; a.click();
+}
+
+/* ══════════════════════════════════════════════
+   تعطيل / تفعيل
+══════════════════════════════════════════════ */
+function openToggleModal(id, name, isActive) {
+    currentId     = id;
+    currentActive = isActive;
+    document.getElementById('toggleId').value          = id;
+    document.getElementById('toggleCurrent').value     = isActive ? '1' : '0';
+    document.getElementById('toggleName').textContent  = name;
+    document.getElementById('toggleAction').textContent= isActive ? 'تعطيل' : 'تفعيل';
+    document.getElementById('toggleIcon').textContent  = isActive ? '🔴' : '✅';
+    document.getElementById('toggleTitle').textContent = isActive ? 'تعطيل الحساب' : 'تفعيل الحساب';
+    openModal('toggleModal');
+}
+
+async function confirmToggle() {
+    const id  = document.getElementById('toggleId').value;
+    const cur = document.getElementById('toggleCurrent').value === '1';
+    const fd  = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('user_id', id);
+    fd.append('active', cur ? '0' : '1');
+    const r    = await fetch('/admin-panel/beneficiaries/toggle/', {method: 'POST', body: fd});
+    const data = await r.json();
+    closeModal('toggleModal');
+    if (data.status === 'success') {
+        const u = allData.find(x => x.id === id);
+        if (u) u.is_active = !cur;
+        renderTable();
+        showSuccess('✅', 'تمت العملية', data.message);
+    } else showError(data.message);
+}
+
+/* ══════════════════════════════════════════════
+   حذف
+══════════════════════════════════════════════ */
+function openDeleteModal(id, name) {
+    document.getElementById('deleteId').value             = id;
+    document.getElementById('deleteName').textContent     = name;
+    openModal('deleteModal');
+}
+
+async function confirmDelete() {
+    const id = document.getElementById('deleteId').value;
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('user_id', id);
+    const r    = await fetch('/admin-panel/beneficiaries/delete/', {method: 'POST', body: fd});
+    const data = await r.json();
+    closeModal('deleteModal');
+    if (data.status === 'success') {
+        allData = allData.filter(x => x.id !== id);
+        applyFilters();
+        showSuccess('✅', 'تمت العملية', data.message);
+    } else showError(data.message);
+}
+
+/* ══════════════════════════════════════════════
+   الملاحظات
+══════════════════════════════════════════════ */
+let notesPage = 1;
+const NOTES_PER_PAGE = 10;
+let allNotes = [];
+
+function switchNoteTab(tab, btn) {
+    document.querySelectorAll('#notesModal .m-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#notesModal .m-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('notePanel_' + tab).classList.add('active');
+    if (tab === 'list') renderNotes();
+}
+
+function openNotesModal(id, name) {
+    document.getElementById('notesUserId').value          = id;
+    document.getElementById('notesUserName').textContent  = name;
+    document.getElementById('newNoteText').value          = '';
+    document.querySelectorAll('#notesModal .m-tab').forEach(b  => b.classList.remove('active'));
+    document.querySelectorAll('#notesModal .m-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('noteTab1').classList.add('active');
+    document.getElementById('notePanel_add').classList.add('active');
+    openModal('notesModal');
+    loadNotes(id);
+}
+
+async function loadNotes(id) {
+    try {
+        const r    = await fetch(`/admin-panel/beneficiaries/notes/?user_id=${id}`, {
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        });
+        const data = await r.json();
+        allNotes   = data.notes || [];
+        notesPage  = 1;
+        document.getElementById('notesCount').textContent = allNotes.length;
+        renderNotes();
+    } catch { showError('خطأ في تحميل الملاحظات'); }
+}
+
+function renderNotes() {
+    const list  = document.getElementById('notesList');
+    const pages = document.getElementById('notesPagination');
+    const total = Math.ceil(allNotes.length / NOTES_PER_PAGE);
+    const start = (notesPage - 1) * NOTES_PER_PAGE;
+    const page  = allNotes.slice(start, start + NOTES_PER_PAGE);
+
+    if (!page.length) {
+        list.innerHTML  = '<p style="color:#9ca3af;font-family:\'Tajawal\',sans-serif;font-size:0.84rem;text-align:center;padding:20px">لا توجد ملاحظات</p>';
+        pages.innerHTML = '';
+        return;
+    }
+
+    list.innerHTML = page.map(n => `
+    <div id="note_${n.id}" style="background:var(--bg-secondary,#f4f9f6);border-radius:9px;padding:12px;margin-bottom:9px;border:1px solid rgba(124,58,237,0.06)">
+        <div id="note_text_${n.id}" style="font-size:0.84rem;color:var(--text,#1a1a2e);font-family:'Tajawal',sans-serif;margin-bottom:8px;line-height:1.6">${n.note}</div>
+        <textarea id="note_edit_${n.id}" style="display:none;width:100%;border:1.5px solid rgba(124,58,237,0.2);border-radius:8px;padding:8px;font-family:'Tajawal',sans-serif;font-size:0.84rem;outline:none;background:#ffffff;color:#1a1a2e;resize:none;margin-bottom:6px" rows="3">${n.note}</textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:0.7rem;color:#9ca3af;font-family:'Tajawal',sans-serif">👤 ${n.admin} — 📅 ${_fmtDate(n.created_at)}</div>
+            <div id="note_btns_${n.id}" style="display:flex;gap:5px">
+                <button onclick="startEditNote('${n.id}')" style="background:rgba(43,108,176,0.1);color:#2b6cb0;border:none;border-radius:6px;padding:3px 9px;font-size:0.72rem;cursor:pointer;font-family:'Tajawal',sans-serif">✏️ تعديل</button>
+                <button onclick="deleteNote('${n.id}')"    style="background:rgba(229,62,62,0.1);color:#c53030;border:none;border-radius:6px;padding:3px 9px;font-size:0.72rem;cursor:pointer;font-family:'Tajawal',sans-serif">🗑️ حذف</button>
+            </div>
+            <div id="note_edit_btns_${n.id}" style="display:none;gap:5px">
+                <button onclick="saveEditNote('${n.id}')"   style="background:rgba(26,122,74,0.1);color:#1a7a4a;border:none;border-radius:6px;padding:3px 9px;font-size:0.72rem;cursor:pointer;font-family:'Tajawal',sans-serif">✅ حفظ</button>
+                <button onclick="cancelEditNote('${n.id}')" style="background:rgba(107,114,128,0.1);color:#6b7280;border:none;border-radius:6px;padding:3px 9px;font-size:0.72rem;cursor:pointer;font-family:'Tajawal',sans-serif">✕ إلغاء</button>
+            </div>
+        </div>
+    </div>`).join('');
+
+    if (total > 1) {
+        let html = '';
+        for (let i = 1; i <= total; i++) {
+            html += `<button onclick="notesPage=${i};renderNotes()" style="width:30px;height:30px;border-radius:7px;border:1.5px solid rgba(124,58,237,0.15);background:${i===notesPage?'var(--adm)':'transparent'};color:${i===notesPage?'#fff':'var(--text,#1a1a2e)'};cursor:pointer;font-family:'Cairo',sans-serif;font-size:0.8rem;display:inline-flex;align-items:center;justify-content:center">${i}</button>`;
+        }
+        pages.innerHTML = html;
+    } else { pages.innerHTML = ''; }
+}
+
+function startEditNote(id) {
+    document.getElementById('note_text_'+id).style.display      = 'none';
+    document.getElementById('note_edit_'+id).style.display      = 'block';
+    document.getElementById('note_btns_'+id).style.display      = 'none';
+    document.getElementById('note_edit_btns_'+id).style.display = 'flex';
+}
+
+function cancelEditNote(id) {
+    const n = allNotes.find(x => x.id == id);
+    document.getElementById('note_text_'+id).style.display      = 'block';
+    document.getElementById('note_edit_'+id).style.display      = 'none';
+    document.getElementById('note_btns_'+id).style.display      = 'flex';
+    document.getElementById('note_edit_btns_'+id).style.display = 'none';
+    if (n) document.getElementById('note_edit_'+id).value = n.note;
+}
+
+async function saveEditNote(id) {
+    const note = document.getElementById('note_edit_'+id).value.trim();
+    if (!note) { showError('الملاحظة فارغة'); return; }
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('note_id', id);
+    fd.append('note', note);
+    const r    = await fetch('/admin-panel/beneficiaries/notes/edit/', {method: 'POST', body: fd});
+    const data = await r.json();
+    if (data.status === 'success') {
+        const n = allNotes.find(x => x.id == id);
+        if (n) n.note = note;
+        renderNotes();
+        showSuccess('✅', 'تم التعديل', 'تم تعديل الملاحظة بنجاح');
+    } else showError(data.message);
+}
+
+async function deleteNote(id) {
+    confirmDeleteAction('هل تريد حذف هذه الملاحظة نهائياً؟', '📝', async () => {
+        const fd = new FormData();
+        fd.append('csrfmiddlewaretoken', CSRF);
+        fd.append('note_id', id);
+        const r    = await fetch('/admin-panel/beneficiaries/notes/delete/', {method: 'POST', body: fd});
+        const data = await r.json();
+        if (data.status === 'success') {
+            allNotes = allNotes.filter(x => x.id != id);
+            document.getElementById('notesCount').textContent = allNotes.length;
+            renderNotes();
+            showSuccess('🗑️', 'تم الحذف', 'تم حذف الملاحظة');
+        } else showError(data.message);
+    });
+}
+
+async function saveNote() {
+    const id   = document.getElementById('notesUserId').value;
+    const note = document.getElementById('newNoteText').value.trim();
+    if (!note) { showError('اكتب ملاحظة أولاً'); return; }
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('user_id', id);
+    fd.append('note', note);
+    const r    = await fetch('/admin-panel/beneficiaries/notes/add/', {method: 'POST', body: fd});
+    const data = await r.json();
+    if (data.status === 'success') {
+        document.getElementById('newNoteText').value = '';
+        loadNotes(id);
+        showSuccess('📝', 'تم الحفظ', 'تم حفظ الملاحظة بنجاح');
+        document.querySelectorAll('#notesModal .m-tab').forEach(b  => b.classList.remove('active'));
+        document.querySelectorAll('#notesModal .m-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById('noteTab2').classList.add('active');
+        document.getElementById('notePanel_list').classList.add('active');
+    } else showError(data.message);
+}
+
+function exportNotesExcel() {
+    window.location.href = `/admin-panel/beneficiaries/notes/export/?user_id=${document.getElementById('notesUserId').value}`;
+}
+
+/* ══════════════════════════════════════════════
+   المدفوعات
+══════════════════════════════════════════════ */
+let paysPage = 1;
+const PAYS_PER_PAGE = 10;
+let allPays = [];
+
+function switchPayTab(tab, btn) {
+    document.querySelectorAll('#payModal .m-tab').forEach(b  => b.classList.remove('active'));
+    document.querySelectorAll('#payModal .m-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('payPanel_' + tab).classList.add('active');
+    if (tab === 'list') renderPayments();
+}
+
+function openPayModal(id, name) {
+    document.getElementById('payUserId').value           = id;
+    document.getElementById('payUserName').textContent   = name;
+    document.getElementById('payDate').value             = new Date().toISOString().split('T')[0];
+    document.getElementById('editPayId').value           = '';
+    document.getElementById('payAmount').value           = '';
+    document.getElementById('payNote').value             = '';
+    document.getElementById('payDisplayIls').textContent = '0.00 ₪';
+    document.getElementById('payDisplayUsd').textContent = '$0.00';
+    document.getElementById('exchangeRateInfo').textContent = `1$ = ${exchangeRate}₪ — سعر السوق الحالي`;
+
+    const u = allData.find(x => x.id === id);
+    const sponsorOption = document.querySelector('#payPaidBy option[value="sponsor"]');
+    if (sponsorOption) {
+        sponsorOption.disabled    = !u?.has_sponsor;
+        sponsorOption.textContent = u?.has_sponsor ? `كافل (${u.sponsor_name})` : 'كافل (لا يوجد)';
+    }
+    if (!u?.has_sponsor) document.getElementById('payPaidBy').value = 'admin';
+
+    document.querySelectorAll('#payModal .m-tab').forEach(b  => b.classList.remove('active'));
+    document.querySelectorAll('#payModal .m-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('payTab1').classList.add('active');
+    document.getElementById('payPanel_add').classList.add('active');
+    openModal('payModal');
+    loadPayments(id);
+}
+
+function convertPayAmount() {
+    const amount   = parseFloat(document.getElementById('payAmount').value) || 0;
+    const currency = document.getElementById('payCurrency').value;
+    const ils      = currency === 'ils' ? amount : amount * exchangeRate;
+    const usd      = currency === 'ils' ? amount / exchangeRate : amount;
+    document.getElementById('payDisplayIls').textContent = ils.toFixed(2) + ' ₪';
+    document.getElementById('payDisplayUsd').textContent = '$' + usd.toFixed(2);
+    document.getElementById('payAmountIls').value        = ils.toFixed(2);
+    document.getElementById('payAmountUsd').value        = usd.toFixed(2);
+}
+
+function toggleSponsorField() {
+    const v = document.getElementById('payPaidBy').value;
+    document.getElementById('payExternalField').style.display = v === 'external' ? 'block' : 'none';
+}
+
+async function loadPayments(id) {
+    const r    = await fetch(`/admin-panel/beneficiaries/payments/?user_id=${id}`, {
+        headers: {'X-Requested-With': 'XMLHttpRequest'}
+    });
+    const data = await r.json();
+    const s    = data.summary || {};
+    document.getElementById('paySummary').innerHTML = `
+        <div style="background:rgba(26,122,74,0.08);border-radius:9px;padding:11px;text-align:center"><div style="font-size:1.2rem;font-weight:900;color:#1a7a4a;font-family:'Cairo',sans-serif">${s.total_ils||0}₪</div><div style="font-size:0.72rem;color:#9ca3af;font-family:'Tajawal',sans-serif">إجمالي المدفوع</div></div>
+        <div style="background:rgba(43,108,176,0.08);border-radius:9px;padding:11px;text-align:center"><div style="font-size:1.2rem;font-weight:900;color:#2b6cb0;font-family:'Cairo',sans-serif">${s.month_ils||0}₪</div><div style="font-size:0.72rem;color:#9ca3af;font-family:'Tajawal',sans-serif">هذا الشهر</div></div>
+        <div style="background:rgba(245,158,11,0.08);border-radius:9px;padding:11px;text-align:center"><div style="font-size:1.1rem;font-weight:900;color:#b45309;font-family:'Cairo',sans-serif">${s.last_date||'—'}</div><div style="font-size:0.72rem;color:#9ca3af;font-family:'Tajawal',sans-serif">آخر دفعة</div></div>`;
+    allPays  = data.payments || [];
+    paysPage = 1;
+    document.getElementById('paysCount').textContent = allPays.length;
+    renderPayments();
+}
+
+function renderPayments() {
+    const list  = document.getElementById('payList');
+    const pages = document.getElementById('payPagination');
+    const total = Math.ceil(allPays.length / PAYS_PER_PAGE);
+    const start = (paysPage - 1) * PAYS_PER_PAGE;
+    const page  = allPays.slice(start, start + PAYS_PER_PAGE);
+
+    const STATUS_COLORS = {paid: '#1a7a4a', pending: '#b45309', late: '#c53030'};
+    const STATUS_LABELS = {paid: 'مدفوعة', pending: 'معلّقة', late: 'متأخرة'};
+    const PAID_BY_LABELS= {sponsor: 'كافل', admin: 'إدارة', external: 'جهة خارجية'};
+
+    if (!page.length) {
+        list.innerHTML  = '<p style="text-align:center;color:#9ca3af;font-family:\'Tajawal\',sans-serif;padding:16px">لا توجد دفعات</p>';
+        pages.innerHTML = '';
+        return;
+    }
+
+    list.innerHTML = page.map(p => `
+    <div id="pay_${p.id}" style="background:var(--bg-secondary,#f4f9f6);border-radius:9px;padding:12px;margin-bottom:8px;border:1px solid rgba(124,58,237,0.06)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+            <div>
+                <div style="font-weight:700;font-size:0.92rem;color:#1a7a4a">${p.amount_ils}₪ <span style="color:#9ca3af;font-size:0.78rem">/ $${p.amount_usd}</span></div>
+                <div style="font-size:0.74rem;color:#9ca3af;font-family:'Tajawal',sans-serif;margin-top:3px">📅 ${p.date} — ${PAID_BY_LABELS[p.paid_by]||p.paid_by} ${p.party?`(${p.party})`:''}</div>
+                ${p.note ? `<div style="font-size:0.76rem;color:#6b7280;margin-top:3px">📝 ${p.note}</div>` : ''}
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+                <span style="background:rgba(26,122,74,0.1);color:${STATUS_COLORS[p.status]};padding:2px 9px;border-radius:10px;font-size:0.72rem;font-weight:700">${STATUS_LABELS[p.status]||p.status}</span>
+                <button onclick="deletePayment('${p.id}')" style="background:rgba(229,62,62,0.1);color:#c53030;border:none;border-radius:6px;padding:3px 8px;font-size:0.72rem;cursor:pointer">🗑️</button>
+            </div>
+        </div>
+    </div>`).join('');
+
+    if (total > 1) {
+        let html = '';
+        for (let i = 1; i <= total; i++) {
+            html += `<button onclick="paysPage=${i};renderPayments()" style="width:30px;height:30px;border-radius:7px;border:1.5px solid rgba(124,58,237,0.15);background:${i===paysPage?'var(--adm)':'transparent'};color:${i===paysPage?'#fff':'var(--text,#1a1a2e)'};cursor:pointer;font-family:'Cairo',sans-serif;font-size:0.8rem;display:inline-flex;align-items:center;justify-content:center">${i}</button>`;
+        }
+        pages.innerHTML = html;
+    } else { pages.innerHTML = ''; }
+}
+
+async function savePayment() {
+    const amount   = parseFloat(document.getElementById('payAmount').value) || 0;
+    const currency = document.getElementById('payCurrency').value;
+    if (!amount) { showError('أدخل قيمة الدفعة'); return; }
+    const ils  = currency === 'ils' ? amount : amount * exchangeRate;
+    const usd  = currency === 'ils' ? amount / exchangeRate : amount;
+    const id   = document.getElementById('payUserId').value;
+    const fd   = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('user_id',      id);
+    fd.append('amount_ils',   ils.toFixed(2));
+    fd.append('amount_usd',   usd.toFixed(2));
+    fd.append('date',         document.getElementById('payDate').value);
+    fd.append('status',       document.getElementById('payStatus').value);
+    fd.append('paid_by',      document.getElementById('payPaidBy').value);
+    fd.append('paid_by_note', document.getElementById('payExternalName').value || '');
+    fd.append('note',         document.getElementById('payNote').value || '');
+    const r    = await fetch('/admin-panel/beneficiaries/payments/add/', {method: 'POST', body: fd});
+    const data = await r.json();
+    if (data.status === 'success') {
+        document.getElementById('payAmount').value           = '';
+        document.getElementById('payNote').value             = '';
+        document.getElementById('payDisplayIls').textContent = '0.00 ₪';
+        document.getElementById('payDisplayUsd').textContent = '$0.00';
+        const u = allData.find(x => x.id === id);
+        if (u) { u.monthly_amount_ils = data.month_ils; u.monthly_amount_usd = data.month_usd; }
+        renderTable();
+        loadPayments(id);
+        document.querySelectorAll('#payModal .m-tab').forEach(b  => b.classList.remove('active'));
+        document.querySelectorAll('#payModal .m-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById('payTab2').classList.add('active');
+        document.getElementById('payPanel_list').classList.add('active');
+        showSuccess('💰', 'تم حفظ الدفعة', `تم تسجيل ${ils.toFixed(2)}₪ / $${usd.toFixed(2)}`);
+    } else showError(data.message);
+}
+
+async function deletePayment(payId) {
+    confirmDeleteAction('هل تريد حذف هذه الدفعة نهائياً؟', '💰', async () => {
+        const fd = new FormData();
+        fd.append('csrfmiddlewaretoken', CSRF);
+        fd.append('pay_id', payId);
+        const r    = await fetch('/admin-panel/beneficiaries/payments/delete/', {method: 'POST', body: fd});
+        const data = await r.json();
+        if (data.status === 'success') {
+            allPays = allPays.filter(x => x.id != payId);
+            document.getElementById('paysCount').textContent = allPays.length;
+            renderPayments();
+            loadPayments(document.getElementById('payUserId').value);
+            showSuccess('🗑️', 'تم الحذف', 'تم حذف الدفعة بنجاح');
+        } else showError(data.message);
+    });
+}
+
+function exportPaymentsExcel() {
+    window.location.href = `/admin-panel/beneficiaries/payments/export/?user_id=${document.getElementById('payUserId').value}`;
+}
+
+/* ══════════════════════════════════════════════
+   المساعدات
+══════════════════════════════════════════════ */
+let aidsPage = 1;
+const AIDS_PER_PAGE = 10;
+let allAids = [];
+
+const AID_TYPES = {
+    food: 'غذائية', medical: 'طبية', financial: 'مالية',
+    clothing: 'ملابس', furniture: 'أثاث', education: 'تعليمية', other: 'أخرى'
+};
+
+function switchAidTab(tab, btn) {
+    document.querySelectorAll('#aidModal .m-tab').forEach(b  => b.classList.remove('active'));
+    document.querySelectorAll('#aidModal .m-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('aidPanel_' + tab).classList.add('active');
+    if (tab === 'list') renderAids();
+}
+
+function openAidModal(id, name) {
+    document.getElementById('aidUserId').value         = id;
+    document.getElementById('aidUserName').textContent = name;
+    document.getElementById('aidDate').value           = new Date().toISOString().split('T')[0];
+    document.getElementById('aidName').value           = '';
+    document.getElementById('aidProvider').value       = '';
+    document.getElementById('aidNote').value           = '';
+    document.getElementById('aidQty').value            = '1';
+    document.querySelectorAll('#aidModal .m-tab').forEach(b  => b.classList.remove('active'));
+    document.querySelectorAll('#aidModal .m-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('aidTab1').classList.add('active');
+    document.getElementById('aidPanel_add').classList.add('active');
+    openModal('aidModal');
+    loadAids(id);
+}
+
+async function loadAids(id) {
+    try {
+        const r    = await fetch(`/admin-panel/beneficiaries/aids/?user_id=${id}`, {
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        });
+        const data = await r.json();
+        allAids    = data.aids || [];
+        aidsPage   = 1;
+        document.getElementById('aidsCount').textContent = allAids.length;
+        renderAids();
+    } catch { showError('خطأ في تحميل المساعدات'); }
+}
+
+function renderAids() {
+    const list  = document.getElementById('aidList');
+    const pages = document.getElementById('aidPagination');
+    const total = Math.ceil(allAids.length / AIDS_PER_PAGE);
+    const start = (aidsPage - 1) * AIDS_PER_PAGE;
+    const page  = allAids.slice(start, start + AIDS_PER_PAGE);
+
+    if (!page.length) {
+        list.innerHTML  = '<p style="text-align:center;color:#9ca3af;font-family:\'Tajawal\',sans-serif;padding:16px">لا توجد مساعدات</p>';
+        pages.innerHTML = '';
+        return;
+    }
+
+    list.innerHTML = page.map(a => `
+    <div id="aid_${a.id}" style="background:var(--bg-secondary,#f4f9f6);border-radius:9px;padding:12px;margin-bottom:9px;border:1px solid rgba(124,58,237,0.06)">
+        <div id="aid_view_${a.id}">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px">
+                <div>
+                    <div style="font-weight:700;font-size:0.88rem;color:var(--text,#1a1a2e)">${a.name} <span style="background:rgba(245,158,11,0.1);color:#b45309;padding:1px 8px;border-radius:10px;font-size:0.7rem;font-weight:700;margin-right:5px">${AID_TYPES[a.aid_type]||a.aid_type}</span></div>
+                    <div style="font-size:0.74rem;color:#9ca3af;font-family:'Tajawal',sans-serif;margin-top:3px">📅 ${a.date} — 🏢 ${a.provider} — الكمية: ${a.quantity} — 👤 ${a.created_by||'النظام'}</div>
+                    ${a.note ? `<div style="font-size:0.76rem;color:#6b7280;margin-top:2px">📝 ${a.note}</div>` : ''}
+                </div>
+                <div style="display:flex;gap:5px">
+                    <button onclick="startEditAid('${a.id}')" style="background:rgba(43,108,176,0.1);color:#2b6cb0;border:none;border-radius:6px;padding:3px 9px;font-size:0.72rem;cursor:pointer;font-family:'Tajawal',sans-serif">✏️ تعديل</button>
+                    <button onclick="deleteAid('${a.id}')"    style="background:rgba(229,62,62,0.1);color:#c53030;border:none;border-radius:6px;padding:3px 9px;font-size:0.72rem;cursor:pointer;font-family:'Tajawal',sans-serif">🗑️ حذف</button>
+                </div>
+            </div>
+        </div>
+        <div id="aid_edit_${a.id}" style="display:none">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+                <div><label style="font-size:0.72rem;color:#9ca3af;font-family:'Tajawal',sans-serif;display:block;margin-bottom:3px">الاسم</label><input type="text"   id="aid_edit_name_${a.id}"     value="${a.name}"     class="f-input" style="font-size:0.84rem;padding:7px 10px"></div>
+                <div><label style="font-size:0.72rem;color:#9ca3af;font-family:'Tajawal',sans-serif;display:block;margin-bottom:3px">النوع</label><select              id="aid_edit_type_${a.id}"                           class="f-input" style="font-size:0.84rem;padding:7px 10px">${Object.entries(AID_TYPES).map(([v,l])=>`<option value="${v}" ${v===a.aid_type?'selected':''}>${l}</option>`).join('')}</select></div>
+                <div><label style="font-size:0.72rem;color:#9ca3af;font-family:'Tajawal',sans-serif;display:block;margin-bottom:3px">الكمية</label><input type="number" id="aid_edit_qty_${a.id}"      value="${a.quantity}" class="f-input" style="font-size:0.84rem;padding:7px 10px" min="1"></div>
+                <div><label style="font-size:0.72rem;color:#9ca3af;font-family:'Tajawal',sans-serif;display:block;margin-bottom:3px">الجهة</label><input type="text"    id="aid_edit_provider_${a.id}" value="${a.provider}" class="f-input" style="font-size:0.84rem;padding:7px 10px"></div>
+                <div><label style="font-size:0.72rem;color:#9ca3af;font-family:'Tajawal',sans-serif;display:block;margin-bottom:3px">التاريخ</label><input type="date"  id="aid_edit_date_${a.id}"     value="${a.date}"     class="f-input" style="font-size:0.84rem;padding:7px 10px"></div>
+                <div><label style="font-size:0.72rem;color:#9ca3af;font-family:'Tajawal',sans-serif;display:block;margin-bottom:3px">ملاحظة</label><input type="text"   id="aid_edit_note_${a.id}"     value="${a.note||''}" class="f-input" style="font-size:0.84rem;padding:7px 10px"></div>
+            </div>
+            <div style="display:flex;gap:6px;justify-content:flex-end">
+                <button onclick="cancelEditAid('${a.id}')" style="background:rgba(107,114,128,0.1);color:#6b7280;border:none;border-radius:6px;padding:5px 12px;font-size:0.78rem;cursor:pointer;font-family:'Tajawal',sans-serif">✕ إلغاء</button>
+                <button onclick="saveEditAid('${a.id}')"   style="background:rgba(26,122,74,0.1);color:#1a7a4a;border:none;border-radius:6px;padding:5px 12px;font-size:0.78rem;cursor:pointer;font-family:'Tajawal',sans-serif">✅ حفظ التعديل</button>
+            </div>
+        </div>
+    </div>`).join('');
+
+    if (total > 1) {
+        let html = '';
+        for (let i = 1; i <= total; i++) {
+            html += `<button onclick="aidsPage=${i};renderAids()" style="width:30px;height:30px;border-radius:7px;border:1.5px solid rgba(124,58,237,0.15);background:${i===aidsPage?'var(--adm)':'transparent'};color:${i===aidsPage?'#fff':'var(--text,#1a1a2e)'};cursor:pointer;font-family:'Cairo',sans-serif;font-size:0.8rem;display:inline-flex;align-items:center;justify-content:center">${i}</button>`;
+        }
+        pages.innerHTML = html;
+    } else { pages.innerHTML = ''; }
+}
+
+function startEditAid(id) {
+    document.getElementById('aid_view_'+id).style.display = 'none';
+    document.getElementById('aid_edit_'+id).style.display = 'block';
+}
+
+function cancelEditAid(id) {
+    document.getElementById('aid_view_'+id).style.display = 'block';
+    document.getElementById('aid_edit_'+id).style.display = 'none';
+}
+
+async function saveEditAid(id) {
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('aid_id',   id);
+    fd.append('name',     document.getElementById('aid_edit_name_'+id).value.trim());
+    fd.append('aid_type', document.getElementById('aid_edit_type_'+id).value);
+    fd.append('quantity', document.getElementById('aid_edit_qty_'+id).value);
+    fd.append('provider', document.getElementById('aid_edit_provider_'+id).value.trim());
+    fd.append('date',     document.getElementById('aid_edit_date_'+id).value);
+    fd.append('note',     document.getElementById('aid_edit_note_'+id).value);
+    if (!fd.get('name') || !fd.get('provider')) { showError('الاسم والجهة مطلوبان'); return; }
+    const r    = await fetch('/admin-panel/beneficiaries/aids/edit/', {method: 'POST', body: fd});
+    const data = await r.json();
+    if (data.status === 'success') {
+        const a = allAids.find(x => x.id == id);
+        if (a) { a.name=fd.get('name'); a.aid_type=fd.get('aid_type'); a.quantity=fd.get('quantity'); a.provider=fd.get('provider'); a.date=fd.get('date'); a.note=fd.get('note'); }
+        renderAids();
+        showSuccess('✅', 'تم التعديل', 'تم تعديل المساعدة بنجاح');
+    } else showError(data.message);
+}
+
+async function saveAid() {
+    const id = document.getElementById('aidUserId').value;
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('user_id',  id);
+    fd.append('name',     document.getElementById('aidName').value.trim());
+    fd.append('aid_type', document.getElementById('aidType').value);
+    fd.append('quantity', document.getElementById('aidQty').value || 1);
+    fd.append('provider', document.getElementById('aidProvider').value.trim());
+    fd.append('date',     document.getElementById('aidDate').value);
+    fd.append('note',     document.getElementById('aidNote').value || '');
+    if (!fd.get('name') || !fd.get('provider')) { showError('اسم المساعدة والجهة مطلوبان'); return; }
+    const r    = await fetch('/admin-panel/beneficiaries/aids/add/', {method: 'POST', body: fd});
+    const data = await r.json();
+    if (data.status === 'success') {
+        document.getElementById('aidName').value = document.getElementById('aidProvider').value = document.getElementById('aidNote').value = '';
+        document.getElementById('aidQty').value  = '1';
+        loadAids(id);
+        showSuccess('🎁', 'تم الحفظ', 'تم حفظ المساعدة بنجاح');
+        document.querySelectorAll('#aidModal .m-tab').forEach(b  => b.classList.remove('active'));
+        document.querySelectorAll('#aidModal .m-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById('aidTab2').classList.add('active');
+        document.getElementById('aidPanel_list').classList.add('active');
+        renderAids();
+    } else showError(data.message);
+}
+
+async function deleteAid(aidId) {
+    confirmDeleteAction('هل تريد حذف هذه المساعدة نهائياً؟', '🎁', async () => {
+        const fd = new FormData();
+        fd.append('csrfmiddlewaretoken', CSRF);
+        fd.append('aid_id', aidId);
+        const r    = await fetch('/admin-panel/beneficiaries/aids/delete/', {method: 'POST', body: fd});
+        const data = await r.json();
+        if (data.status === 'success') {
+            allAids = allAids.filter(x => x.id != aidId);
+            document.getElementById('aidsCount').textContent = allAids.length;
+            renderAids();
+            showSuccess('🗑️', 'تم الحذف', 'تم حذف المساعدة');
+        } else showError(data.message);
+    });
+}
+
+function exportAidsExcel() {
+    window.location.href = `/admin-panel/beneficiaries/aids/export/?user_id=${document.getElementById('aidUserId').value}`;
+}
+
+/* ══════════════════════════════════════════════
+   الحالة
+══════════════════════════════════════════════ */
+function openStatusModal(userId, name, beneId, currentStatus) {
+    document.getElementById('statusUserId').value      = userId;
+    document.getElementById('statusBeneId').value      = beneId;
+    document.getElementById('statusUserName').textContent = name;
+    document.getElementById('newStatus').value         = currentStatus || '';
+    openModal('statusModal');
+}
+
+async function confirmStatus() {
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('bene_type', BENE_TYPE);
+    fd.append('bene_id',   document.getElementById('statusBeneId').value);
+    fd.append('status',    document.getElementById('newStatus').value);
+    const r    = await fetch('/admin-panel/beneficiaries/status/', {method: 'POST', body: fd});
+    const data = await r.json();
+    closeModal('statusModal');
+    if (data.status === 'success') {
+        const u = allData.find(x => x.id === document.getElementById('statusUserId').value);
+        if (u) u.status = document.getElementById('newStatus').value;
+        renderTable();
+        showSuccess('✅', 'تمت العملية', data.message);
+    } else showError(data.message);
+}
+
+/* ══════════════════════════════════════════════
+   سجل النشاط
+══════════════════════════════════════════════ */
+function openLogModal(id, name) {
+    document.getElementById('logUserId').value        = id;
+    document.getElementById('logUserName').textContent= name;
+    document.getElementById('logSearch').value        = '';
+    document.getElementById('logActionFilter').value  = '';
+    document.getElementById('logList').innerHTML      =
+        '<div style="text-align:center;padding:20px"><div class="skel" style="height:100px;border-radius:8px"></div></div>';
+    openModal('logModal');
+    loadLogs(id);
+}
+
+async function loadLogs(id) {
+    const r    = await fetch(`/admin-panel/beneficiaries/logs/?user_id=${id}`, {
+        headers: {'X-Requested-With': 'XMLHttpRequest'}
+    });
+    const data = await r.json();
+    allLogs = filteredLogs = data.logs || [];
+    renderLogs();
+}
+
+function filterLogs() {
+    const q      = document.getElementById('logSearch').value.toLowerCase();
+    const action = document.getElementById('logActionFilter').value;
+    filteredLogs = allLogs.filter(l =>
+        (!q || l.description.toLowerCase().includes(q)) && (!action || l.action === action)
+    );
+    renderLogs();
+}
+
+function renderLogs() {
+    const icons = {LOGIN:'🔑',LOGOUT:'🚪',UPDATE:'✏️',DELETE:'🗑️',MESSAGE:'✉️',PAYMENT:'💰',VIEW:'👁',APPROVE:'✅',REJECT:'❌'};
+    document.getElementById('logList').innerHTML = !filteredLogs.length
+        ? '<p style="text-align:center;color:#9ca3af;font-family:\'Tajawal\',sans-serif">لا توجد سجلات</p>'
+        : filteredLogs.map(l => `
+        <div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid rgba(124,58,237,0.06)">
+            <div style="font-size:1rem;flex-shrink:0">${icons[l.action] || '📌'}</div>
+            <div>
+                <div style="font-size:0.84rem;font-weight:600;color:var(--text,#1a1a2e);font-family:'Tajawal',sans-serif">${l.description}</div>
+                <div style="font-size:0.7rem;color:#9ca3af;font-family:'Tajawal',sans-serif">${l.created_at} — ${l.admin || 'النظام'}</div>
+            </div>
+        </div>`).join('');
+}
+
+async function exportLogExcel(mode) {
+    const id  = document.getElementById('logUserId').value;
+    const ids = mode === 'filtered' ? filteredLogs.map(l => l.id).join(',') : 'all';
+    window.location.href = `/admin-panel/beneficiaries/logs/export/?user_id=${id}&ids=${ids}`;
+}
+
+/* ══════════════════════════════════════════════
+   التواصل
+══════════════════════════════════════════════ */
+function openCommModal(id, name, beneId, allowComm) {
+    document.getElementById('commUserId').value          = id;
+    document.getElementById('commBeneId').value          = beneId;
+    document.getElementById('commUserName').textContent  = name;
+    const btn = document.getElementById('commConfirmBtn');
+    if (allowComm) {
+        document.getElementById('commIcon').textContent   = '🔕';
+        document.getElementById('commStatus').textContent = 'التواصل مفعّل حالياً — هل تريد تعطيله؟';
+        btn.textContent = '🔴 تعطيل التواصل';
+        btn.style.cssText = 'background:linear-gradient(135deg,#c53030,#fc8181);border-color:transparent;color:#fff';
+    } else {
+        document.getElementById('commIcon').textContent   = '💬';
+        document.getElementById('commStatus').textContent = 'التواصل معطّل — هل تريد تفعيله؟';
+        btn.textContent = '✅ تفعيل التواصل';
+        btn.style.cssText = 'background:linear-gradient(135deg,#0f5232,#2ecc71);border-color:transparent;color:#fff';
+    }
+    openModal('commModal');
+}
+
+async function confirmComm() {
+    const userId = document.getElementById('commUserId').value;
+    const beneId = document.getElementById('commBeneId').value;
+    const fd     = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('user_id',   userId);
+    fd.append('bene_id',   beneId);
+    fd.append('bene_type', BENE_TYPE);
+    try {
+        const r    = await fetch('/admin-panel/beneficiaries/comm/', {method: 'POST', body: fd});
+        const data = await r.json();
+        closeModal('commModal');
+        if (data.status === 'success') {
+            const u = allData.find(x => x.id === userId);
+            if (u) u.allow_comm = data.allow_comm;
+            renderTable();
+            showSuccess(data.allow_comm ? '✅' : '🔕', data.allow_comm ? 'تم تفعيل التواصل' : 'تم تعطيل التواصل', data.message);
+        } else toast(data.message, 'error');
+    } catch { closeModal('commModal'); toast('حدث خطأ في الاتصال', 'error'); }
+}
+
+/* ══════════════════════════════════════════════
+   المراسلة
+══════════════════════════════════════════════ */
+let msgsPage = 1;
+const MSGS_PER_PAGE = 10;
+let allMsgs = [];
+
+function switchMsgTab(tab, btn) {
+    document.querySelectorAll('#msgModal .m-tab').forEach(b  => b.classList.remove('active'));
+    document.querySelectorAll('#msgModal .m-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('msgPanel_' + tab).classList.add('active');
+    if (tab === 'list') renderMsgs();
+}
+
+function openMsgModal(id, name) {
+    document.getElementById('msgUserId').value         = id;
+    document.getElementById('msgUserName').textContent = name;
+    document.getElementById('msgSubject').value        = '';
+    document.getElementById('msgBody').value           = '';
+    document.querySelectorAll('#msgModal .m-tab').forEach(b  => b.classList.remove('active'));
+    document.querySelectorAll('#msgModal .m-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('msgTab1').classList.add('active');
+    document.getElementById('msgPanel_add').classList.add('active');
+    openModal('msgModal');
+    loadMsgs(id);
+}
+
+async function loadMsgs(id) {
+    try {
+        const r    = await fetch(`/admin-panel/beneficiaries/messages/?user_id=${id}`, {
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        });
+        const data = await r.json();
+        allMsgs    = data.messages || [];
+        msgsPage   = 1;
+        document.getElementById('msgsCount').textContent = allMsgs.length;
+        renderMsgs();
+    } catch { showError('خطأ في تحميل الرسائل'); }
+}
+
+function renderMsgs() {
+    const list  = document.getElementById('msgList');
+    const pages = document.getElementById('msgPagination');
+    const total = Math.ceil(allMsgs.length / MSGS_PER_PAGE);
+    const start = (msgsPage - 1) * MSGS_PER_PAGE;
+    const page  = allMsgs.slice(start, start + MSGS_PER_PAGE);
+
+    if (!page.length) {
+        list.innerHTML  = '<p style="text-align:center;color:#9ca3af;font-family:\'Tajawal\',sans-serif;padding:16px">لا توجد رسائل سابقة</p>';
+        pages.innerHTML = '';
+        return;
+    }
+
+    list.innerHTML = page.map(m => `
+    <div style="background:var(--bg-secondary,#f4f9f6);border-radius:9px;padding:12px;margin-bottom:9px;border:1px solid rgba(124,58,237,0.06)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px;margin-bottom:6px">
+            <div style="font-weight:700;font-size:0.88rem;color:var(--text,#1a1a2e)">${m.title}</div>
+            <div style="font-size:0.7rem;color:#9ca3af;font-family:'Tajawal',sans-serif">${_fmtDate(m.created_at)}</div>
+        </div>
+        <div style="font-size:0.84rem;color:#6b7280;font-family:'Tajawal',sans-serif;line-height:1.6;margin-bottom:6px">${m.message}</div>
+        <div style="font-size:0.72rem;color:#9ca3af;font-family:'Tajawal',sans-serif">👤 ${m.sender}</div>
+    </div>`).join('');
+
+    if (total > 1) {
+        let html = '';
+        for (let i = 1; i <= total; i++) {
+            html += `<button onclick="msgsPage=${i};renderMsgs()" style="width:30px;height:30px;border-radius:7px;border:1.5px solid rgba(124,58,237,0.15);background:${i===msgsPage?'var(--adm)':'transparent'};color:${i===msgsPage?'#fff':'var(--text,#1a1a2e)'};cursor:pointer;font-family:'Cairo',sans-serif;font-size:0.8rem;display:inline-flex;align-items:center;justify-content:center">${i}</button>`;
+        }
+        pages.innerHTML = html;
+    } else { pages.innerHTML = ''; }
+}
+
+async function sendMsg() {
+    const body = document.getElementById('msgBody').value.trim();
+    if (!body) { showError('اكتب نص الرسالة'); return; }
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('user_id', document.getElementById('msgUserId').value);
+    fd.append('subject', document.getElementById('msgSubject').value.trim() || 'رسالة من الإدارة');
+    fd.append('message', body);
+    const r    = await fetch('/admin-panel/requests/send-message/', {method: 'POST', body: fd});
+    const data = await r.json();
+    if (data.status === 'success') {
+        document.getElementById('msgSubject').value = document.getElementById('msgBody').value = '';
+        loadMsgs(document.getElementById('msgUserId').value);
+        showSuccess('✅', 'تم الإرسال', 'تم إرسال الرسالة بنجاح');
+        document.querySelectorAll('#msgModal .m-tab').forEach(b  => b.classList.remove('active'));
+        document.querySelectorAll('#msgModal .m-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById('msgTab2').classList.add('active');
+        document.getElementById('msgPanel_list').classList.add('active');
+        renderMsgs();
+    } else showError(data.message);
+}
+
+function exportMsgsExcel() {
+    window.location.href = `/admin-panel/beneficiaries/messages/export/?user_id=${document.getElementById('msgUserId').value}`;
+}
+
+/* ══════════════════════════════════════════════
+   تغيير / إزالة الكافل
+══════════════════════════════════════════════ */
+async function changeSponsor(userId) {
+    const sel = document.getElementById(`sponsorSelect_${userId}`);
+    if (!sel || !sel.value) { toast('اختر كافلاً', 'error'); return; }
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('user_id',    userId);
+    fd.append('sponsor_id', sel.value);
+    fd.append('bene_type',  BENE_TYPE);
+    const r    = await fetch('/admin-panel/beneficiaries/sponsor/change/', {method: 'POST', body: fd});
+    const data = await r.json();
+    if (data.status === 'success') { loadData(); closeModal('viewModal'); showSuccess('✅', 'تم', 'تم تغيير الكافل بنجاح'); }
+    else showError(data.message);
+}
+
+async function removeSponsor(userId) {
+    if (!confirm('هل تريد إزالة الكافل الحالي؟')) return;
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('user_id',   userId);
+    fd.append('bene_type', BENE_TYPE);
+    const r    = await fetch('/admin-panel/beneficiaries/sponsor/remove/', {method: 'POST', body: fd});
+    const data = await r.json();
+    if (data.status === 'success') { loadData(); closeModal('viewModal'); showSuccess('✅', 'تم', 'تم إزالة الكافل'); }
+    else showError(data.message);
+}
+
+/* ══════════════════════════════════════════════
+   تصدير
+══════════════════════════════════════════════ */
+async function exportUser(format, userId) {
+    if (format === 'word') {
+        _showExportProgress(
+            ['جار تجميع البيانات...', 'جار بناء الجداول...', 'جار إضافة الوثائق...', 'جار حفظ الملف...'],
+            `/admin-panel/requests/export-word/?id=${userId}`
+        );
+        return;
+    }
+    if (format === 'excel') {
+        _showExportProgress(
+            ['جار تجميع البيانات...', 'جار بناء الأوراق...', 'جار التنسيق...', 'جار حفظ الملف...'],
+            `/admin-panel/beneficiaries/export-single/?id=${userId}`
+        );
+        return;
+    }
+    if (format === 'pdf') {
+        openModal('exportProgressModal');
+        const fill  = document.getElementById('expProgFill');
+        const msg   = document.getElementById('expProgMsg');
+        const pct   = document.getElementById('expProgPct');
+        const dlBtn = document.getElementById('expProgDlBtn');
+
+        dlBtn.style.display = 'none';
+        fill.style.width    = '0%';
+        pct.textContent     = '0%';
+        msg.textContent     = 'جار التجهيز...';
+
+        const steps = [
+            {p: 10, m: 'جار تجميع البيانات...'},
+            {p: 25, m: 'جار معالجة الصور والوثائق...'},
+            {p: 45, m: 'جار توليد HTML...'},
+            {p: 65, m: 'جار تحويل PDF...'},
+            {p: 80, m: 'جار ضغط الملف...'},
+            {p: 90, m: 'جار التحقق النهائي...'},
+        ];
+        let stepIdx = 0;
+        const t = setInterval(() => {
+            if (stepIdx < steps.length) {
+                fill.style.width = steps[stepIdx].p + '%';
+                pct.textContent  = steps[stepIdx].p + '%';
+                msg.textContent  = steps[stepIdx].m;
+                stepIdx++;
+            }
+        }, 800);
+
+        try {
+            const resp = await fetch(`/admin-panel/requests/export-pdf/?id=${userId}`, {
+                headers: {'X-Requested-With': 'XMLHttpRequest'}
+            });
+            if (!resp.ok) throw new Error('فشل التصدير — كود: ' + resp.status);
+            const blob = await resp.blob();
+            clearInterval(t);
+            fill.style.width = '100%';
+            pct.textContent  = '100%';
+            msg.textContent  = '✅ اكتمل التصدير — الملف جاهز!';
+
+            const disposition = resp.headers.get('Content-Disposition') || '';
+            const match       = disposition.match(/filename\*=UTF-8''(.+)/i) || disposition.match(/filename="?([^"]+)"?/i);
+            const fname       = match ? decodeURIComponent(match[1]) : `export_${userId}.pdf`;
+            const url         = URL.createObjectURL(blob);
+            const a           = document.createElement('a');
+            a.href = url; a.download = fname;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+
+            dlBtn.style.display = 'flex';
+            dlBtn.onclick       = () => { window.location.href = url; };
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+            setTimeout(() => closeModal('exportProgressModal'), 3000);
+        } catch (e) {
+            clearInterval(t);
+            closeModal('exportProgressModal');
+            showError('فشل تصدير PDF: ' + e.message);
+        }
+    }
+}
+
+function _showExportProgress(steps, url) {
+    const modal = document.getElementById('exportProgressModal');
+    if (!modal) return;
+    openModal('exportProgressModal');
+    const fill  = document.getElementById('expProgFill');
+    const msg   = document.getElementById('expProgMsg');
+    const dlBtn = document.getElementById('expProgDlBtn');
+    const pct   = document.getElementById('expProgPct');
+
+    dlBtn.style.display = 'none';
+    fill.style.width    = '0%';
+    pct.textContent     = '0%';
+
+    let step = 0;
+    const t  = setInterval(() => {
+        if (step < steps.length) {
+            msg.textContent  = steps[step];
+            const p          = Math.round(((step + 1) / steps.length) * 85);
+            fill.style.width = p + '%';
+            pct.textContent  = p + '%';
+            step++;
+        }
+    }, 600);
+
+    setTimeout(() => {
+        clearInterval(t);
+        fill.style.width = '100%';
+        pct.textContent  = '100%';
+        msg.textContent  = '✅ اكتمل — جار التحميل...';
+        const a          = document.createElement('a');
+        a.href = url; a.click();
+        setTimeout(() => { dlBtn.style.display = 'flex'; dlBtn.onclick = () => { window.location.href = url; }; }, 1500);
+    }, steps.length * 600 + 300);
+}
+
+function exportExcel(type) {
+    window.location.href = `/admin-panel/beneficiaries/export/?type=${BENE_TYPE}&filter=${type}`;
+}
+
+function quickPrint()         { if (currentId) window.open(`/admin-panel/requests/print/?id=${currentId}`, '_blank'); }
+function quickPrintUser(id)   { window.open(`/admin-panel/requests/print/?id=${id}`, '_blank'); }
+
+/* ══════════════════════════════════════════════
+   التعديل
+══════════════════════════════════════════════ */
+let editOriginalData  = {};
+let editChangedFields = {};
+let editErrors        = {};
+let editCheckTimers   = {};
+
+const EDIT_TABS = {
+    orphan:  ['personal', 'contact', 'orphan_data',  'guardian', 'password'],
+    family:  ['personal', 'contact', 'family_data',  'guardian', 'password'],
+    special: ['personal', 'contact', 'special_data', 'guardian', 'password'],
+    sponsor: ['personal', 'contact', 'sponsor_data', 'password'],
+};
+const EDIT_TAB_LABELS = {
+    personal:     '👤 الشخصية',
+    contact:      '📞 التواصل',
+    orphan_data:  '📋 بيانات اليتيم',
+    family_data:  '📋 بيانات الأسرة',
+    special_data: '📋 بيانات الحالة',
+    sponsor_data: '💼 بيانات الكافل',
+    guardian:     '🧑 المعيل',
+    password:     '🔒 كلمة المرور',
+};
+const API_CHECK_FIELDS = {
+    id_number: 'id_number',
+    email:     'email',
+    phone:     'phone',
+    phone2:    'phone2',
+    whatsapp:  'whatsapp',
+};
+
+
+
+function switchEditBeneTab(tab, btn) {
+    document.querySelectorAll('#editBeneModal .m-tab').forEach(b  => b.classList.remove('active'));
+    document.querySelectorAll('#editBeneModal .m-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('editPanel_' + tab)?.classList.add('active');
+}
+
+function _buildEditPanel(tab, data, type) {
+
+    const DD_STYLE = `display:none;position:absolute;bottom:calc(100% + 4px);right:0;z-index:9999;width:280px;max-height:220px;overflow-y:auto;background:var(--bg-card,#fff);border:1.5px solid rgba(124,58,237,0.15);border-radius:10px;box-shadow:0 8px 24px rgba(124,58,237,0.12)`;
+    const DD_SEARCH_STYLE = `width:100%;border:1.5px solid rgba(124,58,237,0.15);border-radius:8px;padding:6px 10px;font-family:'Tajawal',sans-serif;font-size:0.82rem;outline:none;background:var(--bg-secondary,#f8f7ff);color:var(--text,#1a1a2e)`;
+    const SEL_STYLE = `display:flex;align-items:center;gap:6px;padding:9px 12px;cursor:pointer;border:1.5px solid rgba(124,58,237,0.18);border-radius:10px;background:var(--bg-card,#fff);color:var(--text,#1a1a2e)`;
+
+    const _f = (id, label, val, t='text', extra='') => `
+        <div class="f-group">
+            <label class="f-label">${label}</label>
+            <input type="${t}" id="ef_${id}" class="f-input" value="${val||''}" ${extra} oninput="onEditFieldChange('${id}')">
+            <div class="f-error-msg" id="ef_err_${id}" style="display:none;font-size:0.72rem;color:#c53030;margin-top:3px;font-family:'Tajawal',sans-serif"></div>
+            <div class="f-ok-msg"    id="ef_ok_${id}"  style="display:none;font-size:0.72rem;color:#1a7a4a;margin-top:3px;font-family:'Tajawal',sans-serif">✅ متاح</div>
+        </div>`;
+
+    const _s = (id, label, val, opts) => `
+        <div class="f-group">
+            <label class="f-label">${label}</label>
+            <select id="ef_${id}" class="f-input" onchange="onEditFieldChange('${id}')">
+                ${opts.map(([v,l]) => `<option value="${v}" ${val===v?'selected':''}>${l}</option>`).join('')}
+            </select>
+        </div>`;
+
+    const _ta = (id, label, val) => `
+        <div class="f-group">
+            <label class="f-label">${label}</label>
+            <textarea id="ef_${id}" class="f-input" rows="4" oninput="onEditFieldChange('${id}')">${val||''}</textarea>
+        </div>`;
+
+    const _dd = (key, dialVal) => `
+        <div style="position:relative;flex-shrink:0;width:130px">
+            <div id="ef_${key}_sel" onclick="ddToggle('ef_${key}')" style="${SEL_STYLE}" role="combobox" aria-expanded="false">
+                <span id="ef_${key}_flag">🇵🇸</span>
+                <span id="ef_${key}_dial" style="font-size:0.82rem">${dialVal||'+970'}</span>
+                <span style="font-size:0.6rem;margin-right:auto">▼</span>
+            </div>
+            <div class="dd-dropdown" id="ef_${key}_dd" role="listbox" style="${DD_STYLE}">
+                <div style="padding:8px">
+                    <input class="dd-search" id="ef_${key}_q" placeholder="بحث..." style="${DD_SEARCH_STYLE}"
+                           oninput="ddFilter('ef_${key}',this.value)" onclick="event.stopPropagation()">
+                </div>
+                <div class="dd-list" id="ef_${key}_list"></div>
+            </div>
+        </div>`;
+
+    const _phone = (key, id, label, dialVal, phoneVal, withErr=false) => `
+        <div class="f-group">
+            <label class="f-label">${label}</label>
+            <div style="display:flex;gap:8px;align-items:stretch">
+                ${_dd(key, dialVal)}
+                <input type="hidden" id="ef_${id}_country" value="${dialVal||'+970'}">
+                <input type="tel" id="ef_${id}" class="f-input" value="${phoneVal||''}"
+                       placeholder="05XXXXXXXX" style="flex:1" oninput="onEditFieldChange('${id}')">
+            </div>
+            ${withErr ? `
+            <div class="f-error-msg" id="ef_err_${id}" style="display:none;font-size:0.72rem;color:#c53030;margin-top:3px;font-family:'Tajawal',sans-serif"></div>
+            <div class="f-ok-msg"    id="ef_ok_${id}"  style="display:none;font-size:0.72rem;color:#1a7a4a;margin-top:3px;font-family:'Tajawal',sans-serif">✅ متاح</div>` : ''}
+        </div>`;
+
+    const _nat = (val, code) => `
+        <div class="f-group">
+            <label class="f-label">الجنسية</label>
+            <div style="position:relative">
+                <div id="ef_nat_sel" onclick="ddToggle('ef_nat')" style="${SEL_STYLE}" role="combobox" aria-expanded="false">
+                    <span id="ef_nat_flag">🌍</span>
+                    <span id="ef_nat_text" style="flex:1;font-family:'Tajawal',sans-serif;font-size:0.88rem">${val||'اختر الجنسية'}</span>
+                    <span>▼</span>
+                </div>
+                <div class="dd-dropdown" id="ef_nat_dd" role="listbox"
+                     style="${DD_STYLE};width:100%;bottom:auto;top:calc(100% + 4px)">
+                    <div style="padding:8px">
+                        <input class="dd-search" id="ef_nat_q" placeholder="ابحث عن دولتك..." style="${DD_SEARCH_STYLE}"
+                               oninput="ddFilter('ef_nat',this.value)" onclick="event.stopPropagation()">
+                    </div>
+                    <div class="dd-list" id="ef_nat_list"></div>
+                </div>
+            </div>
+            <input type="hidden" id="ef_nationality"      value="${val ||''}">
+            <input type="hidden" id="ef_nationality_code" value="${code||''}">
+        </div>`;
+
+    /* ══ تاب الشخصية ══ */
+    if (tab === 'personal') return `
+        <div class="f-grid">
+            ${_f('first_name',  'الاسم الأول *',  data.first_name)}
+            ${_f('father_name', 'اسم الأب *',     data.father_name)}
+            ${_f('grand_name',  'اسم الجد',       data.grand_name)}
+            ${_f('family_name', 'اسم العائلة *',  data.family_name)}
+            ${_f('id_number',   'رقم الهوية',     data.id_number)}
+            ${_s('gender','الجنس', data.gender, [['','— اختر —'],['ذكر','ذكر'],['أنثى','أنثى']])}
+        </div>
+        ${_nat(data.nationality, data.nationality_code)}`;
+
+    /* ══ تاب التواصل ══ */
+    if (tab === 'contact') return `
+        ${_f('email','البريد الإلكتروني *', data.email, 'email')}
+        ${_phone('p1','phone',    'رقم الجوال',   data.phone_country,    data.phone,    true)}
+        ${_phone('p2','phone2',   'رقم الجوال 2', data.phone2_country,   data.phone2,   false)}
+        ${_phone('wa','whatsapp', 'رقم الواتساب', data.whatsapp_country, data.whatsapp, false)}`;
+
+    /* ══ تاب اليتيم ══ */
+    if (tab === 'orphan_data') return `
+        <div class="f-grid">
+            ${_f('birth_date',        'تاريخ الميلاد',    data.orphan?.birth_date, 'date')}
+            ${_s('orphan_type',       'نوع اليتم',         data.orphan?.orphan_type,       [['أب','أب'],['أم','أم'],['كلاهما','كلاهما']])}
+            ${_s('health_status',     'الحالة الصحية',    data.orphan?.health_status,     [['جيدة','جيدة'],['متوسطة','متوسطة'],['سيئة','سيئة']])}
+            ${_s('education_level',   'المستوى التعليمي', data.orphan?.education_level,   [['روضة','روضة'],['ابتدائي','ابتدائي'],['إعدادي','إعدادي'],['ثانوي','ثانوي'],['جامعي','جامعي'],['لا يدرس','لا يدرس']])}
+            ${_f('school_grade',      'الصف الدراسي',     data.orphan?.school_grade)}
+            ${_f('school_name',       'اسم المدرسة',      data.orphan?.school_name)}
+            ${_s('housing_type',      'نوع السكن',        data.orphan?.housing_type,      [['شقة','شقة'],['بيت','بيت'],['مخيم','مخيم'],['خيمة','خيمة'],['أخرى','أخرى']])}
+            ${_s('housing_ownership', 'ملكية السكن',      data.orphan?.housing_ownership, [['مستأجر','مستأجر'],['ملك','ملك'],['أخرى','أخرى']])}
+            ${_f('monthly_rent',      'الإيجار ₪',        data.orphan?.monthly_rent, 'number')}
+            ${_f('current_city',      'المدينة الحالية',  data.orphan?.current_city)}
+            ${_f('current_street',    'الشارع الحالي',    data.orphan?.current_street)}
+            ${_f('current_landmark',  'أقرب معلم',        data.orphan?.current_landmark)}
+        </div>
+        ${_ta('story','قصة اليتيم', data.orphan?.story)}`;
+
+    /* ══ تاب الأسرة ══ */
+    if (tab === 'family_data') return `
+        <div class="f-grid">
+            ${_f('birth_date',          'تاريخ الميلاد',      data.family?.birth_date, 'date')}
+            ${_s('marital_status',      'الحالة الاجتماعية',  data.family?.marital_status,  [['متزوج','متزوج'],['أرمل','أرمل'],['مطلق','مطلق'],['أعزب','أعزب']])}
+            ${_s('health_status',       'الحالة الصحية',      data.family?.health_status,   [['جيدة','جيدة'],['متوسطة','متوسطة'],['سيئة','سيئة']])}
+            ${_s('education_level',     'المستوى التعليمي',   data.family?.education_level, [['روضة','روضة'],['ابتدائي','ابتدائي'],['إعدادي','إعدادي'],['ثانوي','ثانوي'],['جامعي','جامعي'],['لا يدرس','لا يدرس']])}
+            ${_f('job',                 'المهنة',              data.family?.job)}
+            ${_s('housing_type',        'نوع السكن',           data.family?.housing_type,       [['شقة','شقة'],['بيت','بيت'],['مخيم','مخيم'],['خيمة','خيمة'],['أخرى','أخرى']])}
+            ${_s('housing_ownership',   'ملكية السكن',         data.family?.housing_ownership,  [['مستأجر','مستأجر'],['ملك','ملك'],['أخرى','أخرى']])}
+            ${_f('monthly_rent',        'الإيجار ₪',           data.family?.monthly_rent, 'number')}
+            ${_f('family_members_count','عدد أفراد الأسرة',   data.family?.family_members_count, 'number')}
+            ${_f('sick_members_count',  'عدد المرضى',          data.family?.sick_members_count,   'number')}
+            ${_f('current_city',        'المدينة الحالية',     data.family?.current_city)}
+            ${_f('current_street',      'الشارع الحالي',       data.family?.current_street)}
+        </div>
+        ${_ta('general_status','الوضع العام للأسرة', data.family?.general_status)}`;
+
+    /* ══ تاب ذوو الاحتياجات ══ */
+    if (tab === 'special_data') return `
+        <div class="f-grid">
+            ${_f('birth_date',        'تاريخ الميلاد',     data.special?.birth_date, 'date')}
+            ${_s('health_status',     'الحالة الصحية',     data.special?.health_status,   [['جيدة','جيدة'],['متوسطة','متوسطة'],['سيئة','سيئة'],['حرجة','حرجة']])}
+            ${_s('education_level',   'المستوى التعليمي',  data.special?.education_level, [['روضة','روضة'],['ابتدائي','ابتدائي'],['إعدادي','إعدادي'],['ثانوي','ثانوي'],['جامعي','جامعي'],['لا يدرس','لا يدرس']])}
+            ${_f('school_grade',      'الصف الدراسي',      data.special?.school_grade)}
+            ${_f('school_name',       'اسم المدرسة',       data.special?.school_name)}
+            ${_s('housing_type',      'نوع السكن',         data.special?.housing_type,      [['شقة','شقة'],['بيت','بيت'],['مخيم','مخيم'],['خيمة','خيمة'],['أخرى','أخرى']])}
+            ${_s('housing_ownership', 'ملكية السكن',       data.special?.housing_ownership, [['مستأجر','مستأجر'],['ملك','ملك'],['أخرى','أخرى']])}
+            ${_f('monthly_rent',      'الإيجار ₪',         data.special?.monthly_rent, 'number')}
+            ${_f('current_city',      'المدينة الحالية',   data.special?.current_city)}
+            ${_f('current_street',    'الشارع الحالي',     data.special?.current_street)}
+        </div>
+        ${_ta('case_details','تفاصيل الحالة الصحية', data.special?.case_details)}`;
+
+    /* ══ تاب الكافل ══ */
+    if (tab === 'sponsor_data') return `
+        <div class="f-grid">
+            ${_f('job',     'المهنة',  data.job     || data.sponsor?.job)}
+            ${_f('country', 'الدولة', data.country || data.sponsor?.country)}
+            ${_f('city',    'المدينة', data.city   || data.sponsor?.city)}
+        </div>`;
+
+    /* ══ تاب المعيل ══ */
+    if (tab === 'guardian') return `
+        <div style="background:rgba(124,58,237,0.05);border-radius:10px;padding:12px;margin-bottom:12px;font-family:'Tajawal',sans-serif;font-size:0.82rem;color:#6b7280">
+            ℹ️ تعديل بيانات المعيل الحالي
+        </div>
+        <div class="f-grid">
+            ${_f('guardian_full_name',  'الاسم الكامل',   data.guardian?.full_name)}
+            ${_f('guardian_id',         'رقم الهوية',     data.guardian?.id_number)}
+            ${_f('guardian_relation',   'صلة القرابة',    data.guardian?.relation)}
+            ${_f('guardian_job',        'المهنة',         data.guardian?.job)}
+            ${_f('guardian_income',     'الدخل الشهري ₪', data.guardian?.monthly_income, 'number')}
+            ${_f('guardian_dependents', 'عدد من يعيلهم',  data.guardian?.dependents,     'number')}
+        </div>`;
+
+    /* ══ تاب كلمة المرور ══ */
+    if (tab === 'password') return `
+        <div style="background:rgba(229,62,62,0.05);border-radius:10px;padding:12px;margin-bottom:14px;font-family:'Tajawal',sans-serif;font-size:0.82rem;color:#6b7280">
+            ⚠️ اترك الحقول فارغة إذا لا تريد تغيير كلمة المرور
+        </div>
+        ${_f('new_password',     'كلمة المرور الجديدة', '', 'password')}
+        ${_f('confirm_password', 'تأكيد كلمة المرور',   '', 'password')}`;
+
+    return '';
+}
+
+function _bindEditValidation(userId, type) {
+    document.querySelectorAll('#editBenePanels .f-input').forEach(inp => {
+        if (!inp.id.startsWith('ef_')) return;
+        const field = inp.id.replace('ef_', '');
+        editOriginalData['_orig_' + field] = inp.value;
+    });
+}
+
+function onEditFieldChange(field) {
+    const inp     = document.getElementById('ef_' + field);
+    const val     = inp?.value || '';
+    const origVal = editOriginalData['_orig_' + field] || '';
+    const userId  = document.getElementById('editBeneId').value;
+
+    if (val === origVal) { delete editChangedFields[field]; _clearEditErr(field); }
+    else                 { editChangedFields[field] = val; }
+
+    if (['first_name','father_name','family_name','email'].includes(field) && !val.trim()) {
+        _showEditErr(field, 'هذا الحقل مطلوب'); _updateSaveBtn(); return;
+    }
+    if (field === 'email' && val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+        _showEditErr(field, 'صيغة البريد غير صحيحة'); _updateSaveBtn(); return;
+    }
+    if (field === 'new_password' && val) {
+        if (val.length < 8) { _showEditErr(field, 'كلمة المرور يجب أن تكون 8 أحرف على الأقل'); _updateSaveBtn(); return; }
+        const confirm = document.getElementById('ef_confirm_password')?.value || '';
+        if (confirm && val !== confirm) _showEditErr('confirm_password', 'كلمة المرور غير متطابقة');
+        else _clearEditErr('confirm_password');
+    }
+    if (field === 'confirm_password') {
+        const pass = document.getElementById('ef_new_password')?.value || '';
+        if (val && val !== pass) { _showEditErr(field, 'كلمة المرور غير متطابقة'); _updateSaveBtn(); return; }
+        else _clearEditErr(field);
+    }
+    // تحقق رقم يحتوي أحرف أو مسافات
+    if (['phone', 'phone2', 'whatsapp'].includes(field)) {
+        if (val && !/^\d+$/.test(val)) {
+            _showEditErr(field, 'أدخل أرقاماً فقط بدون أحرف أو مسافات');
+            _updateSaveBtn();
+            return;
+        }
+    }
+    if (API_CHECK_FIELDS[field] && val !== origVal && val.trim()) {
+        clearTimeout(editCheckTimers[field]);
+        _showEditLoading(field);
+        editCheckTimers[field] = setTimeout(async () => {
+            try {
+                const r    = await fetch(
+                    `/admin-panel/requests/check-field/?field=${API_CHECK_FIELDS[field]}&value=${encodeURIComponent(val)}&exclude_id=${userId}`,
+                    {headers: {'X-Requested-With': 'XMLHttpRequest'}}
+                );
+                const data = await r.json();
+                if (!data.available) _showEditErr(field, `هذا ${field==='email'?'البريد':field==='phone'?'الجوال':'رقم الهوية'} مستخدم مسبقاً`);
+                else { _clearEditErr(field); _showEditOk(field); }
+            } catch {}
+            _updateSaveBtn();
+        }, 600);
+        return;
+    }
+    _clearEditErr(field);
+    _updateSaveBtn();
+}
+
+function _showEditErr(field, msg) {
+    const inp = document.getElementById('ef_' + field);
+    const err = document.getElementById('ef_err_' + field);
+    const ok  = document.getElementById('ef_ok_'  + field);
+    if (inp) inp.style.borderColor = '#c53030';
+    if (err) { err.textContent = msg; err.style.display = 'block'; err.style.color = '#c53030'; }
+    if (ok)  ok.style.display  = 'none';
+    editErrors[field] = true;
+}
+
+function _clearEditErr(field) {
+    const inp = document.getElementById('ef_' + field);
+    const err = document.getElementById('ef_err_' + field);
+    const ok  = document.getElementById('ef_ok_'  + field);
+    if (inp) inp.style.borderColor = '';
+    if (err) { err.style.display = 'none'; err.style.color = '#c53030'; }
+    if (ok)  ok.style.display  = 'none';
+    delete editErrors[field];
+}
+
+function _showEditOk(field) {
+    const ok = document.getElementById('ef_ok_' + field);
+    if (ok) ok.style.display = 'block';
+}
+
+function _showEditLoading(field) {
+    const err = document.getElementById('ef_err_' + field);
+    if (err) { err.textContent = '⏳ جار التحقق...'; err.style.display = 'block'; err.style.color = '#9ca3af'; }
+}
+
+function _updateSaveBtn() {
+    document.getElementById('editBeneSaveBtn').disabled =
+        Object.keys(editErrors).length > 0 || Object.keys(editChangedFields).length === 0;
+}
+
+async function openEditModal(id, type) {
+    editOriginalData = {}; editChangedFields = {}; editErrors = {};
+    document.getElementById('editBeneId').value   = id;
+    document.getElementById('editBeneType').value = type;
+
+    // استعادة الدوال الأصلية إذا كانت محفوظة من جلسة سابقة
+    if (window._origDdToggle) { window.ddToggle = window._origDdToggle; window._origDdToggle = null; }
+    if (window._origDdSelect) { window.ddSelect = window._origDdSelect; window._origDdSelect = null; }
+
+    // تحميل الدول إذا لم تكن محملة
+    if (!window.allCountries?.length) {
+        try {
+            const res = await fetch("{% static 'js/countries.json' %}");
+            window.allCountries = await res.json();
+        } catch(e) { console.error('countries load error:', e); }
+    }
+
+    try {
+        const r    = await fetch(`/admin-panel/beneficiaries/detail/?id=${id}&type=${type}`, {
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        });
+        const data = await r.json();
+        const u    = allData.find(x => x.id === id) || {};
+
+        editOriginalData = {
+            ...u,
+            ...(data.detail || {}),
+            first_name:       u.full_name?.split(' ')[0] || '',
+            father_name:      u.full_name?.split(' ')[1] || '',
+            grand_name:       u.full_name?.split(' ')[2] || '',
+            family_name:      u.full_name?.split(' ')[3] || '',
+            email:            u.email         || '',
+            phone:            u.phone_country ? u.phone.replace(u.phone_country, '') : (u.phone || ''),
+            phone_country:    u.phone_country || '+970',
+            phone2:           data.detail?.phone2
+                      ? data.detail.phone2.replace(data.detail?.phone2_country || '+970', '')
+                      : '',
+            phone2_country:   data.detail?.phone2_country   || '+970',
+            whatsapp:         data.detail?.whatsapp
+                                  ? data.detail.whatsapp.replace(data.detail?.whatsapp_country || '+970', '')
+                                  : '',
+            whatsapp_country: data.detail?.whatsapp_country || '+970',
+            id_number:        u.id_number        || '',
+            nationality:      u.nationality      || '',
+            nationality_code: u.nationality_code || '',
+            gender:           u.gender           || '',
+        };
+
+        const tabs = EDIT_TABS[type] || EDIT_TABS.orphan;
+        document.getElementById('editBeneName').textContent = u.full_name || '';
+
+        document.getElementById('editBeneTabs').innerHTML = tabs.map((t, i) =>
+            `<button class="m-tab ${i === 0 ? 'active' : ''}" onclick="switchEditBeneTab('${t}',this)">${EDIT_TAB_LABELS[t]}</button>`
+        ).join('');
+
+        document.getElementById('editBenePanels').innerHTML = tabs.map((t, i) =>
+            `<div class="m-panel ${i === 0 ? 'active' : ''}" id="editPanel_${t}">${_buildEditPanel(t, editOriginalData, type)}</div>`
+        ).join('');
+
+        // إضافة DD_CONFIG بعد بناء HTML
+        if (typeof DD_CONFIG !== 'undefined') {
+            Object.assign(DD_CONFIG, {
+                ef_nat: { type:'nat',   hiddenIds:['ef_nationality','ef_nationality_code'], flagId:'ef_nat_flag', textId:'ef_nat_text' },
+                ef_p1:  { type:'phone', hiddenIds:['ef_phone_country'],    flagId:'ef_p1_flag', dialId:'ef_p1_dial' },
+                ef_p2:  { type:'phone', hiddenIds:['ef_phone2_country'],   flagId:'ef_p2_flag', dialId:'ef_p2_dial' },
+                ef_wa:  { type:'phone', hiddenIds:['ef_whatsapp_country'], flagId:'ef_wa_flag', dialId:'ef_wa_dial' },
+            });
+
+            // حفظ الدوال الأصلية
+            const _origDdToggle = window.ddToggle;
+            const _origDdSelect = window.ddSelect;
+            window._origDdToggle = _origDdToggle;
+            window._origDdSelect = _origDdSelect;
+
+            // override ddToggle — يفتح القائمة ويرسم العناصر
+            window.ddToggle = function(key) {
+                if (key.startsWith('ef_')) {
+                    const dd = document.getElementById(`${key}_dd`);
+                    if (!dd) return;
+                    const isOpen = dd.style.display === 'block';
+                    ['ef_nat','ef_p1','ef_p2','ef_wa'].forEach(k => {
+                        const el = document.getElementById(`${k}_dd`);
+                        if (el) el.style.display = 'none';
+                    });
+                    if (!isOpen) {
+                        dd.style.display = 'block';
+                        if (typeof ddRender === 'function') {
+                            ddRender(key, window.allCountries || []);
+                        }
+                        setTimeout(() => document.getElementById(`${key}_q`)?.focus(), 40);
+                    }
+                } else {
+                    _origDdToggle(key);
+                }
+            };
+
+            // override ddSelect — يحدّث الـ hidden inputs يدوياً
+            window.ddSelect = function(key, c, close = true) {
+                _origDdSelect(key, c, close);
+
+                if (key === 'ef_nat') {
+                    const nat  = document.getElementById('ef_nationality');
+                    const code = document.getElementById('ef_nationality_code');
+                    const txt  = document.getElementById('ef_nat_text');
+                    const flag = document.getElementById('ef_nat_flag');
+                    if (nat)  nat.value  = c.name_ar || '';
+                    if (code) code.value = c.code    || '';
+                    if (txt)  txt.textContent  = c.name_ar || '';
+                    if (flag) flag.textContent = c.flag    || '🌍';
+                    editChangedFields['nationality']      = c.name_ar || '';
+                    editChangedFields['nationality_code'] = c.code    || '';
+                    // إغلاق القائمة
+                    const dd = document.getElementById('ef_nat_dd');
+                    if (dd) dd.style.display = 'none';
+                    _updateSaveBtn();
+                }
+
+                if (key === 'ef_p1') {
+                    const el   = document.getElementById('ef_phone_country');
+                    const flag = document.getElementById('ef_p1_flag');
+                    const dial = document.getElementById('ef_p1_dial');
+                    if (el)   el.value          = c.dial || '';
+                    if (flag) flag.textContent  = c.flag || '🇵🇸';
+                    if (dial) dial.textContent  = c.dial || '+970';
+                    editChangedFields['phone_country'] = c.dial || '';
+                    const dd = document.getElementById('ef_p1_dd');
+                    if (dd) dd.style.display = 'none';
+                    _updateSaveBtn();
+                }
+
+                if (key === 'ef_p2') {
+                    const el   = document.getElementById('ef_phone2_country');
+                    const flag = document.getElementById('ef_p2_flag');
+                    const dial = document.getElementById('ef_p2_dial');
+                    if (el)   el.value          = c.dial || '';
+                    if (flag) flag.textContent  = c.flag || '🇵🇸';
+                    if (dial) dial.textContent  = c.dial || '+970';
+                    editChangedFields['phone2_country'] = c.dial || '';
+                    const dd = document.getElementById('ef_p2_dd');
+                    if (dd) dd.style.display = 'none';
+                    _updateSaveBtn();
+                }
+
+                if (key === 'ef_wa') {
+                    const el   = document.getElementById('ef_whatsapp_country');
+                    const flag = document.getElementById('ef_wa_flag');
+                    const dial = document.getElementById('ef_wa_dial');
+                    if (el)   el.value          = c.dial || '';
+                    if (flag) flag.textContent  = c.flag || '🇵🇸';
+                    if (dial) dial.textContent  = c.dial || '+970';
+                    editChangedFields['whatsapp_country'] = c.dial || '';
+                    const dd = document.getElementById('ef_wa_dd');
+                    if (dd) dd.style.display = 'none';
+                    _updateSaveBtn();
+                }
+            };
+
+            // تهيئة القيم الافتراضية بعد رسم الـ HTML
+            const d = editOriginalData;
+            setTimeout(() => {
+                const nat = window.allCountries?.find(c => c.name_ar === d.nationality);
+                if (nat) window.ddSelect('ef_nat', nat, false);
+                const p1  = window.allCountries?.find(c => c.dial === d.phone_country);
+                if (p1)  window.ddSelect('ef_p1',  p1,  false);
+                const p2  = window.allCountries?.find(c => c.dial === d.phone2_country);
+                if (p2)  window.ddSelect('ef_p2',  p2,  false);
+                const wa  = window.allCountries?.find(c => c.dial === d.whatsapp_country);
+                if (wa)  window.ddSelect('ef_wa',  wa,  false);
+                // مسح التغييرات المحاكاة من التهيئة
+                delete editChangedFields['nationality'];
+                delete editChangedFields['nationality_code'];
+                delete editChangedFields['phone_country'];
+                delete editChangedFields['phone2_country'];
+                delete editChangedFields['whatsapp_country'];
+                _updateSaveBtn();
+            }, 200);
+        }
+
+        _bindEditValidation(id, type);
+        document.getElementById('editBeneSaveBtn').disabled = true;
+        openModal('editBeneModal');
+
+    } catch(e) { console.error('edit error:', e); showError('خطأ في تحميل البيانات'); }
+}
+
+
+async function saveEditBene() {
+    const id   = document.getElementById('editBeneId').value;
+    const type = document.getElementById('editBeneType').value;
+    const btn  = document.getElementById('editBeneSaveBtn');
+
+    // تحقق من وجود تغييرات فعلية
+    const domFields     = ['phone', 'phone2', 'whatsapp', 'email'];
+    const hasDomChanges = domFields.some(f => {
+        const el   = document.getElementById('ef_' + f);
+        const orig = editOriginalData[f] || '';
+        return el && el.value.trim() !== orig.toString().trim();
+    });
+
+    if (!Object.keys(editChangedFields).length && !hasDomChanges) return;
+
+    btn.disabled    = true;
+    btn.textContent = '⏳ جار الحفظ...';
+
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('user_id',   id);
+    fd.append('user_type', type);
+
+    // 1. الحقول المعدَّلة
+    Object.entries(editChangedFields).forEach(([k, v]) => fd.set(k, v));
+
+    // 2. حقول التواصل — أرسل phone كـ phone1 أيضاً للنموذج
+    const phoneEl    = document.getElementById('ef_phone');
+    const phone2El   = document.getElementById('ef_phone2');
+    const whatsappEl = document.getElementById('ef_whatsapp');
+    const emailEl    = document.getElementById('ef_email');
+
+    if (phoneEl)    { fd.set('phone',   phoneEl.value.trim());    fd.set('phone1', phoneEl.value.trim()); }
+    if (phone2El)   { fd.set('phone2',  phone2El.value.trim()); }
+    if (whatsappEl) { fd.set('whatsapp', whatsappEl.value.trim()); }
+    if (emailEl)    { fd.set('email',   emailEl.value.trim()); }
+
+    // 3. مفاتيح الدول — أرسل لكل من CustomUser والنموذج
+    const phoneCountryEl    = document.getElementById('ef_phone_country');
+    const phone2CountryEl   = document.getElementById('ef_phone2_country');
+    const whatsappCountryEl = document.getElementById('ef_whatsapp_country');
+    const natEl             = document.getElementById('ef_nationality');
+    const natCodeEl         = document.getElementById('ef_nationality_code');
+
+    if (phoneCountryEl)    { fd.set('phone_country',    phoneCountryEl.value);    fd.set('phone1_country', phoneCountryEl.value); }
+    if (phone2CountryEl)   { fd.set('phone2_country',   phone2CountryEl.value); }
+    if (whatsappCountryEl) { fd.set('whatsapp_country', whatsappCountryEl.value); }
+    if (natEl)             { fd.set('nationality',      natEl.value); }
+    if (natCodeEl)         { fd.set('nationality_code', natCodeEl.value); }
+
+    try {
+        const r    = await fetch('/admin-panel/beneficiaries/edit/', {method: 'POST', body: fd});
+        const data = await r.json();
+
+        if (data.status === 'success') {
+            if (window._origDdToggle) { window.ddToggle = window._origDdToggle; window._origDdToggle = null; }
+            if (window._origDdSelect) { window.ddSelect = window._origDdSelect; window._origDdSelect = null; }
+            closeModal('editBeneModal');
+            showSuccess('✅', 'تم التعديل', 'تم حفظ التعديلات بنجاح');
+            loadData?.();
+        } else if (data.errors) {
+            Object.entries(data.errors).forEach(([k, v]) => _showEditErr(k, v));
+        } else {
+            showError(data.message || 'حدث خطأ');
+        }
+    } catch {
+        showError('خطأ في الحفظ');
+    }
+
+    btn.disabled    = false;
+    btn.textContent = '💾 حفظ التعديلات';
+    _updateSaveBtn();
+}
+
+/* ══════════════════════════════════════════════
+   مساعدات عامة
+══════════════════════════════════════════════ */
+function openModal(id)  { document.getElementById(id)?.classList.add('show'); }
+function closeModal(id) { document.getElementById(id)?.classList.remove('show'); }
+
+function showSuccess(icon, title, msg) {
+    document.getElementById('successIcon').textContent  = icon;
+    document.getElementById('successTitle').textContent = title;
+    document.getElementById('successMsg').textContent   = msg;
+    const bar = document.getElementById('successProgressBar');
+    if (bar) {
+        bar.style.transition = 'none';
+        bar.style.width      = '100%';
+        setTimeout(() => { bar.style.transition = 'width 2.5s linear'; bar.style.width = '0%'; }, 50);
+    }
+    openModal('successModal');
+    setTimeout(() => closeModal('successModal'), 2600);
+}
+
+function showError(msg, title = 'حدث خطأ') {
+    document.getElementById('errorTitle').textContent = title;
+    document.getElementById('errorMsg').textContent   = msg;
+    const bar = document.getElementById('errorProgressBar');
+    if (bar) {
+        bar.style.transition = 'none';
+        bar.style.width      = '100%';
+        setTimeout(() => { bar.style.transition = 'width 2.5s linear'; bar.style.width = '0%'; }, 50);
+    }
+    openModal('errorModal');
+    setTimeout(() => closeModal('errorModal'), 2600);
+}
+
+function confirmDeleteAction(msg, icon, onConfirm) {
+    document.getElementById('confirmDeleteIcon').textContent = icon;
+    document.getElementById('confirmDeleteMsg').textContent  = msg;
+    document.getElementById('confirmDeleteBtn').onclick = () => {
+        closeModal('confirmDeleteModal');
+        onConfirm();
+    };
+    openModal('confirmDeleteModal');
+}
+
+function toast(msg, type = 'info') {
+    const c  = document.getElementById('toastWrap');
+    const el = document.createElement('div');
+    el.className = `b-toast ${type}`;
+    const icons = {success: '✅', error: '⚠️', info: 'ℹ️'};
+    el.innerHTML = `<span>${icons[type] || 'ℹ️'}</span><span style="font-family:'Tajawal',sans-serif;color:var(--text,#1a1a2e)">${msg}</span>`;
+    c.appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(() => el.remove(), 300); }, 3500);
+}
+
+function _fmtDate(d) {
+    if (!d) return '—';
+    return new Date(d).toLocaleString('ar-EG', {year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'});
+}
+
+function _statusBadge(s) {
+    const m = {
+        'مسودة':['badge-purple','📝'], 'مرسلة':['badge-blue','📨'],
+        'قيد المراجعة':['badge-orange','🔍'], 'مقبولة':['badge-green','✅'],
+        'تم التدقيق':['badge-green','🔎'], 'تم التكفل':['badge-green','🤝'],
+        'مرفوضة':['badge-red','❌']
+    };
+    const v = m[s] || ['badge-purple', '📌'];
+    return `<span class="badge ${v[0]}">${v[1]} ${s || '—'}</span>`;
+}
+
+function _esc(s)        { return (s || '').replace(/'/g, "\\'"); }
+function debounce(fn, delay) { let t; return function() { clearTimeout(t); t = setTimeout(fn, delay); }; }
+
+/* ══════════════════════════════════════════════
+   تهيئة
+══════════════════════════════════════════════ */
+document.querySelectorAll('.m-overlay').forEach(m => {
+    m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); });
+});
+document.addEventListener('DOMContentLoaded', loadData);
+</script>
+{% endblock %}

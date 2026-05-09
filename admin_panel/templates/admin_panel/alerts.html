@@ -1,0 +1,506 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% block title %}التنبيهات الذكية{% endblock %}
+{% block page_title %}🔔 التنبيهات الذكية{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ══ Hero ══ */
+.al-hero {
+    background: linear-gradient(135deg, #1a1a2e, #2d1b69);
+    border-radius: 20px;
+    padding: 24px 28px;
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    position: relative;
+    overflow: hidden;
+}
+.al-hero::before {
+    content: '🔔';
+    position: absolute;
+    font-size: 9rem;
+    opacity: 0.05;
+    left: -10px;
+    top: -20px;
+    transform: rotate(-10deg);
+    pointer-events: none;
+}
+.al-hero-text h2 { font-family:'Tajawal',sans-serif;font-size:1.2rem;font-weight:900;color:#fff;margin-bottom:4px; }
+.al-hero-text p  { font-family:'Tajawal',sans-serif;font-size:0.82rem;color:rgba(255,255,255,0.65); }
+.al-refresh-info { font-family:'Tajawal',sans-serif;font-size:0.78rem;color:rgba(255,255,255,0.5);display:flex;align-items:center;gap:6px; }
+#refreshCountdown { color:#a78bfa;font-weight:700; }
+
+/* ══ مربعات الإحصائيات ══ */
+.al-stats { display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:20px; }
+.al-stat  {
+    background:#fff;border:1px solid #ede9fe;border-radius:14px;
+    padding:14px 12px;text-align:center;transition:all 0.25s;cursor:default;
+}
+body.dark-mode .al-stat { background:#110d1f;border-color:rgba(139,92,246,0.14); }
+.al-stat:hover { transform:translateY(-3px);box-shadow:0 8px 20px rgba(124,58,237,0.1); }
+.al-stat-val { font-size:1.6rem;font-weight:900;font-family:'Cairo',sans-serif;line-height:1;margin-bottom:4px; }
+.al-stat-lbl { font-size:0.68rem;color:#9ca3af;font-weight:600; }
+
+/* ══ الفلاتر ══ */
+.al-filters {
+    background:#fff;border:1px solid #ede9fe;border-radius:14px;
+    padding:14px 18px;margin-bottom:18px;
+    display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;
+}
+body.dark-mode .al-filters { background:#0f0b1e;border-color:rgba(139,92,246,0.12); }
+
+.al-filter-group { display:flex;flex-direction:column;gap:4px; }
+.al-filter-group label { font-family:'Tajawal',sans-serif;font-size:0.72rem;font-weight:700;color:#9ca3af; }
+.al-sel, .al-inp {
+    background:#f8f7ff;border:1.5px solid #ede9fe;border-radius:9px;
+    padding:8px 12px;font-family:'Tajawal',sans-serif;font-size:0.83rem;
+    color:#1a1a2e;outline:none;cursor:pointer;min-width:130px;transition:border 0.2s;
+}
+.al-sel:focus,.al-inp:focus { border-color:var(--adm); }
+body.dark-mode .al-sel, body.dark-mode .al-inp { background:#130f24;color:#e8f5ee;border-color:rgba(139,92,246,0.2); }
+.al-custom-dates { display:none;gap:8px; }
+.al-custom-dates.show { display:flex; }
+
+/* ══ التابات ══ */
+.al-tabs {
+    display:flex;gap:4px;margin-bottom:18px;
+    background:#f8f7ff;padding:4px;border-radius:12px;
+    width:fit-content;border:1px solid #ede9fe;
+}
+body.dark-mode .al-tabs { background:#130f24;border-color:rgba(139,92,246,0.15); }
+.al-tab {
+    padding:8px 20px;border-radius:9px;border:none;background:transparent;
+    font-family:'Tajawal',sans-serif;font-size:0.84rem;font-weight:700;
+    color:#6b7280;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:6px;
+}
+.al-tab.active { background:var(--adm);color:#fff;box-shadow:0 3px 10px rgba(124,58,237,0.25); }
+.al-tab-badge {
+    background:rgba(255,255,255,0.25);padding:1px 7px;border-radius:10px;
+    font-size:0.7rem;font-weight:700;
+}
+.al-tab:not(.active) .al-tab-badge { background:rgba(124,58,237,0.1);color:var(--adm); }
+
+/* ══ بطاقات التنبيهات ══ */
+.al-list { display:flex;flex-direction:column;gap:10px; }
+
+.al-card {
+    background:#fff;border:1px solid #ede9fe;border-radius:14px;
+    padding:16px 18px;display:flex;gap:14px;align-items:flex-start;
+    transition:all 0.22s;animation:slideIn 0.3s ease;
+    position:relative;overflow:hidden;
+}
+body.dark-mode .al-card { background:#0f0b1e;border-color:rgba(139,92,246,0.12); }
+.al-card:hover { box-shadow:0 6px 20px rgba(124,58,237,0.08);transform:translateY(-1px); }
+@keyframes slideIn { from{transform:translateY(10px);opacity:0} to{transform:translateY(0);opacity:1} }
+
+/* خط جانبي حسب المستوى */
+.al-card::before {
+    content:'';position:absolute;top:0;right:0;
+    width:4px;height:100%;border-radius:0 14px 14px 0;
+}
+.al-card.critical::before { background:#c53030; }
+.al-card.high::before     { background:#b45309; }
+.al-card.medium::before   { background:#d97706; }
+.al-card.info::before     { background:#1a7a4a; }
+
+.al-card-icon {
+    width:42px;height:42px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.2rem;flex-shrink:0;
+}
+.al-card.critical .al-card-icon { background:rgba(197,48,48,0.1); }
+.al-card.high .al-card-icon     { background:rgba(180,83,9,0.1); }
+.al-card.medium .al-card-icon   { background:rgba(217,119,6,0.1); }
+.al-card.info .al-card-icon     { background:rgba(26,122,74,0.1); }
+
+.al-card-body { flex:1;min-width:0; }
+.al-card-title {
+    font-family:'Tajawal',sans-serif;font-size:0.9rem;font-weight:700;
+    color:#1a1a2e;margin-bottom:4px;
+}
+body.dark-mode .al-card-title { color:#e8f5ee; }
+.al-card-msg {
+    font-family:'Tajawal',sans-serif;font-size:0.8rem;color:#6b7280;
+    line-height:1.6;margin-bottom:8px;
+}
+.al-card-meta {
+    display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+    font-family:'Tajawal',sans-serif;font-size:0.72rem;color:#9ca3af;
+}
+.al-card-badge {
+    padding:2px 9px;border-radius:10px;font-size:0.7rem;font-weight:700;font-family:'Tajawal',sans-serif;
+}
+.badge-critical { background:rgba(197,48,48,0.1);color:#c53030; }
+.badge-high     { background:rgba(180,83,9,0.1);color:#b45309; }
+.badge-medium   { background:rgba(217,119,6,0.1);color:#d97706; }
+.badge-info     { background:rgba(26,122,74,0.1);color:#1a7a4a; }
+.badge-type     { background:rgba(43,108,176,0.1);color:#2b6cb0; }
+.badge-resolved { background:rgba(107,114,128,0.1);color:#6b7280; }
+
+.al-card-actions { display:flex;gap:6px;align-items:center;flex-shrink:0; }
+.al-btn {
+    display:inline-flex;align-items:center;gap:4px;
+    padding:6px 12px;border-radius:8px;border:none;
+    font-family:'Tajawal',sans-serif;font-size:0.75rem;font-weight:700;
+    cursor:pointer;transition:all 0.2s;
+}
+.al-btn-dismiss { background:rgba(107,114,128,0.1);color:#6b7280; }
+.al-btn-dismiss:hover { background:rgba(107,114,128,0.2); }
+.al-btn-go      { background:rgba(124,58,237,0.1);color:var(--adm); }
+.al-btn-go:hover { background:rgba(124,58,237,0.18); }
+
+/* resolved card */
+.al-card.resolved { opacity:0.65; }
+.al-card.resolved::before { background:#9ca3af; }
+
+/* ══ حالات خاصة ══ */
+.al-empty {
+    text-align:center;padding:60px 24px;
+    color:#9ca3af;font-family:'Tajawal',sans-serif;
+}
+.al-empty .icon { font-size:3.5rem;margin-bottom:12px; }
+.al-empty h3 { font-size:1rem;font-weight:700;color:#6b7280;margin-bottom:5px; }
+
+.al-loading {
+    display:flex;flex-direction:column;align-items:center;
+    justify-content:center;padding:50px;gap:14px;
+    color:#9ca3af;font-family:'Tajawal',sans-serif;
+}
+.al-spinner {
+    width:40px;height:40px;border:3px solid #ede9fe;
+    border-top-color:var(--adm);border-radius:50%;
+    animation:spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ══ شريط الإجراءات ══ */
+.al-actions-bar {
+    display:flex;gap:8px;align-items:center;
+    justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;
+}
+.al-dismiss-all {
+    display:inline-flex;align-items:center;gap:6px;
+    padding:8px 16px;border-radius:10px;border:1.5px solid rgba(229,62,62,0.2);
+    background:rgba(229,62,62,0.06);color:#c53030;
+    font-family:'Tajawal',sans-serif;font-size:0.82rem;font-weight:700;
+    cursor:pointer;transition:all 0.2s;
+}
+.al-dismiss-all:hover { background:rgba(229,62,62,0.12); }
+.al-count-info { font-family:'Tajawal',sans-serif;font-size:0.82rem;color:#9ca3af; }
+
+/* ══ Responsive ══ */
+@media(max-width:1200px) { .al-stats { grid-template-columns:repeat(3,1fr); } }
+@media(max-width:768px)  {
+    .al-stats   { grid-template-columns:repeat(2,1fr); }
+    .al-filters { flex-direction:column; }
+    .al-hero    { flex-direction:column; }
+    .al-card    { flex-wrap:wrap; }
+    .al-card-actions { width:100%;justify-content:flex-start; }
+}
+@media(max-width:480px) { .al-stats { grid-template-columns:1fr 1fr; } }
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<!-- ══ Hero ══ -->
+<div class="al-hero fade-in">
+    <div class="al-hero-text">
+        <h2>🔔 نظام التنبيهات الذكية</h2>
+        <p>مراقبة تلقائية لجميع مؤشرات النظام — يتحدث كل دقيقة</p>
+    </div>
+    <div class="al-refresh-info">
+        🔄 التحديث التالي خلال <span id="refreshCountdown">60</span> ثانية
+    </div>
+</div>
+
+<!-- ══ الإحصائيات ══ -->
+<div class="al-stats fade-in fade-in-d1" id="alertStats">
+    <div class="al-stat"><div class="al-stat-val" style="color:var(--adm)" id="s_active">—</div><div class="al-stat-lbl">🔔 نشطة</div></div>
+    <div class="al-stat"><div class="al-stat-val" style="color:#9ca3af"    id="s_resolved">—</div><div class="al-stat-lbl">✅ منتهية</div></div>
+    <div class="al-stat"><div class="al-stat-val" style="color:#c53030"    id="s_critical">—</div><div class="al-stat-lbl">🔴 حرجة</div></div>
+    <div class="al-stat"><div class="al-stat-val" style="color:#b45309"    id="s_high">—</div><div class="al-stat-lbl">🟠 عالية</div></div>
+    <div class="al-stat"><div class="al-stat-val" style="color:#d97706"    id="s_medium">—</div><div class="al-stat-lbl">🟡 متوسطة</div></div>
+    <div class="al-stat"><div class="al-stat-val" style="color:#1a7a4a"    id="s_info">—</div><div class="al-stat-lbl">🟢 معلوماتية</div></div>
+</div>
+
+<!-- ══ الفلاتر ══ -->
+<div class="al-filters fade-in fade-in-d1">
+    <div class="al-filter-group">
+        <label>الفترة الزمنية</label>
+        <select class="al-sel" id="periodSel" onchange="onPeriodChange()">
+            <option value="all">كل الوقت</option>
+            <option value="today">اليوم</option>
+            <option value="week">آخر أسبوع</option>
+            <option value="month" selected>آخر شهر</option>
+            <option value="six_months">آخر 6 أشهر</option>
+            <option value="year">آخر سنة</option>
+            <option value="custom">تحديد يدوي</option>
+        </select>
+    </div>
+    <div class="al-custom-dates" id="customDates">
+        <div class="al-filter-group">
+            <label>من</label>
+            <input type="date" class="al-inp" id="dateFrom" onchange="loadAlerts()">
+        </div>
+        <div class="al-filter-group">
+            <label>إلى</label>
+            <input type="date" class="al-inp" id="dateTo" onchange="loadAlerts()">
+        </div>
+    </div>
+    <div class="al-filter-group">
+        <label>المستوى</label>
+        <select class="al-sel" id="levelSel" onchange="loadAlerts()">
+            <option value="">كل المستويات</option>
+            <option value="critical">🔴 حرجة</option>
+            <option value="high">🟠 عالية</option>
+            <option value="medium">🟡 متوسطة</option>
+            <option value="info">🟢 معلوماتية</option>
+        </select>
+    </div>
+</div>
+
+<!-- ══ التابات ══ -->
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px">
+    <div class="al-tabs">
+        <button class="al-tab active" id="tab_active" onclick="switchTab('active',this)">
+            🔔 النشطة <span class="al-tab-badge" id="tab_active_count">0</span>
+        </button>
+        <button class="al-tab" id="tab_resolved" onclick="switchTab('resolved',this)">
+            ✅ المنتهية <span class="al-tab-badge" id="tab_resolved_count">0</span>
+        </button>
+    </div>
+    <button class="al-dismiss-all" id="dismissAllBtn" onclick="dismissAll()">
+        🗑️ إغلاق الكل
+    </button>
+</div>
+
+<!-- ══ شريط الإجراءات ══ -->
+<div class="al-actions-bar">
+    <div class="al-count-info" id="countInfo">جار التحميل...</div>
+</div>
+
+<!-- ══ القائمة ══ -->
+<div id="alertsList">
+    <div class="al-loading">
+        <div class="al-spinner"></div>
+        <span>جار تحميل التنبيهات...</span>
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+'use strict';
+
+const CSRF = document.cookie.split(';').find(c=>c.trim().startsWith('csrftoken='))?.split('=')[1]||'';
+let currentTab   = 'active';
+let refreshTimer = null;
+let countdown    = 60;
+
+const LEVEL_ICONS = {
+    critical: '🔴',
+    high:     '🟠',
+    medium:   '🟡',
+    info:     '🟢',
+};
+const TYPE_ICONS = {
+    NO_PAYMENT_30D:      '💸',
+    NO_SPONSOR_30D:      '🤝',
+    LATE_PAYMENT_7D:     '⚠️',
+    DISABLED_SPONSORED:  '🔒',
+    SPONSOR_NO_PAY_2M:   '💰',
+    SPONSOR_REMOVED_14D: '❌',
+    PENDING_REQ_7D:      '📋',
+    NO_LOGIN_60D:        '👤',
+    SPECIAL_NO_AID_60D:  '♿',
+    HIGH_UNSPONSORED:    '📊',
+    SPONSOR_3_LATE:      '🚨',
+    PROFILE_OUTDATED_6M: '📁',
+    NO_AIDS_THIS_MONTH:  '🎁',
+    NO_PAYS_THIS_MONTH:  '💳',
+    NEW_BENEFICIARY_24H: '✨',
+    NEW_SPONSOR_24H:     '🌟',
+    USER_DISABLED_7D:    '🔕',
+    AIDS_DROP_50:        '📉',
+    SPONSOR_CHANGED_7D:  '🔄',
+    ANNIVERSARY_1Y:      '🎂',
+    NO_MSG_30D:          '✉️',
+    SPONSOR_5_BENE:      '👥',
+    PENDING_COUNT_10:    '📌',
+    END_MONTH_PENDING:   '⏰',
+    MONTHLY_SUMMARY:     '📅',
+};
+
+/* ══ الفلاتر ══ */
+function onPeriodChange() {
+    const v = document.getElementById('periodSel').value;
+    document.getElementById('customDates').classList.toggle('show', v === 'custom');
+    loadAlerts();
+}
+
+function _params() {
+    return new URLSearchParams({
+        period:    document.getElementById('periodSel').value,
+        date_from: document.getElementById('dateFrom')?.value || '',
+        date_to:   document.getElementById('dateTo')?.value   || '',
+        level:     document.getElementById('levelSel').value,
+        status:    currentTab,
+    });
+}
+
+/* ══ التابات ══ */
+function switchTab(tab, btn) {
+    currentTab = tab;
+    document.querySelectorAll('.al-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('dismissAllBtn').style.display =
+        tab === 'active' ? 'flex' : 'none';
+    loadAlerts();
+}
+
+/* ══ تحميل التنبيهات ══ */
+async function loadAlerts() {
+    document.getElementById('alertsList').innerHTML = `
+        <div class="al-loading"><div class="al-spinner"></div><span>جار التحميل...</span></div>`;
+
+    try {
+        const r    = await fetch(`/admin-panel/alerts/data/?${_params()}`, {
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        });
+        const data = await r.json();
+        updateStats(data.stats);
+        renderAlerts(data.alerts);
+    } catch {
+        document.getElementById('alertsList').innerHTML = `
+            <div class="al-empty"><div class="icon">⚠️</div><h3>خطأ في التحميل</h3></div>`;
+    }
+}
+
+function updateStats(s) {
+    document.getElementById('s_active').textContent   = s.active;
+    document.getElementById('s_resolved').textContent = s.resolved;
+    document.getElementById('s_critical').textContent = s.critical;
+    document.getElementById('s_high').textContent     = s.high;
+    document.getElementById('s_medium').textContent   = s.medium;
+    document.getElementById('s_info').textContent     = s.info;
+    document.getElementById('tab_active_count').textContent   = s.active;
+    document.getElementById('tab_resolved_count').textContent = s.resolved;
+}
+
+/* ══ عرض التنبيهات ══ */
+function renderAlerts(alerts) {
+    const list    = document.getElementById('alertsList');
+    const countEl = document.getElementById('countInfo');
+
+    if (!alerts.length) {
+        list.innerHTML = `
+            <div class="al-empty">
+                <div class="icon">${currentTab==='active'?'🎉':'📭'}</div>
+                <h3>${currentTab==='active'?'لا توجد تنبيهات نشطة':'لا توجد تنبيهات منتهية'}</h3>
+                <p>${currentTab==='active'?'كل شيء يسير بشكل طبيعي ✅':''}</p>
+            </div>`;
+        countEl.textContent = '0 تنبيه';
+        return;
+    }
+
+    countEl.textContent = `${alerts.length} تنبيه`;
+
+    list.innerHTML = `<div class="al-list">${alerts.map(a => _cardHtml(a)).join('')}</div>`;
+}
+
+function _cardHtml(a) {
+    const icon       = TYPE_ICONS[a.alert_type] || '🔔';
+    const levelIcon  = LEVEL_ICONS[a.level] || '⚪';
+    const isResolved = a.status === 'resolved';
+
+    return `
+    <div class="al-card ${a.level} ${isResolved?'resolved':''}" id="alert_${a.id}">
+        <div class="al-card-icon">${icon}</div>
+        <div class="al-card-body">
+            <div class="al-card-title">${a.title}</div>
+            <div class="al-card-msg">${a.message}</div>
+            <div class="al-card-meta">
+                <span class="al-card-badge badge-${a.level}">${a.level_display}</span>
+                ${a.target_user ? `<span class="al-card-badge badge-type">👤 ${a.target_user} (${a.target_type})</span>` : ''}
+                <span>🕐 ${a.created_at}</span>
+                ${isResolved && a.dismissed_by ? `
+                    <span class="al-card-badge badge-resolved">✅ أُغلق بواسطة: ${a.dismissed_by}</span>
+                    <span>🕐 ${a.dismissed_at}</span>` : ''}
+            </div>
+        </div>
+        <div class="al-card-actions">
+            ${a.action_url ? `
+                <button class="al-btn al-btn-go" onclick="window.open('${a.action_url}','_blank')">
+                    🔗 عرض
+                </button>` : ''}
+            ${!isResolved ? `
+                <button class="al-btn al-btn-dismiss" onclick="dismissAlert(${a.id})">
+                    ✕ إغلاق
+                </button>` : ''}
+        </div>
+    </div>`;
+}
+
+/* ══ إغلاق تنبيه ══ */
+async function dismissAlert(id) {
+    const card = document.getElementById('alert_' + id);
+    if (card) card.style.opacity = '0.5';
+
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('alert_id', id);
+
+    const r    = await fetch('/admin-panel/alerts/dismiss/', {method:'POST', body:fd});
+    const data = await r.json();
+
+    if (data.status === 'success') {
+        if (card) {
+            card.style.transition = 'all 0.3s';
+            card.style.transform  = 'translateX(-20px)';
+            card.style.opacity    = '0';
+            setTimeout(() => { card.remove(); loadAlerts(); }, 300);
+        }
+    }
+}
+
+/* ══ إغلاق الكل ══ */
+async function dismissAll() {
+    if (!confirm('هل تريد إغلاق جميع التنبيهات النشطة؟')) return;
+    const level = document.getElementById('levelSel').value;
+    const fd    = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    if (level) fd.append('level', level);
+    const r    = await fetch('/admin-panel/alerts/dismiss-all/', {method:'POST', body:fd});
+    const data = await r.json();
+    if (data.status === 'success') loadAlerts();
+}
+
+/* ══ تحديث تلقائي كل دقيقة ══ */
+function startCountdown() {
+    countdown = 60;
+    clearInterval(refreshTimer);
+    refreshTimer = setInterval(() => {
+        countdown--;
+        const el = document.getElementById('refreshCountdown');
+        if (el) el.textContent = countdown;
+        if (countdown <= 0) {
+            loadAlerts();
+            countdown = 60;
+        }
+    }, 1000);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadAlerts();
+    startCountdown();
+});
+</script>
+{% endblock %}

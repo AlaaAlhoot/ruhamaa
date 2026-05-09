@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if settings %}{{ settings.site_name }}{% else %}رُحَمَاء{% endif %} — تحت الصيانة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    :root {
+        --green:    #1a7a4a;
+        --green-l:  #22c55e;
+        --gold:     #b45309;
+        --gold-l:   #f59e0b;
+        --dark:     #0a1628;
+        --dark-2:   #0f1f3d;
+        --glass:    rgba(255,255,255,0.06);
+        --glass-b:  rgba(255,255,255,0.12);
+        --text:     #e8f5ee;
+        --muted:    rgba(232,245,238,0.55);
+    }
+
+    html { scroll-behavior:smooth; }
+
+    body {
+        font-family:'Tajawal',sans-serif;
+        background: var(--dark);
+        min-height:100vh;
+        color: var(--text);
+        overflow-x:hidden;
+        position:relative;
+    }
+
+    /* ══ خلفية متحركة ══ */
+    .bg-mesh {
+        position:fixed; inset:0; z-index:0; pointer-events:none;
+        background:
+            radial-gradient(ellipse 80% 60% at 20% 20%, rgba(26,122,74,0.18) 0%, transparent 60%),
+            radial-gradient(ellipse 60% 80% at 80% 80%, rgba(180,83,9,0.12) 0%, transparent 60%),
+            radial-gradient(ellipse 40% 40% at 50% 50%, rgba(34,197,94,0.06) 0%, transparent 70%);
+    }
+
+    .bg-grid {
+        position:fixed; inset:0; z-index:0; pointer-events:none;
+        background-image:
+            linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+        background-size:60px 60px;
+        mask-image:radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+    }
+
+    /* نقاط عائمة */
+    .float-dot {
+        position:fixed; border-radius:50%; pointer-events:none; z-index:0;
+        animation:floatDot linear infinite;
+    }
+    @keyframes floatDot {
+        0%   { transform:translateY(100vh) scale(0); opacity:0; }
+        10%  { opacity:1; }
+        90%  { opacity:0.4; }
+        100% { transform:translateY(-20px) scale(1); opacity:0; }
+    }
+
+    /* ══ المحتوى ══ */
+    .page-wrap {
+        position:relative; z-index:1;
+        min-height:100vh;
+        display:flex; flex-direction:column;
+        align-items:center; justify-content:center;
+        padding:40px 20px;
+        gap:0;
+    }
+
+    /* ══ الشعار ══ */
+    .logo-wrap {
+        margin-bottom:28px;
+        animation:fadeDown 0.8s ease both;
+    }
+    .logo-icon {
+        width:80px; height:80px;
+        border-radius:24px;
+        background:linear-gradient(135deg, var(--green), #059669);
+        display:flex; align-items:center; justify-content:center;
+        font-size:2.2rem;
+        margin:0 auto 12px;
+        box-shadow:0 0 40px rgba(26,122,74,0.4), 0 0 80px rgba(26,122,74,0.15);
+        animation:pulseLogo 3s ease-in-out infinite;
+    }
+    @keyframes pulseLogo {
+        0%,100% { box-shadow:0 0 40px rgba(26,122,74,0.4), 0 0 80px rgba(26,122,74,0.15); }
+        50%      { box-shadow:0 0 60px rgba(26,122,74,0.6), 0 0 120px rgba(26,122,74,0.25); }
+    }
+    .logo-name {
+        font-family:'Cairo',sans-serif;
+        font-size:1.3rem; font-weight:900;
+        color:var(--text);
+        text-align:center;
+        letter-spacing:1px;
+    }
+
+    /* ══ أيقونة الصيانة ══ */
+    .maint-icon-wrap {
+        position:relative; margin-bottom:24px;
+        animation:fadeUp 0.9s ease 0.2s both;
+    }
+    .maint-icon {
+        font-size:5rem;
+        display:block;
+        filter:drop-shadow(0 0 30px rgba(180,83,9,0.5));
+        animation:spin3d 8s linear infinite;
+    }
+    @keyframes spin3d {
+        0%   { transform:rotateY(0deg); }
+        50%  { transform:rotateY(180deg); }
+        100% { transform:rotateY(360deg); }
+    }
+    .maint-ring {
+        position:absolute; inset:-16px;
+        border-radius:50%;
+        border:2px solid rgba(180,83,9,0.3);
+        border-top-color:var(--gold-l);
+        animation:ringRotate 3s linear infinite;
+    }
+    .maint-ring-2 {
+        position:absolute; inset:-28px;
+        border-radius:50%;
+        border:1px solid rgba(26,122,74,0.2);
+        border-bottom-color:var(--green-l);
+        animation:ringRotate 5s linear infinite reverse;
+    }
+    @keyframes ringRotate { to { transform:rotate(360deg); } }
+
+    /* ══ النص الرئيسي ══ */
+    .main-text {
+        text-align:center;
+        margin-bottom:32px;
+        animation:fadeUp 0.9s ease 0.4s both;
+    }
+    .main-title {
+        font-family:'Cairo',sans-serif;
+        font-size:clamp(1.8rem, 5vw, 2.8rem);
+        font-weight:900;
+        color:#fff;
+        margin-bottom:12px;
+        line-height:1.2;
+    }
+    .main-title span {
+        background:linear-gradient(135deg, var(--green-l), var(--gold-l));
+        -webkit-background-clip:text;
+        -webkit-text-fill-color:transparent;
+        background-clip:text;
+    }
+    .main-sub {
+        font-size:1rem; color:var(--muted);
+        line-height:1.8; max-width:480px; margin:0 auto;
+    }
+
+    /* شريط التقدم الوهمي */
+    .progress-section {
+        width:100%; max-width:360px;
+        margin-bottom:32px;
+        animation:fadeUp 0.9s ease 0.5s both;
+    }
+    .progress-label {
+        display:flex; justify-content:space-between;
+        font-size:0.76rem; color:var(--muted);
+        margin-bottom:8px;
+    }
+    .progress-track {
+        height:6px; background:rgba(255,255,255,0.08);
+        border-radius:3px; overflow:hidden;
+    }
+    .progress-fill {
+        height:100%;
+        background:linear-gradient(90deg, var(--green), var(--green-l), var(--gold-l));
+        border-radius:3px;
+        animation:progressAnim 4s ease-in-out infinite;
+        width:0%;
+    }
+    @keyframes progressAnim {
+        0%   { width:0%; }
+        50%  { width:75%; }
+        80%  { width:88%; }
+        100% { width:75%; }
+    }
+
+    /* ══ بطاقات التواصل ══ */
+    .contact-grid {
+        display:grid;
+        grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+        gap:12px;
+        width:100%; max-width:700px;
+        margin-bottom:28px;
+        animation:fadeUp 0.9s ease 0.6s both;
+    }
+    .contact-card {
+        background:var(--glass);
+        border:1px solid var(--glass-b);
+        border-radius:16px;
+        padding:16px 14px;
+        display:flex; align-items:center; gap:12px;
+        backdrop-filter:blur(12px);
+        transition:all 0.3s;
+        text-decoration:none;
+        color:var(--text);
+        cursor:default;
+    }
+    .contact-card.clickable { cursor:pointer; }
+    .contact-card:hover {
+        background:rgba(255,255,255,0.1);
+        transform:translateY(-3px);
+        box-shadow:0 12px 32px rgba(0,0,0,0.3);
+    }
+    .contact-card-icon {
+        width:42px; height:42px; border-radius:12px;
+        display:flex; align-items:center; justify-content:center;
+        font-size:1.2rem; flex-shrink:0;
+    }
+    .card-green  { background:rgba(26,122,74,0.25); }
+    .card-gold   { background:rgba(180,83,9,0.25); }
+    .card-blue   { background:rgba(43,108,176,0.25); }
+    .card-purple { background:rgba(124,58,237,0.25); }
+    .contact-card-info { min-width:0; }
+    .contact-card-label { font-size:0.68rem; color:var(--muted); margin-bottom:2px; }
+    .contact-card-val   { font-size:0.88rem; font-weight:700; word-break:break-all; }
+
+    /* أزرار التواصل السريع */
+    .quick-btns {
+        display:flex; gap:10px; flex-wrap:wrap; justify-content:center;
+        margin-bottom:32px;
+        animation:fadeUp 0.9s ease 0.7s both;
+    }
+    .q-btn {
+        display:inline-flex; align-items:center; gap:7px;
+        padding:10px 20px; border-radius:12px;
+        font-family:'Tajawal',sans-serif; font-size:0.9rem; font-weight:700;
+        text-decoration:none; cursor:pointer; border:none;
+        transition:all 0.25s;
+    }
+    .q-btn-wa  { background:rgba(37,211,102,0.15); color:#25d366; border:1.5px solid rgba(37,211,102,0.3); }
+    .q-btn-wa:hover  { background:rgba(37,211,102,0.25); transform:translateY(-2px); }
+    .q-btn-em  { background:rgba(43,108,176,0.15); color:#60a5fa; border:1.5px solid rgba(43,108,176,0.3); }
+    .q-btn-em:hover  { background:rgba(43,108,176,0.25); transform:translateY(-2px); }
+
+    /* ══ فورم التواصل ══ */
+    .form-section {
+        width:100%; max-width:520px;
+        animation:fadeUp 0.9s ease 0.8s both;
+    }
+    .form-card {
+        background:var(--glass);
+        border:1px solid var(--glass-b);
+        border-radius:20px;
+        padding:28px;
+        backdrop-filter:blur(16px);
+    }
+    .form-title {
+        font-family:'Cairo',sans-serif;
+        font-size:1rem; font-weight:700;
+        color:#fff; margin-bottom:18px;
+        display:flex; align-items:center; gap:8px;
+    }
+    .form-title::after {
+        content:''; flex:1; height:1px;
+        background:linear-gradient(90deg, rgba(255,255,255,0.15), transparent);
+    }
+    .f-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+    .f-inp {
+        width:100%;
+        background:rgba(255,255,255,0.07);
+        border:1.5px solid rgba(255,255,255,0.1);
+        border-radius:10px;
+        padding:11px 13px;
+        color:#fff;
+        font-family:'Tajawal',sans-serif;
+        font-size:0.86rem;
+        outline:none;
+        transition:border 0.2s, box-shadow 0.2s;
+    }
+    .f-inp::placeholder { color:rgba(255,255,255,0.3); }
+    .f-inp:focus {
+        border-color:var(--green-l);
+        box-shadow:0 0 0 3px rgba(34,197,94,0.12);
+    }
+    .f-inp.mb { margin-bottom:10px; }
+    textarea.f-inp { resize:vertical; min-height:90px; }
+    .send-btn {
+        width:100%; padding:12px;
+        background:linear-gradient(135deg, var(--green), #059669);
+        border:none; border-radius:12px;
+        color:#fff; font-family:'Tajawal',sans-serif;
+        font-size:0.95rem; font-weight:700;
+        cursor:pointer; margin-top:4px;
+        transition:all 0.25s;
+        display:flex; align-items:center; justify-content:center; gap:8px;
+        box-shadow:0 4px 20px rgba(26,122,74,0.3);
+    }
+    .send-btn:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(26,122,74,0.45); }
+    .send-btn:active { transform:translateY(0); }
+    .send-btn:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+
+    .success-msg {
+        display:none;
+        background:rgba(34,197,94,0.12);
+        border:1px solid rgba(34,197,94,0.3);
+        border-radius:12px;
+        padding:14px;
+        color:var(--green-l);
+        font-size:0.9rem;
+        text-align:center;
+        margin-top:12px;
+        animation:fadeUp 0.4s ease;
+    }
+
+    /* ══ الفوتر ══ */
+    .page-footer {
+        margin-top:32px;
+        text-align:center;
+        color:rgba(232,245,238,0.3);
+        font-size:0.76rem;
+        animation:fadeUp 0.9s ease 1s both;
+    }
+
+    /* ══ أنيماشن ══ */
+    @keyframes fadeUp   { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:translateY(0); } }
+
+    /* ══ Responsive ══ */
+    @media(max-width:600px) {
+        .contact-grid { grid-template-columns:1fr 1fr; }
+        .f-row { grid-template-columns:1fr; }
+        .form-card { padding:20px; }
+        .maint-icon { font-size:3.5rem; }
+    }
+    @media(max-width:400px) {
+        .contact-grid { grid-template-columns:1fr; }
+        .main-title { font-size:1.6rem; }
+    }
+    </style>
+</head>
+<div style="display:none">{% csrf_token %}</div>
+<!-- زر مخفي -->
+<div style="position:fixed;bottom:16px;left:16px;z-index:99">
+    <button onclick="openAdminLogin()"
+            style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);cursor:pointer;color:rgba(255,255,255,0.2);font-size:0.7rem;transition:all 0.3s"
+            onmouseover="this.style.background='rgba(255,255,255,0.1)';this.style.color='rgba(255,255,255,0.5)'"
+            onmouseout="this.style.background='rgba(255,255,255,0.05)';this.style.color='rgba(255,255,255,0.2)'"
+            title="">🔐</button>
+</div>
+
+<!-- مودل تسجيل الدخول -->
+<div id="adminLoginModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1000;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(8px)">
+    <div style="background:#0f1f3d;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px;width:100%;max-width:380px;animation:fadeUp 0.3s ease;position:relative">
+        <button onclick="closeAdminLogin()" style="position:absolute;top:14px;left:14px;background:none;border:none;color:rgba(255,255,255,0.4);font-size:1.1rem;cursor:pointer;padding:4px">✕</button>
+        <div style="text-align:center;margin-bottom:24px">
+            <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#1a7a4a,#059669);display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 auto 10px">🔐</div>
+            <div style="font-family:'Cairo',sans-serif;font-weight:700;color:#fff;font-size:1rem">دخول الإدارة</div>
+            <div style="font-size:0.74rem;color:rgba(255,255,255,0.4);margin-top:3px">للمصرح لهم فقط</div>
+        </div>
+        <div id="loginError" style="display:none;background:rgba(229,62,62,0.12);border:1px solid rgba(229,62,62,0.3);border-radius:10px;padding:10px;color:#f87171;font-size:0.82rem;text-align:center;margin-bottom:14px;font-family:'Tajawal',sans-serif"></div>
+        <div style="margin-bottom:12px">
+            <input type="text" id="al_username" class="f-inp" placeholder="اسم المستخدم"
+                   autocomplete="off" spellcheck="false"
+                   oninput="clearLoginError()"
+                   onkeydown="if(event.key==='Enter')doAdminLogin()">
+        </div>
+        <div style="margin-bottom:16px;position:relative">
+            <input type="password" id="al_password" class="f-inp" placeholder="كلمة المرور"
+                   autocomplete="current-password"
+                   oninput="clearLoginError()"
+                   onkeydown="if(event.key==='Enter')doAdminLogin()">
+            <button onclick="toggleEyeMaint('al_password',this)"
+                    style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.3);font-size:0.9rem">👁</button>
+        </div>
+        <button onclick="doAdminLogin()" id="al_btn"
+                style="width:100%;padding:12px;background:linear-gradient(135deg,#1a7a4a,#059669);border:none;border-radius:12px;color:#fff;font-family:'Tajawal',sans-serif;font-size:0.95rem;font-weight:700;cursor:pointer;transition:all 0.25s;display:flex;align-items:center;justify-content:center;gap:7px">
+            <span id="al_btn_text">🔑 دخول</span>
+        </button>
+        <div id="al_attempts" style="text-align:center;font-size:0.72rem;color:rgba(255,255,255,0.25);margin-top:10px;font-family:'Tajawal',sans-serif"></div>
+    </div>
+</div>
+<body>
+
+<!-- خلفية -->
+<div class="bg-mesh"></div>
+<div class="bg-grid"></div>
+
+<!-- نقاط عائمة -->
+<script>
+(function(){
+    const colors=['rgba(26,122,74,0.6)','rgba(34,197,94,0.5)','rgba(180,83,9,0.5)','rgba(245,158,11,0.4)'];
+    for(let i=0;i<12;i++){
+        const d=document.createElement('div');
+        d.className='float-dot';
+        const size=Math.random()*4+2;
+        d.style.cssText=`
+            width:${size}px;height:${size}px;
+            background:${colors[Math.floor(Math.random()*colors.length)]};
+            left:${Math.random()*100}%;
+            animation-duration:${Math.random()*15+10}s;
+            animation-delay:${Math.random()*10}s;
+        `;
+        document.body.appendChild(d);
+    }
+})();
+</script>
+
+<div class="page-wrap">
+
+    <!-- الشعار -->
+    <div class="logo-wrap">
+        <div class="logo-icon">🌿</div>
+        <div class="logo-name">{% if settings and settings.site_name %}{{ settings.site_name }}{% else %}منصة رُحَمَاء{% endif %}</div>
+    </div>
+
+    <!-- أيقونة الصيانة -->
+    <div class="maint-icon-wrap">
+        <div class="maint-ring"></div>
+        <div class="maint-ring-2"></div>
+        <span class="maint-icon">🔧</span>
+    </div>
+
+    <!-- النص الرئيسي -->
+    <div class="main-text">
+        <h1 class="main-title">الموقع <span>تحت الصيانة</span></h1>
+        <p class="main-sub">نعمل بجد على تحسين خدماتنا لنقدم لكم تجربة أفضل.<br>سنعود قريباً بكل قوة إن شاء الله 💪</p>
+    </div>
+
+    <!-- شريط التقدم -->
+    <div class="progress-section">
+        <div class="progress-label">
+            <span>جاري العمل...</span>
+            <span style="color:var(--green-l)">قريباً ✨</span>
+        </div>
+        <div class="progress-track">
+            <div class="progress-fill"></div>
+        </div>
+    </div>
+
+    <!-- بطاقات التواصل -->
+    {% if settings %}
+    <div class="contact-grid">
+        {% if settings.site_phone %}
+        <div class="contact-card">
+            <div class="contact-card-icon card-green">📞</div>
+            <div class="contact-card-info">
+                <div class="contact-card-label">رقم الجوال</div>
+                <div class="contact-card-val">{{ settings.site_phone }}</div>
+            </div>
+        </div>
+        {% endif %}
+        {% if settings.site_whatsapp %}
+        <a href="https://wa.me/{{ settings.site_whatsapp|cut:'+' }}" target="_blank" class="contact-card clickable">
+            <div class="contact-card-icon card-green">💬</div>
+            <div class="contact-card-info">
+                <div class="contact-card-label">واتساب</div>
+                <div class="contact-card-val">{{ settings.site_whatsapp }}</div>
+            </div>
+        </a>
+        {% endif %}
+        {% if settings.site_email %}
+        <a href="mailto:{{ settings.site_email }}" class="contact-card clickable">
+            <div class="contact-card-icon card-blue">📧</div>
+            <div class="contact-card-info">
+                <div class="contact-card-label">البريد الإلكتروني</div>
+                <div class="contact-card-val">{{ settings.site_email }}</div>
+            </div>
+        </a>
+        {% endif %}
+        {% if settings.working_hours %}
+        <div class="contact-card">
+            <div class="contact-card-icon card-gold">🕐</div>
+            <div class="contact-card-info">
+                <div class="contact-card-label">أوقات العمل</div>
+                <div class="contact-card-val">{{ settings.working_hours }}</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- أزرار سريعة -->
+    <div class="quick-btns">
+        {% if settings.site_whatsapp %}
+        <a href="https://wa.me/{{ settings.site_whatsapp|cut:'+' }}" target="_blank" class="q-btn q-btn-wa">💬 تواصل عبر واتساب</a>
+        {% endif %}
+        {% if settings.site_email %}
+        <a href="mailto:{{ settings.site_email }}" class="q-btn q-btn-em">📧 راسلنا بالبريد</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- فورم التواصل -->
+    <div class="form-section">
+        <div class="form-card">
+            <div class="form-title">✉️ تواصل معنا</div>
+            <div class="f-row">
+                <input type="text"  class="f-inp" id="m_name"    placeholder="الاسم الكامل *">
+                <input type="email" class="f-inp" id="m_email"   placeholder="البريد الإلكتروني *">
+            </div>
+            <div class="f-row">
+                <input type="text"  class="f-inp" id="m_phone"   placeholder="رقم الجوال">
+                <input type="text"  class="f-inp" id="m_subject" placeholder="الموضوع">
+            </div>
+            <textarea class="f-inp mb" id="m_message" placeholder="رسالتك *"
+          maxlength="1000" oninput="countChars()"></textarea>
+<div style="text-align:left;font-size:0.72rem;margin-top:4px;transition:color 0.2s" id="charCount">
+    <span id="charNum" style="font-weight:700;color:rgba(255,255,255,0.5)">0</span>
+    <span style="color:rgba(255,255,255,0.3)"> / 1000 حرف</span>
+</div>
+            <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                <span id="sendBtnText">📤 إرسال الرسالة</span>
+            </button>
+            <div class="success-msg" id="m_success">
+                ✅ تم إرسال رسالتك بنجاح، سنتواصل معك في أقرب وقت إن شاء الله.
+            </div>
+        </div>
+    </div>
+
+    <!-- الفوتر -->
+    <div class="page-footer">
+        {% if settings and settings.site_name %}{{ settings.site_name }}{% else %}منصة رُحَمَاء{% endif %}
+        &nbsp;•&nbsp; جميع الحقوق محفوظة © {{ "now"|date:"Y" }}
+    </div>
+
+</div>
+
+<script>
+async function sendMessage() {
+    const name    = document.getElementById('m_name').value.trim();
+    const email   = document.getElementById('m_email').value.trim();
+    const phone   = document.getElementById('m_phone').value.trim();
+    const subject = document.getElementById('m_subject').value.trim();
+    const message = document.getElementById('m_message').value.trim();
+
+    if (!name || !email || !message) {
+        const inputs = [
+            {el: document.getElementById('m_name'),    val: name},
+            {el: document.getElementById('m_email'),   val: email},
+            {el: document.getElementById('m_message'), val: message},
+        ];
+        inputs.forEach(({el, val}) => {
+            if (!val) {
+                el.style.borderColor = 'rgba(239,68,68,0.7)';
+                el.style.boxShadow   = '0 0 0 3px rgba(239,68,68,0.12)';
+                setTimeout(() => { el.style.borderColor=''; el.style.boxShadow=''; }, 2500);
+            }
+        });
+        return;
+    }
+
+    const btn     = document.getElementById('sendBtn');
+    const btnText = document.getElementById('sendBtnText');
+    btn.disabled     = true;
+    btnText.textContent = '⏳ جار الإرسال...';
+
+    try {
+        const fd = new FormData();
+        fd.append('name',    name);
+        fd.append('email',   email);
+        fd.append('phone',   phone);
+        fd.append('subject', subject || 'رسالة من صفحة الصيانة');
+        fd.append('message', message);
+
+        const r    = await fetch('/contact/submit/', {method:'POST', body:fd});
+        const data = await r.json();
+
+        if (data.status === 'success') {
+            document.getElementById('m_success').style.display = 'block';
+            ['m_name','m_email','m_phone','m_subject','m_message'].forEach(id => {
+                document.getElementById(id).value = '';
+            });
+        } else {
+            btnText.textContent = '⚠️ حدث خطأ، حاول مجدداً';
+            setTimeout(() => { btnText.textContent = '📤 إرسال الرسالة'; btn.disabled = false; }, 2500);
+            return;
+        }
+    } catch {
+        btnText.textContent = '⚠️ حدث خطأ، حاول مجدداً';
+        setTimeout(() => { btnText.textContent = '📤 إرسال الرسالة'; btn.disabled = false; }, 2500);
+        return;
+    }
+
+    btn.disabled     = false;
+    btnText.textContent = '📤 إرسال الرسالة';
+}
+let loginAttempts  = 0;
+let loginLockUntil = 0;
+
+function openAdminLogin() {
+    document.getElementById('adminLoginModal').style.display = 'flex';
+    setTimeout(() => document.getElementById('al_username')?.focus(), 100);
+}
+
+function closeAdminLogin() {
+    document.getElementById('adminLoginModal').style.display = 'none';
+    document.getElementById('al_username').value = '';
+    document.getElementById('al_password').value = '';
+    clearLoginError();
+}
+
+function clearLoginError() {
+    document.getElementById('loginError').style.display = 'none';
+}
+
+function _showLoginError(msg) {
+    const el = document.getElementById('loginError');
+    el.textContent = msg;
+    el.style.display = 'block';
+}
+
+function toggleEyeMaint(id, btn) {
+    const inp = document.getElementById(id);
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+}
+
+async function doAdminLogin() {
+    const now = Date.now();
+    if (loginLockUntil > now) {
+        const secs = Math.ceil((loginLockUntil - now) / 1000);
+        _showLoginError(`⏳ محاولات كثيرة — انتظر ${secs} ثانية`);
+        return;
+    }
+
+    const username = document.getElementById('al_username').value.trim();
+    const password = document.getElementById('al_password').value;
+
+    if (!username || !password) {
+        _showLoginError('يرجى إدخال اسم المستخدم وكلمة المرور');
+        return;
+    }
+    if (/[<>'"`;\\]/.test(username) || username.length > 150) {
+        _showLoginError('مدخل غير صالح');
+        return;
+    }
+
+    const btn     = document.getElementById('al_btn');
+    const btnText = document.getElementById('al_btn_text');
+    btn.disabled     = true;
+    btnText.textContent = '⏳ جار التحقق...';
+
+    try {
+        await new Promise(r => setTimeout(r, 600 + Math.random() * 400));
+
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+                     document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='))?.split('=')[1] || '';
+
+        const fd = new FormData();
+        fd.append('identifier',           username);
+        fd.append('password',             password);
+        fd.append('csrfmiddlewaretoken',  csrf);
+        fd.append('honeypot',             '');
+
+        const r = await fetch('/admin-login/', {
+            method:  'POST',
+            body:    fd,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrf,   // ← هذا السطر كان ناقصاً
+            },
+        });
+
+        const data = await r.json();
+
+        if (data.status === 'success') {
+            btnText.textContent = '✅ جار التحويل...';
+            window.location.href = data.redirect || '/admin-panel/dashboard/';
+            return;
+        }
+
+        if (data.status === 'locked') {
+            loginLockUntil = Date.now() + ((data.remaining || 120) * 1000);
+            _showLoginError(`🚫 ${data.message}`);
+            document.getElementById('al_username').value = '';
+            document.getElementById('al_password').value = '';
+            document.getElementById('al_attempts').textContent = '';
+        } else {
+            loginAttempts++;
+            _showLoginError(data.message || 'بيانات الدخول غير صحيحة');
+            const left = data.attempts_left;
+            if (left !== undefined) {
+                document.getElementById('al_attempts').textContent =
+                    `محاولات متبقية: ${left}`;
+            }
+            document.getElementById('al_password').value = '';
+            document.getElementById('al_password').focus();
+        }
+
+    } catch(e) {
+        _showLoginError('خطأ في الاتصال، حاول مجدداً');
+    }
+
+    btn.disabled     = false;
+    btnText.textContent = '🔑 دخول';
+}
+function countChars() {
+    const val  = document.getElementById('m_message').value;
+    const len  = val.length;
+    const el   = document.getElementById('charNum');
+    const wrap = document.getElementById('charCount');
+    el.textContent = len;
+    if (len >= 950) {
+        el.style.color = '#f87171';
+        wrap.style.animation = 'none';
+    } else if (len >= 800) {
+        el.style.color = '#f59e0b';
+    } else {
+        el.style.color = 'rgba(255,255,255,0.5)';
+    }
+}
+
+// إغلاق بالضغط خارج المودل
+document.getElementById('adminLoginModal')?.addEventListener('click', e => {
+    if (e.target === document.getElementById('adminLoginModal')) closeAdminLogin();
+});
+</script>
+
+</body>
+</html>

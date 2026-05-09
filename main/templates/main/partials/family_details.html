@@ -1,0 +1,518 @@
+{% load static %}
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    /* الأسماء العربية — رب الأسرة */
+    [
+        ['family_first_name',      'الاسم الأول'],
+        ['family_father_name_h',   'اسم الأب'],
+        ['family_grand_name_h',    'اسم الجد'],
+        ['family_family_name_h',   'اسم العائلة'],
+
+    ].forEach(([id, lbl]) => bindArabicField(id, 'err_' + id, lbl));
+
+    /* الأسماء العربية — الزوجة */
+    [
+        ['wife_first_name',  'اسم الزوجة'],
+        ['wife_father_name', 'اسم أب الزوجة'],
+        ['wife_grand_name',  'اسم جد الزوجة'],
+        ['wife_family_name', 'لقب الزوجة'],
+    ].forEach(([id, lbl]) => bindArabicField(id, 'err_' + id, lbl));
+
+    /* الأسماء العربية — المعيل */
+    [
+        ['family_guardian_first_name',  'اسم المعيل'],
+        ['family_guardian_father_name', 'اسم أب المعيل'],
+        ['family_guardian_grand_name',  'اسم جد المعيل'],
+        ['family_guardian_family_name', 'لقب المعيل'],
+    ].forEach(([id, lbl]) => bindArabicField(id, 'err_' + id, lbl));
+
+    /* تواريخ الميلاد */
+    ['family_birth_date', 'wife_birth_date']
+        .forEach(id => bindDateField(id, 'err_' + id));
+
+    /* الأرقام */
+    bindNumberField('family_members_count',            'err_family_members_count',            'عدد أفراد الأسرة',  1);
+    bindNumberField('family_sick_count',               'err_family_sick_count',               'عدد المرضى',        0);
+    bindNumberField('family_monthly_rent',             '',                                    'مبلغ الإيجار',      0);
+    bindNumberField('family_guardian_monthly_income',  'err_family_guardian_monthly_income',  'الدخل الشهري',      0);
+    bindNumberField('family_guardian_dependents',      'err_family_guardian_dependents',      'عدد المُعالين',     1);
+
+    /* أرقام الهوية مع تحقق API */
+    bindIdField('family_id_number',         'err_family_id_number');
+    bindIdField('wife_id_number',           'err_wife_id_number');
+    bindIdField('family_guardian_id_number','err_family_guardian_id_number');
+});
+
+/* ── إظهار/إخفاء قسم الزوجة ── */
+function toggleWifeSection(v) {
+    document.getElementById('wifeSection')?.classList.toggle('d-none', v !== 'متزوج');
+}
+</script>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     بيانات رب الأسرة
+══════════════════════════════════════════════════════════ -->
+<div class="sec-title mb-3"><span>👨‍👩‍👧</span> بيانات رب الأسرة</div>
+<div class="row g-3 mb-4">
+
+    <div class="col-sm-6 col-md-3">
+        <label class="form-label">الاسم الأول <span class="req">*</span></label>
+        <input type="text" id="family_first_name" class="form-control" placeholder="الاسم">
+        <div class="field-err" id="err_family_first_name"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+        <label class="form-label">اسم الأب <span class="req">*</span></label>
+        <input type="text" id="family_father_name_h" class="form-control" placeholder="اسم الأب">
+        <div class="field-err" id="err_family_father_name_h"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+        <label class="form-label">اسم الجد <span class="req">*</span></label>
+        <input type="text" id="family_grand_name_h" class="form-control" placeholder="اسم الجد">
+        <div class="field-err" id="err_family_grand_name_h"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+        <label class="form-label">اسم العائلة <span class="req">*</span></label>
+        <input type="text" id="family_family_name_h" class="form-control" placeholder="اسم العائلة">
+        <div class="field-err" id="err_family_family_name_h"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">تاريخ الميلاد <span class="req">*</span></label>
+        <input type="date" id="family_birth_date" class="form-control" max="">
+        <div class="field-err" id="err_family_birth_date"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">رقم الهوية <span class="req">*</span></label>
+        <div style="position:relative">
+            <input type="text" id="family_id_number" class="form-control" maxlength="9"
+                   placeholder="9XXXXXXXX" inputmode="numeric"
+                   >
+        </div>
+
+        <div class="field-err" id="err_family_id_number"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">الجنس <span class="req">*</span></label>
+        <select id="family_gender" class="form-select form-control">
+            <option value="">-- اختر --</option>
+            <option>ذكر</option><option>أنثى</option>
+        </select>
+        <div class="field-err" id="err_family_gender"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">الحالة الاجتماعية <span class="req">*</span></label>
+        <select id="family_marital_status" class="form-select form-control"
+                onchange="toggleWifeSection(this.value)">
+            <option value="">-- اختر --</option>
+            <option value="متزوج">متزوج/ـة</option>
+            <option value="أرمل">أرمل/ـة</option>
+            <option value="مطلق">مطلق/ـة</option>
+        </select>
+        <div class="field-err" id="err_family_marital_status"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">الحالة الصحية <span class="req">*</span></label>
+        <select id="family_health_status" class="form-select form-control">
+            <option value="">-- اختر --</option>
+            <option>سليم</option><option>مرض مزمن</option>
+            <option>ذوو احتياجات خاصة</option><option>مصاب حرب</option>
+        </select>
+        <div class="field-err" id="err_family_health_status"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">المستوى التعليمي <span class="req">*</span></label>
+        <select id="family_education_level" class="form-select form-control">
+            <option value="">-- اختر --</option>
+            <option>غير متعلم</option><option>ابتدائي</option><option>إعدادي</option>
+            <option>ثانوي</option><option>جامعي</option><option>ماجستير</option>
+        </select>
+        <div class="field-err" id="err_family_education_level"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">المهنة <span class="req">*</span></label>
+        <select id="family_job" class="form-select form-control">
+            <option value="">-- اختر --</option>
+            <option>موظف حكومي</option><option>موظف قطاع خاص</option><option>تاجر</option>
+            <option>طبيب</option><option>مهندس</option><option>معلم/ـة</option>
+            <option>ممرض/ـة</option><option>مقاول</option><option>سائق</option>
+            <option>عامل</option><option>ربة بيت</option><option>متقاعد</option>
+            <option>لا يعمل</option><option>أخرى</option>
+        </select>
+        <div class="field-err" id="err_family_job"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">الصورة الشخصية <span class="req">*</span></label>
+        <div class="photo-box" id="family_photo_box"
+             onclick="document.getElementById('family_photo').click()">
+            <input type="file" id="family_photo" accept=".jpg,.jpeg,.png"
+                   onchange="previewPhoto(this,'familyPhotoPreview','familyPhotoHolder','family_photo_box')"
+                   onclick="event.stopPropagation()">
+            <img id="familyPhotoPreview" class="photo-preview" src="" alt="">
+            <div id="familyPhotoHolder">
+                <div style="font-size:1.8rem;margin-bottom:4px">📷</div>
+                <div class="file-box-text">اضغط لرفع الصورة<br><small>JPG • PNG — 4MB</small></div>
+            </div>
+        </div>
+        <div class="field-err" id="err_family_photo"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">عدد أفراد الأسرة <span class="req">*</span></label>
+        <input type="number" id="family_members_count" class="form-control" placeholder="1" min="1" value="1">
+        <div class="field-err" id="err_family_members_count"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">عدد المرضى بالأسرة <span class="req">*</span></label>
+        <input type="number" id="family_sick_count" class="form-control" placeholder="0" min="0" value="0">
+        <div class="field-err" id="err_family_sick_count"><span>⚠️</span><span></span></div>
+    </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     العنوان الحالي
+══════════════════════════════════════════════════════════ -->
+<div class="sec-title mb-3"><span>📍</span> العنوان الحالي</div>
+<div class="row g-3 mb-3">
+
+    <div class="col-md-4">
+        <label class="form-label">المدينة <span class="req">*</span></label>
+        <select id="family_current_city" class="form-select form-control">
+            <option value="">-- اختر --</option>
+            <option>رفح</option><option>خانيونس</option><option>القرارة</option>
+            <option>دير البلح</option><option>الزوايدة</option><option>النصيرات</option>
+            <option>المغازي</option><option>البريج</option><option>مدينة غزة</option>
+            <option>شمال غزة</option><option>شرق غزة</option><option>غرب غزة</option>
+            <option>غير محدد</option>
+        </select>
+        <div class="field-err" id="err_family_current_city"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label">الشارع <span class="req">*</span></label>
+        <input type="text" id="family_current_street" class="form-control" placeholder="اسم الشارع" data-type="address">
+        <div class="field-err" id="err_family_current_street"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label">أقرب معلم/مسجد <span class="req">*</span></label>
+        <input type="text" id="family_current_landmark" class="form-control" placeholder="أقرب معلم أو مسجد" data-type="address">
+        <div class="field-err" id="err_family_current_landmark"><span>⚠️</span><span></span></div>
+    </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     العنوان السابق (اختياري)
+══════════════════════════════════════════════════════════ -->
+<div class="sec-title mb-3">
+    <span>📍</span> العنوان السابق
+    <span style="font-size:0.72rem;color:#9ca3af"></span>
+</div>
+<div class="row g-3 mb-4">
+
+    <div class="col-md-4">
+        <label class="form-label">المدينة<span class="req">*</span></label>
+        <select id="family_previous_city" class="form-select form-control" required>
+            <option value="">-- اختر --</option>
+            <option>رفح</option><option>خانيونس</option><option>القرارة</option>
+            <option>دير البلح</option><option>الزوايدة</option><option>النصيرات</option>
+            <option>المغازي</option><option>البريج</option><option>مدينة غزة</option>
+            <option>شمال غزة</option><option>شرق غزة</option><option>غرب غزة</option>
+            <option>غير محدد</option>
+        </select>
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label">الشارع<span class="req">*</span></label>
+        <input type="text" id="family_previous_street" class="form-control" placeholder="اسم الشارع" data-type="address" required>
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label">أقرب معلم/مسجد<span class="req">*</span></label>
+        <input type="text" id="family_previous_landmark" class="form-control" placeholder="أقرب معلم أو مسجد" data-type="address" required>
+    </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     السكن
+══════════════════════════════════════════════════════════ -->
+<div class="sec-title mb-3"><span>🏠</span> السكن</div>
+<div class="row g-3 mb-4">
+
+    <div class="col-md-4">
+        <label class="form-label">نوع السكن <span class="req">*</span></label>
+        <select id="family_housing_type" class="form-select form-control">
+            <option value="">-- اختر --</option>
+            <option>خيمة</option>
+            <option>بيت باطون</option>
+            <option>بيت زينقو</option>
+        </select>
+        <div class="field-err" id="err_family_housing_type"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label">ملكية السكن <span class="req">*</span></label>
+        <select id="family_housing_ownership" class="form-select form-control"
+                onchange="document.getElementById('family_rent_wrap').classList.toggle('d-none',this.value!=='إيجار')">
+            <option value="">-- اختر --</option>
+            <option>ملك</option>
+            <option>إيجار</option>
+        </select>
+        <div class="field-err" id="err_family_housing_ownership"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-4 d-none" id="family_rent_wrap">
+        <label class="form-label">مبلغ الإيجار (₪) <span class="req">*</span></label>
+        <input type="number" id="family_monthly_rent" class="form-control" placeholder="0" min="0">
+        <div class="field-err" id="err_family_monthly_rent"><span>⚠️</span><span></span></div>
+    </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     بيانات الزوجة (تظهر عند اختيار "متزوج")
+══════════════════════════════════════════════════════════ -->
+<div id="wifeSection" class="d-none">
+    <div class="sec-title mb-3"><span>👩</span> بيانات الزوجة</div>
+    <div class="row g-3 mb-4">
+
+        <div class="col-sm-6 col-md-3">
+            <label class="form-label">الاسم الأول <span class="req">*</span></label>
+            <input type="text" id="wife_first_name" class="form-control" placeholder="الاسم">
+            <div class="field-err" id="err_wife_first_name"><span>⚠️</span><span></span></div>
+        </div>
+
+        <div class="col-sm-6 col-md-3">
+            <label class="form-label">اسم الأب <span class="req">*</span></label>
+            <input type="text" id="wife_father_name" class="form-control" placeholder="اسم الأب">
+            <div class="field-err" id="err_wife_father_name"><span>⚠️</span><span></span></div>
+        </div>
+
+        <div class="col-sm-6 col-md-3">
+            <label class="form-label">اسم الجد <span class="req">*</span></label>
+            <input type="text" id="wife_grand_name" class="form-control" placeholder="اسم الجد">
+            <div class="field-err" id="err_wife_grand_name"><span>⚠️</span><span></span></div>
+        </div>
+
+        <div class="col-sm-6 col-md-3">
+            <label class="form-label">اسم العائلة <span class="req">*</span></label>
+            <input type="text" id="wife_family_name" class="form-control" placeholder="اسم العائلة">
+            <div class="field-err" id="err_wife_family_name"><span>⚠️</span><span></span></div>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">تاريخ الميلاد <span class="req">*</span></label>
+            <input type="date" id="wife_birth_date" class="form-control" max="">
+            <div class="field-err" id="err_wife_birth_date"><span>⚠️</span><span></span></div>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">رقم الهوية <span class="req">*</span></label>
+            <div style="position:relative">
+                <input type="text" id="wife_id_number" class="form-control" maxlength="9"
+                       placeholder="9XXXXXXXX" inputmode="numeric"
+                       >
+            </div>
+
+            <div class="field-err" id="err_wife_id_number"><span>⚠️</span><span></span></div>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">الجنس</label>
+            <input type="text" class="form-control" value="أنثى" readonly
+                   style="background:var(--bg-secondary,#f4f9f6);cursor:not-allowed">
+            <input type="hidden" id="wife_gender" value="أنثى">
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">الحالة الصحية <span class="req">*</span></label>
+            <select id="wife_health_status" class="form-select form-control">
+                <option value="">-- اختر --</option>
+                <option>سليمة</option><option>مرض مزمن</option>
+                <option>ذوو احتياجات خاصة</option><option>مصاب حرب</option>
+            </select>
+            <div class="field-err" id="err_wife_health_status"><span>⚠️</span><span></span></div>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">المستوى التعليمي <span class="req">*</span></label>
+            <select id="wife_education_level" class="form-select form-control">
+                <option value="">-- اختر --</option>
+                <option>غير متعلم</option><option>ابتدائي</option><option>إعدادي</option>
+                <option>ثانوي</option><option>جامعي</option><option>ماجستير</option>
+            </select>
+            <div class="field-err" id="err_wife_education_level"><span>⚠️</span><span></span></div>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">الصورة <span class="opt">(اختياري)</span></label>
+            <div class="photo-box" id="wife_photo_box"
+                 onclick="document.getElementById('wife_photo').click()">
+                <input type="file" id="wife_photo" accept=".jpg,.jpeg,.png"
+                       onchange="previewPhoto(this,'wifePhotoPreview','wifePhotoHolder','wife_photo_box')"
+                       onclick="event.stopPropagation()">
+                <img id="wifePhotoPreview" class="photo-preview" src="" alt="">
+                <div id="wifePhotoHolder">
+                    <div style="font-size:1.5rem">📷</div>
+                    <div class="file-box-text">اختياري — 4MB</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     المعيل الحالي
+══════════════════════════════════════════════════════════ -->
+<div class="sec-title mb-3"><span>🧑</span> المعيل الحالي</div>
+<div class="row g-3 mb-4">
+
+    <div class="col-sm-6 col-md-3">
+        <label class="form-label">الاسم الأول <span class="req">*</span></label>
+        <input type="text" id="family_guardian_first_name" class="form-control" placeholder="الاسم">
+        <div class="field-err" id="err_family_guardian_first_name"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+        <label class="form-label">اسم الأب <span class="req">*</span></label>
+        <input type="text" id="family_guardian_father_name" class="form-control" placeholder="اسم الأب">
+        <div class="field-err" id="err_family_guardian_father_name"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+        <label class="form-label">اسم الجد <span class="req">*</span></label>
+        <input type="text" id="family_guardian_grand_name" class="form-control" placeholder="اسم الجد">
+        <div class="field-err" id="err_family_guardian_grand_name"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+        <label class="form-label">اسم العائلة <span class="req">*</span></label>
+        <input type="text" id="family_guardian_family_name" class="form-control" placeholder="اسم العائلة">
+        <div class="field-err" id="err_family_guardian_family_name"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">رقم الهوية <span class="req">*</span></label>
+        <div style="position:relative">
+            <input type="text" id="family_guardian_id_number" class="form-control" maxlength="9"
+                   placeholder="9XXXXXXXX" inputmode="numeric"
+                   >
+        </div>
+
+        <div class="field-err" id="err_family_guardian_id_number"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">الجنس <span class="req">*</span></label>
+        <select id="family_guardian_gender" class="form-select form-control">
+            <option value="">-- اختر --</option>
+            <option>ذكر</option><option>أنثى</option>
+        </select>
+        <div class="field-err" id="err_family_guardian_gender"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">صلة القرابة <span class="req">*</span></label>
+        <select id="family_guardian_relation" class="form-select form-control">
+            <option value="">-- اختر --</option>
+            <option value="عم">عم/ـة</option><option value="خال">خال/ـة</option>
+            <option value="جد">جد/ة</option><option value="أخ">أخ</option>
+            <option value="أخت">أخت</option><option value="أخرى">أخرى</option>
+        </select>
+        <div class="field-err" id="err_family_guardian_relation"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">المهنة <span class="req">*</span></label>
+        <select id="family_guardian_job" class="form-select form-control">
+            <option value="">-- اختر المهنة --</option>
+            <option>موظف حكومي</option><option>موظف قطاع خاص</option>
+            <option>تاجر</option><option>معلم/ـة</option>
+            <option>عامل</option><option>لا يعمل</option><option>أخرى</option>
+        </select>
+        <div class="field-err" id="err_family_guardian_job"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">الحالة الصحية <span class="req">*</span></label>
+        <select id="family_guardian_health_status" class="form-select form-control">
+            <option value="">-- اختر --</option>
+            <option>سليم</option><option>مرض مزمن</option>
+            <option>ذوو احتياجات خاصة</option><option>مصاب حرب</option>
+        </select>
+        <div class="field-err" id="err_family_guardian_health_status"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">المستوى التعليمي <span class="req">*</span></label>
+        <select id="family_guardian_education_level" class="form-select form-control">
+            <option value="">-- اختر --</option>
+            <option>غير متعلم</option><option>ابتدائي</option><option>إعدادي</option>
+            <option>ثانوي</option><option>جامعي</option><option>ماجستير</option>
+        </select>
+        <div class="field-err" id="err_family_guardian_education_level"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">الدخل الشهري (₪) <span class="req">*</span></label>
+        <input type="number" id="family_guardian_monthly_income" class="form-control" placeholder="0" min="0">
+        <div class="field-err" id="err_family_guardian_monthly_income"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">عدد من يعيلهم <span class="req">*</span></label>
+        <input type="number" id="family_guardian_dependents" class="form-control" placeholder="1" min="1" value="1">
+        <div class="field-err" id="err_family_guardian_dependents"><span>⚠️</span><span></span></div>
+    </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     أفراد الأسرة (اختياري)
+══════════════════════════════════════════════════════════ -->
+<div class="sec-title mb-3">
+    <span>👨‍👩‍👧</span> أفراد الأسرة
+    <span style="font-size:0.72rem;color:#9ca3af">(اختياري — إذا أضفت فرداً يجب تعبئته كاملاً)</span>
+</div>
+<div id="familyMembersContainer" class="mb-3"></div>
+<button type="button" class="btn-add-member mb-4"
+        onclick="addMember('familyMembersContainer')">
+    <span>➕</span> إضافة فرد
+</button>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     الوضع العام للأسرة وقصتها
+══════════════════════════════════════════════════════════ -->
+<div class="sec-title mb-3"><span>📋</span> الوضع العام للأسرة وقصتها</div>
+<div class="mb-2">
+    <textarea id="family_general_status" class="form-control" rows="5" maxlength="1000"
+              placeholder="اكتب الوضع العام للأسرة وقصتها هنا... (مطلوب)"
+              oninput="document.getElementById('family_status_count').textContent=this.value.length"></textarea>
+    <div class="char-count"><span id="family_status_count">0</span>/1000</div>
+    <div class="field-err" id="err_family_general_status"><span>⚠️</span><span>هذا الحقل مطلوب</span></div>
+</div>

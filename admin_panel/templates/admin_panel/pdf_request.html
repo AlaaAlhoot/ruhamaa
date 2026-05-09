@@ -1,0 +1,835 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>{% if user.is_approved %}مستفيد موافق عليه{% else %}طلب تسجيل{% endif %} — {{ user.get_full_name }}</title>
+<style>
+@font-face {
+    font-family: 'Cairo';
+    src: local('Cairo'), local('Arial');
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'Cairo', 'Arial', sans-serif;
+    background: #fff;
+    color: #1a1a2e;
+    font-size: 11pt;
+    direction: rtl;
+}
+
+/* ══ Watermark ══ */
+.watermark {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.04;
+    z-index: 0;
+}
+.watermark img {
+    width: 350px;
+    height: 350px;
+    object-fit: contain;
+}
+
+.wrapper {
+    max-width: 100%;
+    padding: 0;
+    position: relative;
+    z-index: 1;
+}
+
+/* ══ Header ══ */
+.print-header {
+    background-color: #7c3aed;
+    padding: 16px 24px;
+    margin-bottom: 18px;
+    border-radius: 10px;
+    display: table;
+    width: 100%;
+}
+.header-right {
+    display: table-cell;
+    vertical-align: middle;
+    width: 60%;
+}
+.header-left {
+    display: table-cell;
+    vertical-align: middle;
+    text-align: left;
+    width: 40%;
+}
+.org-logo-wrap {
+    display: table;
+}
+.org-logo-wrap img {
+    display: table-cell;
+    width: 55px;
+    height: 55px;
+    vertical-align: middle;
+}
+.org-text {
+    display: table-cell;
+    vertical-align: middle;
+    padding-right: 10px;
+}
+.org-name {
+    font-size: 20pt;
+    font-weight: 900;
+    color: #ffffff;
+    font-family: 'Arial', serif;
+}
+.org-sub {
+    font-size: 8pt;
+    color: #e0d4ff;
+    margin-top: 2px;
+}
+.print-meta {
+    font-size: 8pt;
+    color: #e0d4ff;
+    line-height: 1.9;
+    text-align: left;
+}
+.print-meta strong { color: #ffffff; }
+
+/* ══ Title ══ */
+.req-title {
+    text-align: center;
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    border: 2px solid #7c3aed;
+    border-radius: 8px;
+    background-color: #f5f3ff;
+}
+.req-title h2 {
+    font-size: 13pt;
+    font-weight: 900;
+    color: #7c3aed;
+}
+.req-title h2.approved { color: #1a7a4a; }
+.type-badge {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 8pt;
+    font-weight: 700;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+}
+.badge-orphan  { background: #dcfce7; color: #1a7a4a; border-color: #1a7a4a; }
+.badge-family  { background: #fef3c7; color: #b45309; border-color: #b45309; }
+.badge-special { background: #fee2e2; color: #c53030; border-color: #c53030; }
+.badge-sponsor { background: #dbeafe; color: #2b6cb0; border-color: #2b6cb0; }
+
+/* ══ Photo + Basic ══ */
+.photo-basic {
+    display: table;
+    width: 100%;
+    margin-bottom: 14px;
+}
+.photo-cell {
+    display: table-cell;
+    width: 90px;
+    vertical-align: top;
+    padding-left: 12px;
+}
+.user-photo {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #7c3aed;
+}
+.no-photo {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #f3f0ff;
+    border: 3px solid #c4b5fd;
+    text-align: center;
+    line-height: 80px;
+    font-size: 28pt;
+}
+.basic-cell {
+    display: table-cell;
+    vertical-align: top;
+}
+
+/* ══ Sections ══ */
+.section {
+    margin-bottom: 14px;
+    border: 1px solid #c4b5fd;
+    border-radius: 8px;
+    overflow: hidden;
+    page-break-inside: avoid;
+}
+.section-title {
+    background-color: #f3f0ff;
+    padding: 7px 14px;
+    font-size: 9.5pt;
+    font-weight: 700;
+    color: #7c3aed;
+    border-bottom: 1px solid #c4b5fd;
+}
+.section-title.green {
+    background-color: #f0fdf4;
+    color: #1a7a4a;
+    border-color: #bbf7d0;
+}
+.section-title.orange {
+    background-color: #fff7ed;
+    color: #b45309;
+    border-color: #fed7aa;
+}
+.section-title.blue {
+    background-color: #eff6ff;
+    color: #2b6cb0;
+    border-color: #bfdbfe;
+}
+
+/* ══ Info Grid ══ */
+.info-grid {
+    display: table;
+    width: 100%;
+    padding: 10px;
+    border-collapse: collapse;
+}
+.info-row {
+    display: table-row;
+}
+.info-item {
+    display: table-cell;
+    width: 33.33%;
+    padding: 5px 6px;
+    vertical-align: top;
+}
+.info-item-half {
+    display: table-cell;
+    width: 50%;
+    padding: 5px 6px;
+    vertical-align: top;
+}
+.info-item-full {
+    display: table-cell;
+    width: 100%;
+    padding: 5px 6px;
+    vertical-align: top;
+}
+.info-box {
+    background-color: #f9f7ff;
+    border-radius: 6px;
+    padding: 7px 9px;
+}
+.info-box.green { background-color: #f0fdf4; }
+.info-box.orange { background-color: #fff7ed; }
+.info-lbl {
+    font-size: 6.5pt;
+    color: #9ca3af;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+.info-val {
+    font-size: 8.5pt;
+    font-weight: 700;
+    color: #1a1a2e;
+}
+.info-val.ltr { direction: ltr; text-align: right; }
+.info-val.story { font-weight: 400; line-height: 1.7; font-size: 8pt; }
+
+/* ══ Tables ══ */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 7.5pt;
+}
+.data-table th {
+    padding: 6px 8px;
+    font-weight: 700;
+    text-align: right;
+    font-size: 7pt;
+    border-bottom: 1px solid #c4b5fd;
+    background-color: #f3f0ff;
+    color: #7c3aed;
+}
+.data-table.green th {
+    background-color: #f0fdf4;
+    color: #1a7a4a;
+    border-color: #bbf7d0;
+}
+.data-table.orange th {
+    background-color: #fff7ed;
+    color: #b45309;
+    border-color: #fed7aa;
+}
+.data-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid #ede9fe;
+    vertical-align: top;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:nth-child(even) td { background-color: #f9f7ff; }
+.data-table.green tr:nth-child(even) td { background-color: #f0fdf4; }
+.data-table.orange tr:nth-child(even) td { background-color: #fff7ed; }
+.st-paid    { color: #1a7a4a; font-weight: 700; }
+.st-pending { color: #b45309; font-weight: 700; }
+.st-late    { color: #c53030; font-weight: 700; }
+
+/* ══ Sponsor Box ══ */
+.sponsor-box {
+    display: table;
+    width: 100%;
+    padding: 10px;
+    background-color: #eff6ff;
+    border-radius: 6px;
+    margin: 10px;
+    width: calc(100% - 20px);
+}
+.sponsor-row { display: table-row; }
+.sponsor-cell {
+    display: table-cell;
+    width: 25%;
+    padding: 4px 6px;
+    vertical-align: top;
+}
+.sponsor-lbl { font-size: 6.5pt; color: #2b6cb0; font-weight: 700; margin-bottom: 2px; }
+.sponsor-val { font-size: 8.5pt; font-weight: 700; color: #1a1a2e; }
+
+/* ══ No Data ══ */
+.no-data {
+    padding: 14px;
+    text-align: center;
+    color: #9ca3af;
+    font-size: 8pt;
+    background-color: #f9f9f9;
+    border-radius: 6px;
+    margin: 10px;
+}
+
+/* ══ Docs ══ */
+.doc-item {
+    margin-bottom: 18px;
+    page-break-inside: avoid;
+}
+.doc-header {
+    padding: 6px 10px;
+    background-color: #f3f0ff;
+    border-radius: 6px;
+    font-size: 8pt;
+    font-weight: 700;
+    color: #7c3aed;
+    margin-bottom: 7px;
+}
+.doc-img {
+    width: 100%;
+    max-width: 500px;
+    border: 1px solid #c4b5fd;
+    border-radius: 6px;
+    display: block;
+    margin: 0 auto;
+}
+.doc-pdf {
+    padding: 10px;
+    background-color: #f3f0ff;
+    border: 1px solid #c4b5fd;
+    border-radius: 6px;
+    font-size: 8pt;
+}
+
+/* ══ Signature ══ */
+.signature-area {
+    display: table;
+    width: 100%;
+    margin-top: 28px;
+    padding-top: 16px;
+    border-top: 1.5px dashed #c4b5fd;
+}
+.sig-cell {
+    display: table-cell;
+    width: 33.33%;
+    text-align: center;
+    padding: 0 10px;
+}
+.sig-line {
+    border-bottom: 1.5px solid #9ca3af;
+    margin: 40px 10px 7px;
+}
+.sig-label { font-size: 7pt; color: #6b7280; font-weight: 700; }
+
+/* ══ Footer ══ */
+.print-footer {
+    margin-top: 18px;
+    padding-top: 10px;
+    border-top: 1px solid #ede9fe;
+    display: table;
+    width: 100%;
+    font-size: 7pt;
+    color: #9ca3af;
+}
+.footer-cell { display: table-cell; width: 33.33%; }
+.footer-cell:last-child { text-align: left; }
+.footer-cell:nth-child(2) { text-align: center; }
+
+/* ══ Page Break ══ */
+.page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<!-- Watermark -->
+<div class="watermark">
+    <img src="{{ request.scheme }}://{{ request.get_host }}{% static 'images/logo.png' %}" alt="">
+</div>
+
+<div class="wrapper">
+
+<!-- ══ Header ══ -->
+<div class="print-header">
+    <div class="header-right">
+        <div class="org-logo-wrap">
+            <img src="{{ request.scheme }}://{{ request.get_host }}{% static 'images/logo.png' %}">
+            <div class="org-text">
+                <div class="org-name">رُحَمَاء</div>
+                <div class="org-sub">جمعية نسائم فلسطين الخيرية</div>
+            </div>
+        </div>
+    </div>
+    <div class="header-left">
+        <div class="print-meta">
+            <div><strong>رقم الاستمارة:</strong> {{ user.registration_number|default:user.pk }}</div>
+            <div><strong>تاريخ الطباعة:</strong> {% now "Y/m/d H:i" %}</div>
+            <div><strong>الحالة:</strong> {% if user.is_approved %}موافق عليه ✓{% else %}قيد المراجعة{% endif %}</div>
+            {% if printed_by %}<div><strong>طُبع بواسطة:</strong> {{ printed_by }}</div>{% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ══ Title ══ -->
+<div class="req-title">
+    <h2 class="{% if user.is_approved %}approved{% endif %}">
+        {% if user.is_approved %}✓ مستفيد موافق عليه — {{ user.get_full_name }}
+        {% else %}طلب تسجيل — {{ user.get_full_name }}{% endif %}
+    </h2>
+    <span class="type-badge badge-{{ user.user_type }}">
+        {% if user.user_type == 'sponsor' %}كافل
+        {% elif user.user_type == 'orphan' %}يتيم
+        {% elif user.user_type == 'family' %}اسرة
+        {% elif user.user_type == 'special' %}ذوو احتياجات خاصة{% endif %}
+    </span>
+</div>
+
+<!-- ══ الصورة + البيانات الأساسية ══ -->
+<div class="photo-basic">
+    <div class="photo-cell">
+        {% if detail.orphan.photo_url %}<img src="{{ request.scheme }}://{{ request.get_host }}{{ detail.orphan.photo_url }}" class="user-photo">
+        {% elif detail.special.photo_url %}<img src="{{ request.scheme }}://{{ request.get_host }}{{ detail.special.photo_url }}" class="user-photo">
+        {% elif detail.family.photo_url %}<img src="{{ request.scheme }}://{{ request.get_host }}{{ detail.family.photo_url }}" class="user-photo">
+        {% elif detail.sponsor.photo_url %}<img src="{{ request.scheme }}://{{ request.get_host }}{{ detail.sponsor.photo_url }}" class="user-photo">
+        {% else %}<div class="no-photo">&#128100;</div>{% endif %}
+    </div>
+    <div class="basic-cell">
+        <div class="section" style="margin-bottom:0">
+            <div class="section-title">البيانات الأساسية</div>
+            <div class="info-grid">
+                <div class="info-row">
+                    <div class="info-item"><div class="info-box"><div class="info-lbl">الاسم الكامل</div><div class="info-val">{{ user.get_full_name }}</div></div></div>
+                    <div class="info-item"><div class="info-box"><div class="info-lbl">البريد الإلكتروني</div><div class="info-val">{{ user.email }}</div></div></div>
+                    <div class="info-item"><div class="info-box"><div class="info-lbl">رقم الجوال</div><div class="info-val ltr">{{ user.phone_country }}{{ user.phone }}</div></div></div>
+                </div>
+                <div class="info-row">
+                    {% if user.phone2 %}<div class="info-item"><div class="info-box"><div class="info-lbl">الجوال 2</div><div class="info-val ltr">{{ user.phone2_country }}{{ user.phone2 }}</div></div></div>{% endif %}
+                    {% if user.whatsapp %}<div class="info-item"><div class="info-box"><div class="info-lbl">واتساب</div><div class="info-val ltr">{{ user.whatsapp_country }}{{ user.whatsapp }}</div></div></div>{% endif %}
+                    {% if user.id_number %}<div class="info-item"><div class="info-box"><div class="info-lbl">رقم الهوية</div><div class="info-val">{{ user.id_number }}</div></div></div>{% endif %}
+                </div>
+                <div class="info-row">
+                    <div class="info-item"><div class="info-box"><div class="info-lbl">الجنسية</div><div class="info-val">{{ user.nationality|default:"—" }}</div></div></div>
+                    <div class="info-item"><div class="info-box"><div class="info-lbl">الجنس</div><div class="info-val">{{ user.gender|default:"—" }}</div></div></div>
+                    <div class="info-item"><div class="info-box"><div class="info-lbl">تاريخ التسجيل</div><div class="info-val">{{ user.date_joined|date:"Y/m/d" }}</div></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ كافل ══ -->
+{% if user.user_type == 'sponsor' and detail.sponsor %}
+<div class="section">
+    <div class="section-title blue">بيانات الكافل</div>
+    <div class="info-grid">
+        <div class="info-row">
+            <div class="info-item"><div class="info-box"><div class="info-lbl">اسم المستخدم</div><div class="info-val">{{ user.username }}</div></div></div>
+            <div class="info-item"><div class="info-box"><div class="info-lbl">المهنة</div><div class="info-val">{{ detail.sponsor.job|default:"—" }}</div></div></div>
+            <div class="info-item"><div class="info-box"><div class="info-lbl">الدولة</div><div class="info-val">{{ detail.sponsor.country|default:"—" }}</div></div></div>
+        </div>
+        <div class="info-row">
+            <div class="info-item"><div class="info-box"><div class="info-lbl">المدينة</div><div class="info-val">{{ detail.sponsor.city|default:"—" }}</div></div></div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ══ يتيم ══ -->
+{% if user.user_type == 'orphan' %}
+    {% if detail.orphan %}
+    <div class="section">
+        <div class="section-title">بيانات اليتيم</div>
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-item"><div class="info-box"><div class="info-lbl">تاريخ الميلاد</div><div class="info-val">{{ detail.orphan.birth_date }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">نوع اليتم</div><div class="info-val">{{ detail.orphan.orphan_type }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">الحالة الصحية</div><div class="info-val">{{ detail.orphan.health_status }}</div></div></div>
+            </div>
+            <div class="info-row">
+                <div class="info-item"><div class="info-box"><div class="info-lbl">المستوى التعليمي</div><div class="info-val">{{ detail.orphan.education_level }}</div></div></div>
+                {% if detail.orphan.school_grade %}<div class="info-item"><div class="info-box"><div class="info-lbl">الصف الدراسي</div><div class="info-val">{{ detail.orphan.school_grade }}</div></div></div>{% endif %}
+                <div class="info-item"><div class="info-box"><div class="info-lbl">اسم المدرسة</div><div class="info-val">{{ detail.orphan.school_name|default:"—" }}</div></div></div>
+            </div>
+            <div class="info-row">
+                <div class="info-item"><div class="info-box"><div class="info-lbl">نوع السكن</div><div class="info-val">{{ detail.orphan.housing_type }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">ملكية السكن</div><div class="info-val">{{ detail.orphan.housing_ownership }}</div></div></div>
+                {% if detail.orphan.monthly_rent %}<div class="info-item"><div class="info-box"><div class="info-lbl">مبلغ الإيجار</div><div class="info-val">{{ detail.orphan.monthly_rent }} &#8362;</div></div></div>{% endif %}
+            </div>
+            <div class="info-row">
+                <div class="info-item"><div class="info-box"><div class="info-lbl">المدينة الحالية</div><div class="info-val">{{ detail.orphan.current_city }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">الشارع الحالي</div><div class="info-val">{{ detail.orphan.current_street }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">أقرب معلم</div><div class="info-val">{{ detail.orphan.current_landmark }}</div></div></div>
+            </div>
+            {% if detail.orphan.previous_city %}
+            <div class="info-row">
+                <div class="info-item"><div class="info-box"><div class="info-lbl">المدينة السابقة</div><div class="info-val">{{ detail.orphan.previous_city }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">الشارع السابق</div><div class="info-val">{{ detail.orphan.previous_street|default:"—" }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">أقرب معلم سابق</div><div class="info-val">{{ detail.orphan.previous_landmark|default:"—" }}</div></div></div>
+            </div>
+            {% endif %}
+            {% if detail.orphan.story %}
+            <div class="info-row">
+                <div class="info-item" style="width:100%;display:block;padding:5px 6px">
+                    <div class="info-box" style="width:100%">
+                        <div class="info-lbl">قصة اليتيم</div>
+                        <div class="info-val story">{{ detail.orphan.story }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if detail.mother %}
+    <div class="section">
+        <div class="section-title">بيانات الأم</div>
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-item"><div class="info-box"><div class="info-lbl">الاسم الكامل</div><div class="info-val">{{ detail.mother.full_name }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">رقم الهوية</div><div class="info-val">{{ detail.mother.id_number }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">تاريخ الميلاد</div><div class="info-val">{{ detail.mother.birth_date }}</div></div></div>
+            </div>
+            <div class="info-row">
+                <div class="info-item"><div class="info-box"><div class="info-lbl">الحالة</div><div class="info-val">{% if detail.mother.is_alive %}على قيد الحياة{% else %}متوفية{% endif %}</div></div></div>
+                {% if not detail.mother.is_alive %}
+                    {% if detail.mother.death_date %}<div class="info-item"><div class="info-box"><div class="info-lbl">تاريخ الوفاة</div><div class="info-val">{{ detail.mother.death_date }}</div></div></div>{% endif %}
+                    {% if detail.mother.death_reason %}<div class="info-item"><div class="info-box"><div class="info-lbl">سبب الوفاة</div><div class="info-val">{{ detail.mother.death_reason }}</div></div></div>{% endif %}
+                {% endif %}
+                <div class="info-item"><div class="info-box"><div class="info-lbl">الحالة الصحية</div><div class="info-val">{{ detail.mother.health_status }}</div></div></div>
+            </div>
+            <div class="info-row">
+                <div class="info-item"><div class="info-box"><div class="info-lbl">المستوى التعليمي</div><div class="info-val">{{ detail.mother.education_level }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">المهنة</div><div class="info-val">{{ detail.mother.job }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">الدخل الشهري</div><div class="info-val">{{ detail.mother.monthly_income }} &#8362;</div></div></div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if detail.father %}
+    <div class="section">
+        <div class="section-title">بيانات الأب</div>
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-item"><div class="info-box"><div class="info-lbl">الاسم الكامل</div><div class="info-val">{{ detail.father.full_name }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">رقم الهوية</div><div class="info-val">{{ detail.father.id_number }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">تاريخ الميلاد</div><div class="info-val">{{ detail.father.birth_date }}</div></div></div>
+            </div>
+            <div class="info-row">
+                <div class="info-item"><div class="info-box"><div class="info-lbl">الحالة</div><div class="info-val">{% if detail.father.is_alive %}على قيد الحياة{% else %}متوفي{% endif %}</div></div></div>
+                {% if not detail.father.is_alive %}
+                    {% if detail.father.death_date %}<div class="info-item"><div class="info-box"><div class="info-lbl">تاريخ الوفاة</div><div class="info-val">{{ detail.father.death_date }}</div></div></div>{% endif %}
+                    {% if detail.father.death_reason %}<div class="info-item"><div class="info-box"><div class="info-lbl">سبب الوفاة</div><div class="info-val">{{ detail.father.death_reason }}</div></div></div>{% endif %}
+                {% else %}
+                    {% if detail.father.income_before %}<div class="info-item"><div class="info-box"><div class="info-lbl">الدخل الشهري</div><div class="info-val">{{ detail.father.income_before }} &#8362;</div></div></div>{% endif %}
+                {% endif %}
+                <div class="info-item"><div class="info-box"><div class="info-lbl">الحالة الصحية</div><div class="info-val">{{ detail.father.health_status }}</div></div></div>
+            </div>
+            <div class="info-row">
+                <div class="info-item"><div class="info-box"><div class="info-lbl">المستوى التعليمي</div><div class="info-val">{{ detail.father.education_level }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">المهنة</div><div class="info-val">{{ detail.father.job }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">عدد الأبناء</div><div class="info-val">{{ detail.father.children_count }}</div></div></div>
+            </div>
+            {% if detail.father.pension_after %}
+            <div class="info-row">
+                <div class="info-item"><div class="info-box"><div class="info-lbl">المعاش بعد الوفاة</div><div class="info-val">{{ detail.father.pension_after }} &#8362;</div></div></div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+{% endif %}
+
+<!-- ══ ذوو احتياجات ══ -->
+{% if user.user_type == 'special' and detail.special %}
+<div class="section">
+    <div class="section-title">بيانات ذوو الاحتياجات</div>
+    <div class="info-grid">
+        <div class="info-row">
+            <div class="info-item"><div class="info-box"><div class="info-lbl">تاريخ الميلاد</div><div class="info-val">{{ detail.special.birth_date }}</div></div></div>
+            <div class="info-item"><div class="info-box"><div class="info-lbl">الحالة الصحية</div><div class="info-val">{{ detail.special.health_status }}</div></div></div>
+            <div class="info-item"><div class="info-box"><div class="info-lbl">المستوى التعليمي</div><div class="info-val">{{ detail.special.education_level }}</div></div></div>
+        </div>
+        <div class="info-row">
+            {% if detail.special.school_grade %}<div class="info-item"><div class="info-box"><div class="info-lbl">الصف الدراسي</div><div class="info-val">{{ detail.special.school_grade }}</div></div></div>{% endif %}
+            {% if detail.special.school_name %}<div class="info-item"><div class="info-box"><div class="info-lbl">اسم المدرسة</div><div class="info-val">{{ detail.special.school_name }}</div></div></div>{% endif %}
+            <div class="info-item"><div class="info-box"><div class="info-lbl">نوع السكن</div><div class="info-val">{{ detail.special.housing_type }}</div></div></div>
+        </div>
+        <div class="info-row">
+            <div class="info-item"><div class="info-box"><div class="info-lbl">المدينة الحالية</div><div class="info-val">{{ detail.special.current_city }}</div></div></div>
+            <div class="info-item"><div class="info-box"><div class="info-lbl">الشارع الحالي</div><div class="info-val">{{ detail.special.current_street }}</div></div></div>
+            <div class="info-item"><div class="info-box"><div class="info-lbl">أقرب معلم</div><div class="info-val">{{ detail.special.current_landmark }}</div></div></div>
+        </div>
+        {% if detail.special.case_details %}
+        <div class="info-row">
+            <div class="info-item" style="width:100%;display:block;padding:5px 6px">
+                <div class="info-box" style="width:100%">
+                    <div class="info-lbl">تفاصيل الحالة</div>
+                    <div class="info-val story">{{ detail.special.case_details }}</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- ══ أسرة ══ -->
+{% if user.user_type == 'family' %}
+    {% if detail.family %}
+    <div class="section">
+        <div class="section-title">بيانات رب الأسرة</div>
+        <div class="info-grid">
+            <div class="info-row">
+                {% if detail.family.id_number %}<div class="info-item"><div class="info-box"><div class="info-lbl">رقم الهوية</div><div class="info-val">{{ detail.family.id_number }}</div></div></div>{% endif %}
+                <div class="info-item"><div class="info-box"><div class="info-lbl">تاريخ الميلاد</div><div class="info-val">{{ detail.family.birth_date }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">الحالة الاجتماعية</div><div class="info-val">{{ detail.family.marital_status }}</div></div></div>
+            </div>
+            <div class="info-row">
+                <div class="info-item"><div class="info-box"><div class="info-lbl">الحالة الصحية</div><div class="info-val">{{ detail.family.health_status }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">المستوى التعليمي</div><div class="info-val">{{ detail.family.education_level }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">المهنة</div><div class="info-val">{{ detail.family.job }}</div></div></div>
+            </div>
+            <div class="info-row">
+                <div class="info-item"><div class="info-box"><div class="info-lbl">نوع السكن</div><div class="info-val">{{ detail.family.housing_type }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">ملكية السكن</div><div class="info-val">{{ detail.family.housing_ownership }}</div></div></div>
+                {% if detail.family.monthly_rent %}<div class="info-item"><div class="info-box"><div class="info-lbl">مبلغ الإيجار</div><div class="info-val">{{ detail.family.monthly_rent }} &#8362;</div></div></div>{% endif %}
+            </div>
+            <div class="info-row">
+                <div class="info-item"><div class="info-box"><div class="info-lbl">المدينة الحالية</div><div class="info-val">{{ detail.family.current_city }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">الشارع الحالي</div><div class="info-val">{{ detail.family.current_street }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">أقرب معلم</div><div class="info-val">{{ detail.family.current_landmark }}</div></div></div>
+            </div>
+            <div class="info-row">
+                <div class="info-item"><div class="info-box"><div class="info-lbl">عدد أفراد الأسرة</div><div class="info-val">{{ detail.family.members_count }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">عدد المرضى</div><div class="info-val">{{ detail.family.sick_count }}</div></div></div>
+            </div>
+            {% if detail.family.general_status %}
+            <div class="info-row">
+                <div class="info-item" style="width:100%;display:block;padding:5px 6px">
+                    <div class="info-box" style="width:100%">
+                        <div class="info-lbl">الوضع العام</div>
+                        <div class="info-val story">{{ detail.family.general_status }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if detail.wife %}
+    <div class="section">
+        <div class="section-title">بيانات الزوجة</div>
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-item"><div class="info-box"><div class="info-lbl">الاسم الكامل</div><div class="info-val">{{ detail.wife.full_name }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">رقم الهوية</div><div class="info-val">{{ detail.wife.id_number }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">تاريخ الميلاد</div><div class="info-val">{{ detail.wife.birth_date }}</div></div></div>
+            </div>
+            <div class="info-row">
+                <div class="info-item"><div class="info-box"><div class="info-lbl">الحالة الصحية</div><div class="info-val">{{ detail.wife.health_status }}</div></div></div>
+                <div class="info-item"><div class="info-box"><div class="info-lbl">المستوى التعليمي</div><div class="info-val">{{ detail.wife.education_level }}</div></div></div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endif %}
+
+<!-- ══ المعيل ══ -->
+{% if detail.guardian %}
+<div class="section">
+    <div class="section-title">بيانات المعيل الحالي</div>
+    <div class="info-grid">
+        <div class="info-row">
+            <div class="info-item"><div class="info-box"><div class="info-lbl">الاسم الكامل</div><div class="info-val">{{ detail.guardian.full_name }}</div></div></div>
+            <div class="info-item"><div class="info-box"><div class="info-lbl">رقم الهوية</div><div class="info-val">{{ detail.guardian.id_number }}</div></div></div>
+            <div class="info-item"><div class="info-box"><div class="info-lbl">صلة القرابة</div><div class="info-val">{{ detail.guardian.relation }}</div></div></div>
+        </div>
+        <div class="info-row">
+            <div class="info-item"><div class="info-box"><div class="info-lbl">المهنة</div><div class="info-val">{{ detail.guardian.job }}</div></div></div>
+            <div class="info-item"><div class="info-box"><div class="info-lbl">الحالة الصحية</div><div class="info-val">{{ detail.guardian.health_status }}</div></div></div>
+            <div class="info-item"><div class="info-box"><div class="info-lbl">المستوى التعليمي</div><div class="info-val">{{ detail.guardian.education_level }}</div></div></div>
+        </div>
+        <div class="info-row">
+            <div class="info-item"><div class="info-box"><div class="info-lbl">الدخل الشهري</div><div class="info-val">{{ detail.guardian.monthly_income }} &#8362;</div></div></div>
+            <div class="info-item"><div class="info-box"><div class="info-lbl">عدد من يعيلهم</div><div class="info-val">{{ detail.guardian.dependents }}</div></div></div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ══ أفراد الأسرة ══ -->
+{% if detail.members %}
+<div class="section">
+    <div class="section-title">أفراد الأسرة — {{ detail.members|length }} فرد</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>#</th><th>الاسم الكامل</th><th>رقم الهوية</th><th>الجنس</th>
+                <th>تاريخ الميلاد</th><th>الحالة الاجتماعية</th><th>صلة القرابة</th>
+                <th>الحالة الصحية</th><th>التعليم</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in detail.members %}
+            <tr>
+                <td>{{ forloop.counter }}</td><td>{{ m.full_name }}</td>
+                <td>{{ m.id_number|default:"—" }}</td><td>{{ m.gender }}</td>
+                <td>{{ m.birth_date }}</td><td>{{ m.marital_status|default:"—" }}</td>
+                <td>{{ m.relation }}</td><td>{{ m.health_status }}</td>
+                <td>{{ m.education_level|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- ══ أقسام المعتمدين فقط ══ -->
+{% if user.is_approved and user.user_type != 'sponsor' %}
+
+<!-- الكافل -->
+<div class="section">
+    <div class="section-title green">بيانات الكافل</div>
+    {% if detail.sponsor_info %}
+    <div class="sponsor-box">
+        <div class="sponsor-row">
+            <div class="sponsor-cell"><div class="sponsor-lbl">اسم الكافل</div><div class="sponsor-val">{{ detail.sponsor_info.name }}</div></div>
+            <div class="sponsor-cell"><div class="sponsor-lbl">رقم الاستمارة</div><div class="sponsor-val">{{ detail.sponsor_info.reg_number }}</div></div>
+            <div class="sponsor-cell"><div class="sponsor-lbl">البريد</div><div class="sponsor-val">{{ detail.sponsor_info.email }}</div></div>
+            <div class="sponsor-cell"><div class="sponsor-lbl">الجوال</div><div class="sponsor-val">{{ detail.sponsor_info.phone }}</div></div>
+        </div>
+    </div>
+    {% else %}
+    <div class="no-data">لا يوجد كافل حالياً</div>
+    {% endif %}
+</div>
+
+<!-- المدفوعات -->
+<div class="section">
+    <div class="section-title green">سجل المدفوعات</div>
+    {% if detail.payments %}
+    <table class="data-table green">
+        <thead>
+            <tr><th>التاريخ</th><th>المبلغ &#8362;</th><th>المبلغ $</th><th>مصدر الدفع</th><th>الشخص/الجهة</th><th>الحالة</th><th>ملاحظة</th></tr>
+        </thead>
+        <tbody>
+            {% for p in detail.payments %}
+            <tr>
+                <td>{{ p.date }}</td>
+                <td>{{ p.amount_ils }}&#8362;</td>
+                <td>${{ p.amount_usd }}</td>
+                <td>{{ p.paid_by_label }}</td>
+                <td>{{ p.party }}</td>
+                <td class="st-{{ p.status }}">{{ p.status_label }}</td>
+                <td>{{ p.note|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="no-data">لا توجد مدفوعات مسجّلة</div>
+    {% endif %}
+</div>
+
+<!-- المساعدات -->
+<div class="section">
+    <div class="section-title orange">سجل المساعدات</div>
+    {% if detail.aids %}
+    <table class="data-table orange">
+        <thead>
+            <tr><th>التاريخ</th><th>الاسم</th><th>النوع</th><th>الكمية</th><th>الجهة</th><th>معتمد الطلب</th><th>ملاحظة</th></tr>
+        </thead>
+        <tbody>
+            {% for a in detail.aids %}
+            <tr>
+                <td>{{ a.date }}</td><td>{{ a.name }}</td><td>{{ a.aid_type_label }}</td>
+                <td>{{ a.quantity }}</td><td>{{ a.provider }}</td>
+                <td>{{ a.created_by }}</td><td>{{ a.note|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="no-data">لا توجد مساعدات مسجّلة</div>
+    {% endif %}
+</div>
+
+{% endif %}
+
+<!-- ══ الوثائق ══ -->
+{% if detail.docs %}
+<div class="section page-break">
+    <div class="section-title">الوثائق المرفوعة — {{ detail.docs|length }} وثيقة</div>
+    <div style="padding:12px">
+        {% for doc in detail.docs %}
+        <div class="doc-item">
+            <div class="doc-header">{{ doc.type }}</div>
+            {% if doc.name|slice:"-4:" == ".pdf" %}
+            <div class="doc-pdf">ملف PDF — {{ doc.type }}</div>
+            {% else %}
+            <img src="{{ request.scheme }}://{{ request.get_host }}{{ doc.url }}" class="doc-img" alt="{{ doc.type }}">
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- ══ التوقيعات ══ -->
+<div class="signature-area">
+    <div class="sig-cell"><div class="sig-line"></div><div class="sig-label">توقيع مقدم الطلب</div></div>
+    <div class="sig-cell"><div class="sig-line"></div><div class="sig-label">توقيع المراجع</div></div>
+    <div class="sig-cell"><div class="sig-line"></div><div class="sig-label">ختم الجمعية واعتمادها</div></div>
+</div>
+
+<!-- ══ Footer ══ -->
+<div class="print-footer">
+    <div class="footer-cell">منصة رُحَمَاء — جميع الحقوق محفوظة</div>
+    <div class="footer-cell">{% if printed_by %}طُبع بواسطة: {{ printed_by }}{% endif %}</div>
+    <div class="footer-cell">رقم الاستمارة: {{ user.registration_number|default:user.pk }}</div>
+</div>
+
+</div>
+</body>
+</html>

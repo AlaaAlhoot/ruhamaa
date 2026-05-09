@@ -1,0 +1,1680 @@
+{% extends 'beneficiary/base.html' %}
+{% load static %}
+{% block title %}الملف الشخصي{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ════════════════════════════════════════════
+   إصلاح overflow على المستوى العام
+═════════════════════════════════════════════ */
+html, body { overflow-x: hidden; max-width: 100vw; }
+
+.page-content,
+.main-content {
+    overflow-x: hidden !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* تأكيد: لا يخرج شيء عن حدود الـ viewport */
+.pf-wrap {
+    max-width: 100%;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+.pf-card {
+    max-width: 100%;
+    width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+/* ════════════════════════════════════════════
+   متغيرات النظام
+═════════════════════════════════════════════ */
+:root {
+    --card: #fff;
+    --border: rgba(0,0,0,0.08);
+    --text: #1a1a2e;
+    --bg-secondary: #f4f9f6;
+}
+body.dark-mode {
+    --card: #111e16;
+    --border: rgba(46,204,113,0.12);
+    --text: #e8f5ee;
+    --bg-secondary: #0d1a12;
+}
+
+/* ════════════════════════════════════════════
+   CSS الـ dropdown (للجنسية والمفاتيح)
+═════════════════════════════════════════════ */
+.dd-wrap { position: relative; width: 100%; }
+
+.dd-selector {
+    display: flex; align-items: center; gap: 8px;
+    background: #fff; border: 1.5px solid rgba(26,122,74,0.18);
+    border-radius: 10px; padding: 9px 12px;
+    cursor: pointer; transition: all 0.2s;
+    font: 600 0.86rem 'Tajawal', sans-serif;
+    color: var(--text); user-select: none; min-width: 0;
+}
+body.dark-mode .dd-selector { background: #111e16; color: #e8f5ee; border-color: rgba(46,204,113,0.18); }
+.dd-selector:hover { border-color: #1a7a4a; }
+.dd-selector.open { border-color: #1a7a4a; box-shadow: 0 0 0 3px rgba(26,122,74,0.12); }
+
+.dd-flag { font-size: 1.2rem; line-height: 1; flex-shrink: 0; }
+.dd-text { flex: 1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.dd-sub  { font-weight: 700; color: #1a7a4a; font-family: 'Cairo', sans-serif; direction: ltr; }
+body.dark-mode .dd-sub { color: #4ade80; }
+.dd-arrow { font-size: 0.7rem; color: #6b7280; transition: transform 0.2s; flex-shrink: 0; }
+.dd-selector.open .dd-arrow { transform: rotate(180deg); }
+
+.dd-dropdown {
+    display: none; position: absolute; top: calc(100% + 4px); right: 0; left: 0;
+    background: #fff; border: 1.5px solid rgba(26,122,74,0.2);
+    border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+    z-index: 1000; overflow: hidden; max-height: 320px;
+}
+body.dark-mode .dd-dropdown { background: #111e16; border-color: rgba(46,204,113,0.2); }
+.dd-dropdown.show { display: flex; flex-direction: column; }
+
+.dd-search-wrap { padding: 8px; border-bottom: 1px solid rgba(0,0,0,0.06); }
+body.dark-mode .dd-search-wrap { border-color: rgba(255,255,255,0.06); }
+.dd-search {
+    width: 100%; padding: 8px 12px;
+    background: var(--bg-secondary);
+    border: 1px solid rgba(26,122,74,0.15);
+    border-radius: 8px; font: 500 0.82rem 'Tajawal', sans-serif;
+    color: var(--text); outline: none;
+}
+body.dark-mode .dd-search { background: #0d1a12; color: #e8f5ee; border-color: rgba(46,204,113,0.15); }
+.dd-search:focus { border-color: #1a7a4a; box-shadow: 0 0 0 2px rgba(26,122,74,0.1); }
+
+.dd-list { overflow-y: auto; max-height: 260px; }
+.dd-list::-webkit-scrollbar { width: 6px; }
+.dd-list::-webkit-scrollbar-thumb { background: rgba(26,122,74,0.3); border-radius: 50px; }
+
+.dd-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; cursor: pointer;
+    font: 500 0.85rem 'Tajawal', sans-serif;
+    color: var(--text); transition: background 0.15s;
+    border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+body.dark-mode .dd-item { color: #e8f5ee; border-color: rgba(255,255,255,0.04); }
+.dd-item:last-child { border-bottom: none; }
+.dd-item:hover { background: rgba(26,122,74,0.08); }
+.dd-item.selected { background: rgba(26,122,74,0.12); font-weight: 700; }
+body.dark-mode .dd-item.selected { background: rgba(46,204,113,0.15); }
+
+.dd-item-flag { font-size: 1.1rem; flex-shrink: 0; }
+.dd-item-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dd-item-sub  { font-weight: 700; color: #1a7a4a; font-family: 'Cairo', sans-serif; direction: ltr; font-size: 0.78rem; flex-shrink: 0; }
+body.dark-mode .dd-item-sub { color: #4ade80; }
+
+/* ════════════════════════════════════════════
+   التخطيط الرئيسي (مع container محدود)
+═════════════════════════════════════════════ */
+.pf-wrap { max-width: 1200px; margin: 0 auto; padding: 0; box-sizing: border-box; }
+
+.pf-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 18px; padding: 22px 24px;
+    box-shadow: 0 8px 30px rgba(26,122,74,0.06);
+    overflow: hidden;  /* يمنع تخطي العناصر للحدود */
+}
+
+/* ════════════════════════════════════════════
+   الرأس
+═════════════════════════════════════════════ */
+.pf-header {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 18px;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(26,122,74,0.1);
+}
+
+.pf-photo-wrap { position: relative; width: 110px; height: 110px; flex-shrink: 0; }
+.pf-photo { width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 4px solid #1a7a4a; box-shadow: 0 6px 16px rgba(26,122,74,0.25); }
+.pf-photo-empty { width: 110px; height: 110px; border-radius: 50%; background: linear-gradient(135deg,#1a7a4a,#2ecc71); display: flex; align-items: center; justify-content: center; color: #fff; font: 700 2.6rem 'Amiri',serif; }
+.pf-photo-edit { position: absolute; bottom: 2px; left: 2px; width: 32px; height: 32px; border-radius: 50%; background: #1a7a4a; color: #fff; border: 3px solid #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; }
+body.dark-mode .pf-photo-edit { border-color: #111e16; }
+.pf-photo-edit input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+.pf-info { min-width: 0; overflow: hidden; }
+.pf-name {
+    font: 700 1.55rem 'Amiri',serif;
+    background: linear-gradient(135deg,#0f5232,#2ecc71);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 6px;
+    word-break: break-word;
+    line-height: 1.3;
+}
+.pf-meta { display: flex; flex-wrap: wrap; gap: 6px 12px; font: 600 0.78rem 'Tajawal',sans-serif; color: #6b7280; min-width: 0; }
+body.dark-mode .pf-meta { color: #95a89d; }
+.pf-meta span { white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.pf-badge { display: inline-block; padding: 3px 10px; border-radius: 50px; font: 700 0.72rem 'Tajawal',sans-serif; }
+
+.pf-actions { display: flex; gap: 8px; flex-wrap: wrap; flex-shrink: 0; }
+.pf-btn { padding: 9px 14px; border-radius: 11px; font: 700 0.82rem 'Tajawal',sans-serif; cursor: pointer; border: 1.5px solid transparent; display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s; white-space: nowrap; }
+.pf-btn-print { background: rgba(43,108,176,0.1); color: #2b6cb0; border-color: rgba(43,108,176,0.2); }
+.pf-btn-pdf { background: rgba(229,62,62,0.1); color: #c53030; border-color: rgba(229,62,62,0.2); }
+.pf-btn-excel { background: rgba(26,122,74,0.1); color: #1a7a4a; border-color: rgba(26,122,74,0.2); }
+.pf-btn:hover { transform: translateY(-2px); }
+
+/* ════════════════════════════════════════════
+   التابات
+═════════════════════════════════════════════ */
+.pf-tabs-wrap {
+    background: rgba(26,122,74,0.04);
+    border-radius: 14px;
+    padding: 6px;
+    margin-bottom: 18px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(26,122,74,0.3) transparent;
+}
+.pf-tabs-wrap::-webkit-scrollbar { height: 4px; }
+.pf-tabs-wrap::-webkit-scrollbar-thumb { background: rgba(26,122,74,0.3); border-radius: 50px; }
+body.dark-mode .pf-tabs-wrap { background: rgba(46,204,113,0.05); }
+
+.pf-tabs { display: flex; gap: 4px; flex-wrap: nowrap; min-width: max-content; }
+.pf-tab { padding: 9px 14px; background: transparent; border: none; color: #6b7280; border-radius: 10px; cursor: pointer; font: 600 0.82rem 'Tajawal',sans-serif; white-space: nowrap; transition: all 0.2s; flex-shrink: 0; }
+body.dark-mode .pf-tab { color: #95a89d; }
+.pf-tab:hover { background: rgba(26,122,74,0.08); color: #1a7a4a; }
+.pf-tab.active { background: linear-gradient(135deg,#1a7a4a,#2ecc71); color: #fff; box-shadow: 0 4px 12px rgba(26,122,74,0.25); }
+
+/* ════════════════════════════════════════════
+   البانلات
+═════════════════════════════════════════════ */
+.pf-panel { display: none; animation: fadeUp 0.3s ease; }
+.pf-panel.active { display: block; }
+@keyframes fadeUp { from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)} }
+
+/* ════════════════════════════════════════════
+   ترويسة قسم
+═════════════════════════════════════════════ */
+.pf-section-hdr { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 15px; background: linear-gradient(135deg,rgba(26,122,74,0.08),rgba(46,204,113,0.04)); border-radius: 11px; margin-bottom: 14px; flex-wrap: wrap; }
+.pf-section-title { font: 700 0.92rem 'Tajawal',sans-serif; color: #1a7a4a; display: flex; align-items: center; gap: 8px; min-width: 0; }
+body.dark-mode .pf-section-title { color: #4ade80; }
+
+/* ════════════════════════════════════════════
+   الحقول
+═════════════════════════════════════════════ */
+.pf-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 12px 14px; }
+.pf-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pf-field.full { grid-column: 1/-1; }
+.pf-label { font: 600 0.74rem 'Tajawal',sans-serif; color: #6b7280; }
+body.dark-mode .pf-label { color: #95a89d; }
+.pf-label .req { color: #e53e3e; }
+
+.pf-value { font: 600 0.86rem 'Tajawal',sans-serif; color: var(--text); padding: 9px 12px; background: var(--bg-secondary); border-radius: 10px; min-height: 40px; word-wrap: break-word; word-break: break-word; }
+.pf-value.empty { color: #9ca3af; font-weight: 400; font-style: italic; }
+
+.pf-input, .pf-select, .pf-textarea {
+    background: #fff; border: 1.5px solid rgba(26,122,74,0.18);
+    border-radius: 10px; padding: 9px 12px;
+    font: 600 0.86rem 'Tajawal',sans-serif;
+    color: var(--text); width: 100%; transition: all 0.2s;
+    box-sizing: border-box; min-width: 0;
+}
+body.dark-mode .pf-input, body.dark-mode .pf-select, body.dark-mode .pf-textarea { background: #111e16; color: #e8f5ee; border-color: rgba(46,204,113,0.18); }
+.pf-input:focus, .pf-select:focus, .pf-textarea:focus { border-color: #1a7a4a; box-shadow: 0 0 0 3px rgba(26,122,74,0.12); outline: none; }
+.pf-input.is-invalid, .pf-select.is-invalid, .pf-textarea.is-invalid { border-color: #e53e3e !important; box-shadow: 0 0 0 3px rgba(229,62,62,0.12) !important; }
+.pf-input.is-valid { border-color: #1a7a4a !important; }
+.pf-input:disabled, .pf-select:disabled, .pf-textarea:disabled { background: #f0f0f0 !important; color: #9ca3af !important; cursor: not-allowed; }
+body.dark-mode .pf-input:disabled, body.dark-mode .pf-select:disabled { background: #1a1a1a !important; color: #6b7280 !important; }
+.pf-textarea { resize: vertical; min-height: 90px; }
+.pf-err, .pf-ok { font: 600 0.72rem 'Tajawal',sans-serif; margin-top: 2px; display: none; }
+.pf-err { color: #e53e3e; }
+.pf-ok { color: #1a7a4a; }
+
+/* ════════════════════════════════════════════
+   حقل الجوال (مفتاح + رقم)
+═════════════════════════════════════════════ */
+.phone-row { display: flex; gap: 6px; min-width: 0; }
+.phone-row .dd-wrap { width: 130px; flex-shrink: 0; }
+.phone-row .dd-selector { padding: 8px 10px !important; }
+.phone-row .pf-input { flex: 1; min-width: 0; }
+
+/* ════════════════════════════════════════════
+   أزرار التعديل
+═════════════════════════════════════════════ */
+.pf-edit-btn { background: rgba(26,122,74,0.1); color: #1a7a4a; border: 1.5px solid rgba(26,122,74,0.2); border-radius: 9px; padding: 6px 13px; cursor: pointer; font: 700 0.78rem 'Tajawal',sans-serif; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s; white-space: nowrap; }
+.pf-edit-btn:hover { background: #1a7a4a; color: #fff; }
+.pf-save-btn { background: linear-gradient(135deg,#1a7a4a,#2ecc71); color: #fff; border: none; border-radius: 9px; padding: 7px 16px; cursor: pointer; font: 700 0.8rem 'Tajawal',sans-serif; transition: all 0.2s; white-space: nowrap; }
+.pf-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.pf-save-btn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(26,122,74,0.25); }
+.pf-cancel-btn { background: transparent; color: #6b7280; border: 1.5px solid rgba(0,0,0,0.1); border-radius: 9px; padding: 6px 13px; cursor: pointer; font: 600 0.78rem 'Tajawal',sans-serif; white-space: nowrap; }
+.pf-add-btn { background: linear-gradient(135deg,#1a7a4a,#2ecc71); color: #fff; border: none; border-radius: 9px; padding: 7px 14px; cursor: pointer; font: 700 0.78rem 'Tajawal',sans-serif; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.pf-add-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(26,122,74,0.25); }
+
+/* ════════════════════════════════════════════
+   الكافل
+═════════════════════════════════════════════ */
+.sponsor-card { background: linear-gradient(135deg,rgba(26,122,74,0.08),rgba(46,204,113,0.04)); border: 2px solid rgba(26,122,74,0.15); border-radius: 16px; padding: 20px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.sponsor-photo { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #1a7a4a; flex-shrink: 0; }
+.sponsor-photo-empty { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg,#1a7a4a,#2ecc71); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 2rem; flex-shrink: 0; }
+.sponsor-info { flex: 1; min-width: 200px; }
+.sponsor-name { font: 700 1.05rem 'Tajawal',sans-serif; color: #1a7a4a; margin-bottom: 6px; word-break: break-word; }
+body.dark-mode .sponsor-name { color: #4ade80; }
+.sponsor-meta { display: grid; grid-template-columns: repeat(auto-fill,minmax(140px,1fr)); gap: 5px 14px; font: 600 0.8rem 'Tajawal',sans-serif; color: #6b7280; }
+body.dark-mode .sponsor-meta { color: #95a89d; }
+
+.no-data { text-align: center; padding: 40px 20px; background: rgba(245,158,11,0.06); border: 2px dashed rgba(245,158,11,0.3); border-radius: 14px; }
+.no-data-icon { font-size: 3rem; margin-bottom: 8px; }
+.no-data-text { font: 700 0.95rem 'Tajawal',sans-serif; color: #b45309; }
+
+/* ════════════════════════════════════════════
+   المرفقات
+═════════════════════════════════════════════ */
+.docs-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 14px; }
+.doc-card { background: var(--bg-secondary); border: 1.5px solid rgba(26,122,74,0.1); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px; transition: all 0.2s; min-width: 0; }
+body.dark-mode .doc-card { background: #0d1a12; border-color: rgba(46,204,113,0.1); }
+.doc-card:hover { border-color: #1a7a4a; transform: translateY(-3px); box-shadow: 0 8px 18px rgba(26,122,74,0.1); }
+.doc-card.required { border-color: rgba(229,62,62,0.25); }
+.doc-icon { font-size: 2rem; text-align: center; }
+.doc-label { font: 700 0.85rem 'Tajawal',sans-serif; color: var(--text); text-align: center; word-break: break-word; }
+.doc-required-badge { display: inline-block; font: 600 0.62rem 'Tajawal',sans-serif; padding: 2px 7px; border-radius: 8px; background: #e53e3e; color: #fff; }
+.doc-name { font: 500 0.7rem 'Tajawal',sans-serif; color: #9ca3af; text-align: center; word-break: break-all; }
+.doc-actions { display: flex; gap: 5px; margin-top: auto; flex-wrap: wrap; }
+.doc-btn { flex: 1; min-width: 60px; border: none; border-radius: 7px; padding: 6px; font: 700 0.74rem 'Tajawal',sans-serif; cursor: pointer; transition: all 0.15s; }
+.doc-btn-view { background: rgba(43,108,176,0.1); color: #2b6cb0; }
+.doc-btn-replace { background: rgba(245,158,11,0.1); color: #b45309; }
+.doc-btn-delete { background: rgba(229,62,62,0.1); color: #c53030; }
+.doc-btn:hover { filter: brightness(0.9); }
+.doc-add-card { border: 2px dashed rgba(26,122,74,0.25); border-radius: 12px; padding: 18px; text-align: center; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; gap: 6px; align-items: center; justify-content: center; min-height: 160px; }
+.doc-add-card:hover { border-color: #1a7a4a; background: rgba(26,122,74,0.04); }
+
+/* ════════════════════════════════════════════
+   أفراد الأسرة
+═════════════════════════════════════════════ */
+.member-card { background: var(--bg-secondary); border: 1px solid rgba(26,122,74,0.12); border-radius: 12px; padding: 13px 15px; margin-bottom: 10px; }
+body.dark-mode .member-card { background: #0d1a12; border-color: rgba(46,204,113,0.1); }
+.member-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
+.member-title { font: 700 0.86rem 'Tajawal',sans-serif; color: #1a7a4a; word-break: break-word; min-width: 0; }
+body.dark-mode .member-title { color: #4ade80; }
+.member-actions { display: flex; gap: 5px; flex-shrink: 0; }
+.member-btn { border: none; border-radius: 7px; padding: 5px 10px; font: 600 0.74rem 'Tajawal',sans-serif; cursor: pointer; white-space: nowrap; }
+.member-btn-edit { background: rgba(245,158,11,0.1); color: #b45309; }
+.member-btn-delete { background: rgba(229,62,62,0.1); color: #c53030; }
+.member-btn:hover { filter: brightness(0.9); }
+
+/* ════════════════════════════════════════════
+   المودلات
+═════════════════════════════════════════════ */
+.pf-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; align-items: center; justify-content: center; padding: 16px; }
+.pf-modal.show { display: flex; animation: modalIn 0.25s ease; }
+@keyframes modalIn { from{opacity:0} to{opacity:1} }
+.pf-modal-box { background: #fff; border-radius: 16px; max-width: 700px; width: 100%; max-height: 92vh; display: flex; flex-direction: column; animation: boxIn 0.3s ease; }
+@keyframes boxIn { from{transform:translateY(20px); opacity:0} to{transform:translateY(0); opacity:1} }
+body.dark-mode .pf-modal-box { background: #111e16; }
+.pf-modal-hdr { padding: 14px 18px; border-bottom: 1px solid rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+body.dark-mode .pf-modal-hdr { border-color: rgba(255,255,255,0.08); }
+.pf-modal-title { font: 700 1rem 'Tajawal',sans-serif; color: #1a7a4a; word-break: break-word; min-width: 0; flex: 1; }
+body.dark-mode .pf-modal-title { color: #4ade80; }
+.pf-modal-body { padding: 16px 18px; flex: 1; overflow: auto; }
+.pf-modal-foot { padding: 14px 18px; border-top: 1px solid rgba(0,0,0,0.08); display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+body.dark-mode .pf-modal-foot { border-color: rgba(255,255,255,0.08); }
+.pf-modal-close { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #9ca3af; flex-shrink: 0; }
+.pf-modal-close:hover { color: #c53030; }
+
+.doc-modal-body { text-align: center; }
+.doc-modal-body img { max-width: 100%; border-radius: 8px; }
+.doc-modal-body iframe { width: 100%; height: 70vh; border: none; border-radius: 8px; }
+
+.success-modal-box { max-width: 380px; text-align: center; padding: 30px 24px; }
+.success-icon { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg,#1a7a4a,#2ecc71); margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; }
+.success-icon svg { width: 48px; height: 48px; }
+.success-icon path { stroke: #fff; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; fill: none; stroke-dasharray: 100; stroke-dashoffset: 100; animation: drawCheck 0.6s 0.2s ease forwards; }
+@keyframes drawCheck { to{stroke-dashoffset:0} }
+.success-text { font: 700 1.05rem 'Tajawal',sans-serif; color: #1a7a4a; margin-bottom: 8px; }
+body.dark-mode .success-text { color: #4ade80; }
+.success-sub { font: 500 0.85rem 'Tajawal',sans-serif; color: #6b7280; margin-bottom: 18px; }
+.success-bar-wrap { background: rgba(26,122,74,0.1); border-radius: 50px; height: 6px; overflow: hidden; }
+.success-bar { height: 100%; background: linear-gradient(90deg,#1a7a4a,#2ecc71); border-radius: 50px; width: 100%; animation: shrinkBar 5s linear forwards; }
+@keyframes shrinkBar { from{width:100%} to{width:0%} }
+
+/* ════════════════════════════════════════════
+   شارات الحالة
+═════════════════════════════════════════════ */
+.status-badge { display: inline-block; padding: 4px 11px; border-radius: 50px; font: 700 0.74rem 'Tajawal',sans-serif; }
+.s-مسودة { background: rgba(107,114,128,0.15); color: #4b5563; }
+.s-مرسلة { background: rgba(43,108,176,0.15); color: #2b6cb0; }
+.s-قيد { background: rgba(245,158,11,0.15); color: #b45309; }
+.s-مقبولة { background: rgba(26,122,74,0.15); color: #1a7a4a; }
+.s-التدقيق { background: rgba(124,58,237,0.15); color: #7c3aed; }
+.s-التكفل { background: rgba(46,204,113,0.18); color: #1a7a4a; }
+.s-مرفوضة { background: rgba(229,62,62,0.15); color: #c53030; }
+
+/* ════════════════════════════════════════════
+   skeleton & toasts
+═════════════════════════════════════════════ */
+.skel { background: linear-gradient(90deg,rgba(26,122,74,0.05) 25%,rgba(26,122,74,0.12) 50%,rgba(26,122,74,0.05) 75%); background-size: 200% 100%; animation: skelMove 1.4s infinite; border-radius: 8px; height: 16px; }
+@keyframes skelMove { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+.toast-wrap { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; flex-direction: column; gap: 8px; max-width: calc(100vw - 32px); }
+.toast-msg { padding: 11px 18px; border-radius: 11px; font: 600 0.84rem 'Tajawal',sans-serif; box-shadow: 0 8px 22px rgba(0,0,0,0.12); animation: toastIn 0.3s ease; word-break: break-word; }
+.toast-msg.success { background: #1a7a4a; color: #fff; }
+.toast-msg.error { background: #c53030; color: #fff; }
+.toast-msg.info { background: #2b6cb0; color: #fff; }
+@keyframes toastIn { from{opacity:0; transform:translateY(-12px)} to{opacity:1; transform:translateY(0)} }
+
+/* ════════════════════════════════════════════
+   📱 RESPONSIVE — متعدد الـ breakpoints
+═════════════════════════════════════════════ */
+
+/* ── تابلت كبير (≤ 1024px) ── */
+@media (max-width: 1024px) {
+    .pf-wrap { padding: 0 8px; }
+}
+
+/* ── تابلت (≤ 991px) ── */
+@media (max-width: 991px) {
+    .pf-card { padding: 20px 18px; }
+    .pf-name { font-size: 1.45rem; }
+}
+
+/* ── موبايل أفقي (≤ 767px) ── */
+@media (max-width: 767px) {
+    .pf-wrap { padding: 0 4px; }
+    .pf-card { padding: 18px 14px; border-radius: 16px; }
+
+    /* الرأس - عمودي ومنظم */
+    .pf-header {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 14px;
+    }
+    .pf-photo-wrap { margin: 0 auto; width: 95px; height: 95px; }
+    .pf-photo, .pf-photo-empty { width: 95px; height: 95px; }
+    .pf-photo-empty { font-size: 2.2rem; }
+    .pf-info { text-align: center; }
+    .pf-name { font-size: 1.3rem; }
+    .pf-meta { justify-content: center; gap: 5px 10px; font-size: 0.74rem; }
+
+    /* الأزرار - شبكة 3 أعمدة */
+    .pf-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+    }
+    .pf-btn { padding: 9px 6px; font-size: 0.78rem; justify-content: center; }
+
+    /* التابات */
+    .pf-tabs-wrap { padding: 5px; }
+    .pf-tabs { gap: 3px; }
+    .pf-tab { padding: 8px 12px; font-size: 0.78rem; }
+
+    /* الحقول - عمود واحد */
+    .pf-grid { grid-template-columns: 1fr; gap: 10px; }
+
+    /* ترويسة قسم */
+    .pf-section-hdr {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 11px 13px;
+        gap: 8px;
+    }
+    .pf-section-hdr > div:last-child {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    /* المرفقات - عمودان */
+    .docs-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+    /* الكافل - عمودي */
+    .sponsor-card { flex-direction: column; text-align: center; padding: 16px; }
+    .sponsor-info { text-align: center; }
+    .sponsor-meta { justify-content: center; }
+
+    /* أفراد الأسرة */
+    .member-header { flex-direction: column; align-items: stretch; }
+    .member-actions { justify-content: flex-end; }
+
+    /* المودلات */
+    .pf-modal { padding: 10px; }
+    .pf-modal-box { max-height: 95vh; }
+    .pf-modal-body { padding: 14px; }
+    .pf-modal-foot { padding: 12px 14px; }
+}
+
+/* ── موبايل عمودي (≤ 480px) ── */
+@media (max-width: 480px) {
+    .pf-card { padding: 14px 10px; border-radius: 14px; }
+    .pf-name { font-size: 1.18rem; }
+    .pf-photo-wrap { width: 85px; height: 85px; }
+    .pf-photo, .pf-photo-empty { width: 85px; height: 85px; }
+    .pf-photo-empty { font-size: 2rem; }
+    .pf-meta { font-size: 0.72rem; gap: 4px 8px; }
+
+    /* الأزرار تبقى 3 لكن أصغر */
+    .pf-actions { gap: 5px; }
+    .pf-btn { padding: 8px 4px; font-size: 0.72rem; gap: 3px; }
+
+    .pf-tab { padding: 7px 10px; font-size: 0.74rem; }
+
+    /* المرفقات - عمود واحد */
+    .docs-grid { grid-template-columns: 1fr; }
+
+    /* حقل الجوال - يبقى أفقي مع تصغير */
+    .phone-row .dd-wrap { width: 110px; }
+    .phone-row .dd-selector { padding: 7px 8px !important; }
+    .phone-row .dd-sub { font-size: 0.78rem; }
+}
+
+/* ── شاشة صغيرة جداً (≤ 360px) ── */
+@media (max-width: 360px) {
+    .pf-card { padding: 12px 8px; }
+
+    /* الأزرار - عمود واحد لو الشاشة صغيرة جداً */
+    .pf-actions { grid-template-columns: 1fr; }
+    .pf-btn { padding: 9px; font-size: 0.78rem; }
+
+    /* حقل الجوال - عمودي */
+    .phone-row { flex-direction: column; gap: 6px; }
+    .phone-row .dd-wrap { width: 100%; }
+
+    /* تابات أصغر */
+    .pf-tab { padding: 7px 9px; font-size: 0.72rem; }
+}
+
+/* ── تحسينات عامة لمنع overflow ── */
+* { box-sizing: border-box; }
+img { max-width: 100%; height: auto; }
+.pf-wrap, .pf-card, .pf-grid, .pf-field, .docs-grid, .doc-card, .member-card { max-width: 100%; }
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+
+<!DOCTYPE html>
+<div class="pf-wrap">
+    <div class="pf-card">
+
+        <!-- الرأس -->
+        <div class="pf-header" id="pfHeader">
+            <div class="skel" style="width:110px;height:110px;border-radius:50%"></div>
+            <div style="min-width:0">
+                <div class="skel" style="width:240px;max-width:100%;height:28px;margin-bottom:10px"></div>
+                <div class="skel" style="width:160px;max-width:100%;height:14px"></div>
+            </div>
+            <div></div>
+        </div>
+
+        <!-- التابات -->
+        <div class="pf-tabs-wrap"><div class="pf-tabs" id="pfTabs"></div></div>
+
+        <!-- المحتوى -->
+        <div id="pfContent">
+            <div class="skel" style="height:200px;border-radius:14px"></div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Toasts -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- مودل عرض المستند -->
+<div class="pf-modal" id="docViewModal" onclick="if(event.target===this)closeDocView()">
+    <div class="pf-modal-box">
+        <div class="pf-modal-hdr">
+            <span class="pf-modal-title" id="docViewTitle">المستند</span>
+            <button class="pf-modal-close" onclick="closeDocView()">✕</button>
+        </div>
+        <div class="pf-modal-body doc-modal-body" id="docViewBody"></div>
+    </div>
+</div>
+
+<!-- مودل إضافة/تعديل فرد عائلة -->
+<div class="pf-modal" id="memberModal" onclick="if(event.target===this)closeMemberModal()">
+    <div class="pf-modal-box">
+        <div class="pf-modal-hdr">
+            <span class="pf-modal-title" id="memberModalTitle">إضافة فرد</span>
+            <button class="pf-modal-close" onclick="closeMemberModal()">✕</button>
+        </div>
+        <div class="pf-modal-body" id="memberModalBody"></div>
+        <div class="pf-modal-foot">
+            <button class="pf-cancel-btn" onclick="closeMemberModal()">إلغاء</button>
+            <button class="pf-save-btn" id="memberSaveBtn" onclick="saveMember()">💾 حفظ</button>
+        </div>
+    </div>
+</div>
+
+<!-- مودل النجاح -->
+<div class="pf-modal" id="successModal">
+    <div class="pf-modal-box success-modal-box">
+        <div class="success-icon">
+            <svg viewBox="0 0 64 64"><path d="M16 32 L28 44 L48 22"/></svg>
+        </div>
+        <div class="success-text" id="successText">تم الحفظ بنجاح</div>
+        <div class="success-sub" id="successSub">سيتم إغلاق النافذة تلقائياً...</div>
+        <div class="success-bar-wrap"><div class="success-bar" id="successBar"></div></div>
+    </div>
+</div>
+
+<!-- مودل تقدّم التصدير -->
+<div class="pf-modal" id="pdfProgressModal">
+    <div class="pf-modal-box success-modal-box">
+        <div style="font-size:3rem;margin-bottom:12px" id="pdfProgIcon">📋</div>
+        <div class="success-text" id="pdfProgText">جار تجهيز ملف PDF...</div>
+        <div class="success-sub" id="pdfProgSub">يرجى الانتظار قليلاً</div>
+        <div class="success-bar-wrap" style="margin-top:14px">
+            <div id="pdfProgBar" style="height:100%;background:linear-gradient(90deg,#1a7a4a,#2ecc71);border-radius:50px;width:0%;transition:width 0.3s ease"></div>
+        </div>
+        <div style="margin-top:8px;font:600 0.78rem 'Tajawal',sans-serif;color:#6b7280" id="pdfProgPct">0%</div>
+    </div>
+</div>
+
+{% csrf_token %}
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="{% static 'js/validation.js' %}"></script>
+<script src="{% static 'js/dropdown.js' %}"></script>
+<script>
+'use strict';
+
+/* ════════════════════════════════════════════
+   إعدادات عامة
+═════════════════════════════════════════════ */
+const CSRF = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+let profileData = null;
+let userType    = null;
+let editing     = {};
+let editValues  = {};
+let editErrors  = {};
+let checkTimers = {};
+let currentTab  = null;
+let _ddCounter  = 0;
+let memberCtx   = { mode:'add', index:-1 };
+
+const TYPE_LABELS = { orphan:'👦 يتيم', special:'♿ ذوو احتياجات', family:'👨‍👩‍👧 أسرة' };
+const TABS_BY_TYPE = {
+    orphan:  ['basic','main','mother','father','guardian','members','address','sponsor','docs'],
+    special: ['basic','main','guardian','members','address','sponsor','docs'],
+    family:  ['basic','main','wife','guardian','members','address','sponsor','docs'],
+};
+const TAB_LABELS = {
+    basic:'👤 الأساسي', main:'📋 البيانات', mother:'👩 الأم', father:'👨 الأب',
+    wife:'💍 الزوجة', guardian:'🧑 المعيل', members:'👥 الأفراد',
+    address:'📍 العنوان والسكن', sponsor:'🤝 الكافل', docs:'📎 المرفقات',
+};
+
+/* خرائط الصفوف حسب المستوى التعليمي */
+const GRADE_MAP = {
+    'غير متعلم':   { lock:'غير متعلم',   options:[] },
+    'رياض الأطفال':{ lock:null, options:[['0','روضة']] },
+    'ابتدائي':     { lock:null, options:[['1','الأول'],['2','الثاني'],['3','الثالث'],['4','الرابع'],['5','الخامس'],['6','السادس']] },
+    'إعدادي':      { lock:null, options:[['7','السابع'],['8','الثامن'],['9','التاسع']] },
+    'ثانوي':       { lock:null, options:[['10','العاشر'],['11','الحادي عشر'],['12','الثاني عشر']] },
+    'جامعي':       { lock:'جامعي',    options:[] },
+    'ماجستير':     { lock:'ماجستير',  options:[] },
+    'دكتوراه':     { lock:'دكتوراه',  options:[] },
+};
+
+/* ════════════════════════════════════════════
+   تحميل البيانات
+═════════════════════════════════════════════ */
+async function loadProfile() {
+    try {
+        const r = await fetch('/beneficiary/profile/data/', { headers:{'X-Requested-With':'XMLHttpRequest'}});
+        const d = await r.json();
+        if (d.status !== 'success') return showToast(d.message || 'خطأ', 'error');
+        profileData = d.data;
+        userType    = profileData.user_type;
+        renderHeader();
+        renderTabs();
+        switchTab(currentTab || TABS_BY_TYPE[userType][0]);
+    } catch { showToast('فشل الاتصال', 'error'); }
+}
+
+/* ════════════════════════════════════════════
+   الرأس
+═════════════════════════════════════════════ */
+function renderHeader() {
+    const u = profileData.user, f = profileData.form;
+    const photo = f.photo
+        ? `<img src="${f.photo}" class="pf-photo" alt="">`
+        : `<div class="pf-photo-empty">${_esc(u.first_name?.[0] || '?')}</div>`;
+    document.getElementById('pfHeader').innerHTML = `
+        <div class="pf-photo-wrap">
+            ${photo}
+            <label class="pf-photo-edit" title="تغيير الصورة">✏️
+                <input type="file" accept=".jpg,.jpeg,.png" onchange="uploadPhoto(this)">
+            </label>
+        </div>
+        <div class="pf-info">
+            <div class="pf-name">${_esc(u.full_name)}</div>
+            <div class="pf-meta">
+                ${u.reg_number ? `<span>📋 ${_esc(u.reg_number)}</span>` : `<span>📋 ${_esc(f.form_number)}</span>`}
+                <span>🆔 ${_esc(u.id_number)}</span>
+                <span>📧 ${_esc(u.email)}</span>
+                <span class="pf-badge s-${_statusKey(f.status)}">${_esc(f.status)}</span>
+                <span class="pf-badge" style="background:rgba(124,58,237,0.1);color:#7c3aed">${TYPE_LABELS[userType]}</span>
+            </div>
+        </div>
+        <div class="pf-actions">
+            <button class="pf-btn pf-btn-excel" onclick="exportExcel()">📊 Excel</button>
+            <button class="pf-btn pf-btn-print" onclick="quickPrint()">🖨️ طباعة</button>
+            <button class="pf-btn pf-btn-pdf" onclick="exportPdf()">📋 PDF</button>
+        </div>`;
+}
+
+/* ════════════════════════════════════════════
+   التابات
+═════════════════════════════════════════════ */
+function renderTabs() {
+    document.getElementById('pfTabs').innerHTML = (TABS_BY_TYPE[userType] || [])
+        .map(t => `<button class="pf-tab" id="tab_${t}" onclick="switchTab('${t}')">${TAB_LABELS[t]}</button>`)
+        .join('');
+}
+
+function switchTab(tabId, keepEditing = false) {
+    document.querySelectorAll('.pf-tab').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab_' + tabId)?.classList.add('active');
+    currentTab = tabId;
+    if (!keepEditing) { editing = {}; editValues = {}; editErrors = {}; }
+
+    const fn = { basic:renderBasic, main:renderMain, mother:renderMother, father:renderFather,
+                 wife:renderWife, guardian:renderGuardian, members:renderMembers,
+                 address:renderAddress, sponsor:renderSponsor, docs:renderDocs }[tabId];
+    document.getElementById('pfContent').innerHTML = fn ? fn() : '<div>—</div>';
+
+    // تهيئة العناصر الديناميكية بعد الرسم
+    setTimeout(() => initDynamicWidgets(tabId), 30);
+}
+
+function refreshCurrentTab() {
+    if (currentTab) switchTab(currentTab, true);
+}
+
+/* ════════════════════════════════════════════
+   مساعدات بناء الحقول
+═════════════════════════════════════════════ */
+function _row(label, value) {
+    return `<div class="pf-field">
+        <div class="pf-label">${label}</div>
+        <div class="pf-value ${value ? '' : 'empty'}">${value ? _esc(String(value)) : '— غير محدد —'}</div>
+    </div>`;
+}
+
+function _input(section, field, label, value, opts={}) {
+    const t = opts.type || 'text';
+    const dis = opts.disabled ? 'disabled' : '';
+    const req = opts.required ? '<span class="req">*</span>' : '';
+    return `<div class="pf-field">
+        <label class="pf-label">${label} ${req}</label>
+        <input type="${t}" id="ef_${section}_${field}" class="pf-input"
+               value="${_esc(value||'')}" ${dis}
+               oninput="onFieldChange('${section}','${field}')">
+        <div class="pf-err" id="err_${section}_${field}"></div>
+        <div class="pf-ok"  id="ok_${section}_${field}">✅ متاح</div>
+    </div>`;
+}
+
+function _select(section, field, label, value, options, required=false, opts={}) {
+    const optsStr = options.map(([v,l]) =>
+        `<option value="${_esc(v)}" ${v===value?'selected':''}>${_esc(l)}</option>`
+    ).join('');
+    const dis = opts.disabled ? 'disabled' : '';
+    const onch = opts.onchange ? ` onchange="${opts.onchange}"` : ` onchange="onFieldChange('${section}','${field}')"`;
+    return `<div class="pf-field">
+        <label class="pf-label">${label} ${required?'<span class="req">*</span>':''}</label>
+        <select id="ef_${section}_${field}" class="pf-select" ${dis}${onch}>
+            <option value="">— اختر —</option>${optsStr}
+        </select>
+        <div class="pf-err" id="err_${section}_${field}"></div>
+    </div>`;
+}
+
+function _textarea(section, field, label, value) {
+    return `<div class="pf-field full">
+        <label class="pf-label">${label}</label>
+        <textarea id="ef_${section}_${field}" class="pf-textarea"
+                  oninput="onFieldChange('${section}','${field}')">${_esc(value||'')}</textarea>
+    </div>`;
+}
+
+/* ── حقل الجنسية بـ dropdown ── */
+function _natField(section, label, value, code, required=false) {
+    const id = `nat_${section}_${++_ddCounter}`;
+    const flag = _flagFromCode(code) || '🇵🇸';
+    const name = value || 'فلسطين';
+    return `<div class="pf-field">
+        <label class="pf-label">${label} ${required?'<span class="req">*</span>':''}</label>
+        <div class="dd-wrap" id="${id}_wrap">
+            <div class="dd-selector" id="${id}_sel" onclick="ddToggle('${id}')" role="combobox">
+                <span class="dd-flag" id="${id}_flag">${flag}</span>
+                <span class="dd-text" id="${id}_text">${_esc(name)}</span>
+                <span class="dd-arrow">▼</span>
+            </div>
+            <div class="dd-dropdown" id="${id}_dd" role="listbox">
+                <div class="dd-search-wrap">
+                    <input class="dd-search" id="${id}_q" placeholder="ابحث..."
+                           oninput="ddFilter('${id}',this.value)" onclick="event.stopPropagation()">
+                </div>
+                <div class="dd-list" id="${id}_list"></div>
+            </div>
+        </div>
+        <input type="hidden" id="${id}_value"  data-section="${section}" data-field="nationality"      value="${_esc(name)}" data-edit-watch="1">
+        <input type="hidden" id="${id}_codev"  data-section="${section}" data-field="nationality_code" value="${_esc(code||'PS')}" data-edit-watch="1">
+    </div>`;
+}
+
+/* ── حقل الجوال (مفتاح + رقم) ── */
+function _phoneField(section, fieldName, label, value, codeValue, required=false) {
+    const id = `ph_${section}_${++_ddCounter}`;
+    const flag = _flagFromDial(codeValue) || '🇵🇸';
+    const dial = codeValue || '+970';
+    return `<div class="pf-field">
+        <label class="pf-label">${label} ${required?'<span class="req">*</span>':''}</label>
+        <div class="phone-row">
+            <div class="dd-wrap" id="${id}_wrap">
+                <div class="dd-selector" id="${id}_sel" onclick="ddToggle('${id}')">
+                    <span class="dd-flag" id="${id}_flag">${flag}</span>
+                    <span class="dd-sub" id="${id}_dial">${dial}</span>
+                    <span class="dd-arrow" style="font-size:0.65rem">▼</span>
+                </div>
+                <div class="dd-dropdown" id="${id}_dd">
+                    <div class="dd-search-wrap">
+                        <input class="dd-search" id="${id}_q" placeholder="بحث..."
+                               oninput="ddFilter('${id}',this.value)" onclick="event.stopPropagation()">
+                    </div>
+                    <div class="dd-list" id="${id}_list"></div>
+                </div>
+            </div>
+            <input type="hidden" id="${id}_codev" data-section="${section}" data-field="${fieldName}_country" value="${_esc(dial)}" data-edit-watch="1">
+            <input type="tel" id="ef_${section}_${fieldName}" class="pf-input"
+                   value="${_esc(value||'')}" inputmode="numeric"
+                   oninput="onFieldChange('${section}','${fieldName}')">
+        </div>
+        <div class="pf-err" id="err_${section}_${fieldName}"></div>
+        <div class="pf-ok"  id="ok_${section}_${fieldName}">✅ متاح</div>
+    </div>`;
+}
+
+/* ── ترويسة قسم ── */
+function _sectionHdr(title, key, editable=true, extra='') {
+    const isEd = editing[key];
+    const btns = !editable ? extra : (isEd ? `
+        <div style="display:flex;gap:6px">
+            <button class="pf-cancel-btn" onclick="cancelEdit('${key}')">إلغاء</button>
+            <button class="pf-save-btn" id="save_${key}" onclick="saveSection('${key}')" disabled>💾 حفظ</button>
+        </div>` : `<button class="pf-edit-btn" onclick="startEdit('${key}')">✏️ تعديل</button>${extra}`);
+    return `<div class="pf-section-hdr">
+        <div class="pf-section-title">${title}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">${btns}</div>
+    </div>`;
+}
+
+function _viewMode(s) { return !editing[s]; }
+
+/* ════════════════════════════════════════════
+   التاب: الأساسي
+═════════════════════════════════════════════ */
+function renderBasic() {
+    const u = profileData.user, f = profileData.form;
+    const v1 = _viewMode('personal'), v2 = _viewMode('contact');
+
+    const personal = v1 ? `<div class="pf-grid">
+        ${_row('الاسم الأول',  u.first_name)}${_row('اسم الأب', u.father_name)}
+        ${_row('اسم الجد',     u.grand_name)}${_row('اسم العائلة', u.family_name)}
+        ${_row('رقم الهوية',   u.id_number)}${_row('الجنسية', u.nationality)}
+        ${_row('الجنس',        u.gender)}${_row('اسم المستخدم', u.username)}
+    </div>` : `<div class="pf-grid">
+        ${_input('personal','first_name','الاسم الأول', u.first_name, {required:true})}
+        ${_input('personal','father_name','اسم الأب',   u.father_name, {required:true})}
+        ${_input('personal','grand_name','اسم الجد',    u.grand_name)}
+        ${_input('personal','family_name','اسم العائلة', u.family_name, {required:true})}
+        ${_input('personal','id_number','رقم الهوية (مقفل)', u.id_number, {disabled:true})}
+        ${_natField('personal','الجنسية', u.nationality, u.nationality_code, true)}
+        ${_select('personal','gender','الجنس', u.gender, [['ذكر','ذكر'],['أنثى','أنثى']])}
+        ${_row('اسم المستخدم', u.username)}
+    </div>`;
+
+    const contact = v2 ? `<div class="pf-grid">
+        ${_row('البريد الإلكتروني', u.email)}
+        ${_row('رقم الجوال', (u.phone_country||'') + ' ' + (u.phone||''))}
+        ${_row('رقم الجوال 2', f.phone2 ? (f.phone2_country + ' ' + f.phone2) : '')}
+        ${_row('رقم الواتساب', (u.whatsapp_country||'') + ' ' + (u.whatsapp||''))}
+    </div>` : `<div class="pf-grid">
+        ${_input('contact','email','البريد الإلكتروني', u.email, {type:'email', required:true})}
+        ${_phoneField('contact','phone','رقم الجوال', u.phone, u.phone_country, true)}
+        ${_phoneField('contact','phone2','رقم الجوال 2', f.phone2, f.phone2_country)}
+        ${_phoneField('contact','whatsapp','رقم الواتساب', u.whatsapp, u.whatsapp_country, true)}
+    </div>`;
+
+    return `${_sectionHdr('👤 البيانات الشخصية', 'personal')}${personal}
+        <div style="margin-top:20px"></div>
+        ${_sectionHdr('📞 بيانات التواصل', 'contact')}${contact}`;
+}
+
+/* ════════════════════════════════════════════
+   التاب: البيانات الرئيسية
+═════════════════════════════════════════════ */
+function renderMain() {
+    const f = profileData.form, c = profileData.choices, v = _viewMode('main_data');
+
+    if (userType === 'orphan') {
+        if (v) return `${_sectionHdr('📋 بيانات اليتيم', 'main_data')}<div class="pf-grid">
+            ${_row('تاريخ الميلاد', f.birth_date)}${_row('نوع اليتم', f.orphan_type)}
+            ${_row('الحالة الصحية', f.health_status)}${_row('المستوى التعليمي', f.education_level)}
+            ${_row('الصف', _gradeLabel(f.school_grade))}${_row('اسم المدرسة', f.school_name)}
+        </div><div style="margin-top:14px">${_row('قصة اليتيم', f.story)}</div>`;
+        return `${_sectionHdr('📋 بيانات اليتيم', 'main_data')}<div class="pf-grid">
+            ${_input('main_data','birth_date','تاريخ الميلاد', f.birth_date, {type:'date', required:true})}
+            ${_select('main_data','orphan_type','نوع اليتم', f.orphan_type, c.orphan_type, true)}
+            ${_select('main_data','health_status','الحالة الصحية', f.health_status, c.health, true)}
+            ${_eduSelect('main_data','education_level', f.education_level, c.education, true)}
+            ${_gradeSelect('main_data','school_grade', f.school_grade, f.education_level)}
+            ${_input('main_data','school_name','اسم المدرسة', f.school_name)}
+        </div>${_textarea('main_data','story','قصة اليتيم', f.story)}`;
+    }
+
+    if (userType === 'special') {
+        if (v) return `${_sectionHdr('📋 بيانات الحالة', 'main_data')}<div class="pf-grid">
+            ${_row('تاريخ الميلاد', f.birth_date)}${_row('الحالة الصحية', f.health_status)}
+            ${_row('المستوى التعليمي', f.education_level)}${_row('الصف', _gradeLabel(f.school_grade))}
+            ${_row('اسم المدرسة', f.school_name)}
+        </div><div style="margin-top:14px">${_row('تفاصيل الحالة', f.case_details)}</div>`;
+        return `${_sectionHdr('📋 بيانات الحالة', 'main_data')}<div class="pf-grid">
+            ${_input('main_data','birth_date','تاريخ الميلاد', f.birth_date, {type:'date'})}
+            ${_select('main_data','health_status','الحالة الصحية', f.health_status, c.health, true)}
+            ${_eduSelect('main_data','education_level', f.education_level, c.education, true)}
+            ${_gradeSelect('main_data','school_grade', f.school_grade, f.education_level)}
+            ${_input('main_data','school_name','اسم المدرسة', f.school_name)}
+        </div>${_textarea('main_data','case_details','تفاصيل الحالة', f.case_details)}`;
+    }
+
+    if (userType === 'family') {
+        if (v) return `${_sectionHdr('📋 بيانات رب الأسرة', 'main_data')}<div class="pf-grid">
+            ${_row('تاريخ الميلاد', f.birth_date)}${_row('الجنس', f.gender)}
+            ${_row('الحالة الاجتماعية', f.marital_status)}${_row('الحالة الصحية', f.health_status)}
+            ${_row('المستوى التعليمي', f.education_level)}${_row('المهنة', f.job)}
+            ${_row('عدد أفراد الأسرة', f.family_members_count)}${_row('عدد المرضى', f.sick_members_count)}
+        </div><div style="margin-top:14px">${_row('الوضع العام', f.general_status)}</div>`;
+        return `${_sectionHdr('📋 بيانات رب الأسرة', 'main_data')}<div class="pf-grid">
+            ${_input('main_data','birth_date','تاريخ الميلاد', f.birth_date, {type:'date'})}
+            ${_select('main_data','marital_status','الحالة الاجتماعية', f.marital_status, c.marital, true)}
+            ${_select('main_data','health_status','الحالة الصحية', f.health_status, c.health, true)}
+            ${_eduSelect('main_data','education_level', f.education_level, c.education, true)}
+            ${_select('main_data','job','المهنة', f.job, c.jobs, true)}
+            ${_input('main_data','family_members_count','عدد أفراد الأسرة', f.family_members_count, {type:'number'})}
+            ${_input('main_data','sick_members_count','عدد المرضى', f.sick_members_count, {type:'number'})}
+        </div>${_textarea('main_data','general_status','الوضع العام', f.general_status)}`;
+    }
+}
+
+/* ── select المستوى التعليمي مع ربط الصف ── */
+function _eduSelect(section, field, value, options, required=false) {
+    return _select(section, field, 'المستوى التعليمي', value, options, required, {
+        onchange: `onEducationChange('${section}','${field}')`
+    });
+}
+
+/* ── select الصف المرتبط بالمستوى ── */
+function _gradeSelect(section, field, value, eduLevel) {
+    const map = GRADE_MAP[eduLevel];
+    if (map && map.lock !== null) {
+        // الحقل مقفل بقيمة محددة
+        return `<div class="pf-field">
+            <label class="pf-label">الصف</label>
+            <input type="text" id="ef_${section}_${field}" class="pf-input" value="${_esc(map.lock)}" disabled>
+        </div>`;
+    }
+    const opts = (map ? map.options : []);
+    return _select(section, field, 'الصف', value, opts);
+}
+
+/* عند تغيير المستوى التعليمي */
+function onEducationChange(section, field) {
+    const el = document.getElementById(`ef_${section}_${field}`);
+    if (!el) return;
+    const val = el.value;
+    if (!editValues[section]) editValues[section] = {};
+    editValues[section][field] = val;
+
+    // إعادة بناء حقل الصف
+    const gradeEl = document.getElementById(`ef_${section}_school_grade`);
+    if (gradeEl && gradeEl.parentElement) {
+        const map = GRADE_MAP[val];
+        const newHtml = map && map.lock !== null
+            ? `<input type="text" id="ef_${section}_school_grade" class="pf-input" value="${_esc(map.lock)}" disabled>`
+            : (() => {
+                const optsStr = (map ? map.options : [])
+                    .map(([v,l]) => `<option value="${v}">${l}</option>`).join('');
+                return `<select id="ef_${section}_school_grade" class="pf-select" onchange="onFieldChange('${section}','school_grade')">
+                    <option value="">— اختر —</option>${optsStr}
+                </select>`;
+            })();
+        gradeEl.outerHTML = newHtml;
+        // تحديث editValues
+        editValues[section].school_grade = (map && map.lock !== null) ? map.lock : '';
+    }
+    _updateSaveBtn(section);
+}
+
+/* ════════════════════════════════════════════
+   التاب: العنوان والسكن
+═════════════════════════════════════════════ */
+function renderAddress() {
+    const f = profileData.form, c = profileData.choices, v = _viewMode('main_data');
+
+    if (v) return `${_sectionHdr('📍 العنوان والسكن', 'main_data')}
+        <h6 style="font:700 0.84rem 'Tajawal',sans-serif;color:#1a7a4a;margin-bottom:8px">العنوان الحالي</h6>
+        <div class="pf-grid">
+            ${_row('المدينة', f.current_city)}${_row('الشارع', f.current_street)}
+            ${_row('أقرب معلم', f.current_landmark)}
+        </div>
+        ${f.previous_city ? `<h6 style="font:700 0.84rem 'Tajawal',sans-serif;color:#1a7a4a;margin:14px 0 8px">العنوان السابق</h6>
+        <div class="pf-grid">${_row('المدينة', f.previous_city)}${_row('الشارع', f.previous_street)}${_row('أقرب معلم', f.previous_landmark)}</div>` : ''}
+        <h6 style="font:700 0.84rem 'Tajawal',sans-serif;color:#1a7a4a;margin:14px 0 8px">السكن</h6>
+        <div class="pf-grid">
+            ${_row('نوع السكن', f.housing_type)}${_row('ملكية السكن', f.housing_ownership)}
+            ${_row('الإيجار الشهري ₪', f.monthly_rent)}
+        </div>`;
+
+    return `${_sectionHdr('📍 العنوان والسكن', 'main_data')}
+        <h6 style="font:700 0.84rem 'Tajawal',sans-serif;color:#1a7a4a;margin-bottom:8px">العنوان الحالي</h6>
+        <div class="pf-grid">
+            ${_select('main_data','current_city','المدينة', f.current_city, c.cities, true)}
+            ${_input('main_data','current_street','الشارع', f.current_street, {required:true})}
+            ${_input('main_data','current_landmark','أقرب معلم', f.current_landmark, {required:true})}
+        </div>
+        <h6 style="font:700 0.84rem 'Tajawal',sans-serif;color:#1a7a4a;margin:14px 0 8px">العنوان السابق</h6>
+        <div class="pf-grid">
+            ${_select('main_data','previous_city','المدينة', f.previous_city, c.cities)}
+            ${_input('main_data','previous_street','الشارع', f.previous_street)}
+            ${_input('main_data','previous_landmark','أقرب معلم', f.previous_landmark)}
+        </div>
+        <h6 style="font:700 0.84rem 'Tajawal',sans-serif;color:#1a7a4a;margin:14px 0 8px">السكن</h6>
+        <div class="pf-grid">
+            ${_select('main_data','housing_type','نوع السكن', f.housing_type, c.housing_type, true)}
+            ${_select('main_data','housing_ownership','ملكية السكن', f.housing_ownership, c.housing_ownership, true)}
+            ${_input('main_data','monthly_rent','الإيجار الشهري ₪', f.monthly_rent, {type:'number'})}
+        </div>`;
+}
+
+/* ════════════════════════════════════════════
+   التابات الفرعية: الأم/الأب/الزوجة/المعيل
+═════════════════════════════════════════════ */
+function _personPanel(key, title, person, opts={}) {
+    if (!person) return `${_sectionHdr(title, key, false)}<div class="no-data">
+        <div class="no-data-icon">🚫</div><div class="no-data-text">لا توجد بيانات مسجلة</div></div>`;
+
+    const c = profileData.choices, v = _viewMode(key);
+
+    if (v) return `${_sectionHdr(title, key)}<div class="pf-grid">
+        ${_row('الاسم الكامل', person.full_name)}${_row('رقم الهوية', person.id_number)}
+        ${_row('تاريخ الميلاد', person.birth_date)}${_row('الجنس', person.gender)}
+        ${_row('الجنسية', person.nationality)}${_row('الحالة الصحية', person.health_status)}
+        ${_row('المستوى التعليمي', person.education_level)}
+        ${opts.showJob ? _row('المهنة', person.job) : ''}
+        ${opts.showIncome ? _row('الدخل الشهري ₪', person.monthly_income) : ''}
+        ${opts.showRelation ? _row('صلة القرابة', person.relation) : ''}
+        ${opts.showDependents ? _row('عدد المعالين', person.dependents) : ''}
+        ${opts.showAlive ? _row('الحالة', person.is_alive ? '✅ على قيد الحياة' : '🕊️ متوفى/ـة') : ''}
+        ${opts.showAlive && !person.is_alive ? _row('تاريخ الوفاة', person.death_date) : ''}
+        ${opts.showAlive && !person.is_alive ? _row('سبب الوفاة', person.death_reason) : ''}
+        ${opts.showChildren ? _row('عدد الأبناء', person.children_count) : ''}
+    </div>`;
+
+    const isAlive = person.is_alive !== false;
+    return `${_sectionHdr(title, key)}<div class="pf-grid">
+        ${_input(key,'first_name','الاسم الأول', person.first_name, {required:true})}
+        ${_input(key,'father_name','اسم الأب', person.father_name, {required:true})}
+        ${_input(key,'grand_name','اسم الجد', person.grand_name)}
+        ${_input(key,'family_name','اسم العائلة', person.family_name, {required:true})}
+        ${_input(key,'id_number','رقم الهوية', person.id_number, {required:true})}
+        ${_input(key,'birth_date','تاريخ الميلاد', person.birth_date, {type:'date'})}
+        ${_natField(key,'الجنسية', person.nationality, person.nationality_code)}
+        ${_select(key,'gender','الجنس', person.gender, [['ذكر','ذكر'],['أنثى','أنثى']])}
+        ${_select(key,'health_status','الحالة الصحية', person.health_status, c.health)}
+        ${_eduSelect(key,'education_level', person.education_level, c.education)}
+        ${opts.showJob ? _select(key,'job','المهنة', person.job, c.jobs) : ''}
+        ${opts.showIncome ? _input(key,'monthly_income','الدخل الشهري ₪', person.monthly_income, {type:'number'}) : ''}
+        ${opts.showRelation ? _select(key,'relation','صلة القرابة', person.relation, c.guardian_relation) : ''}
+        ${opts.showDependents ? _input(key,'dependents','عدد المعالين', person.dependents, {type:'number'}) : ''}
+        ${opts.showAlive ? _select(key,'is_alive','الحالة', isAlive ? 'true' : 'false', [['true','على قيد الحياة'],['false','متوفى/ـة']], false, {onchange:`onAliveChange('${key}')`}) : ''}
+        ${opts.showAlive ? `
+        <div class="pf-field" id="dd_date_${key}" style="${isAlive ? 'display:none' : ''}">
+            <label class="pf-label">تاريخ الوفاة</label>
+            <input type="date" id="ef_${key}_death_date" class="pf-input"
+                   value="${_esc(person.death_date||'')}" oninput="onFieldChange('${key}','death_date')">
+        </div>
+        <div class="pf-field" id="dd_reason_${key}" style="${isAlive ? 'display:none' : ''}">
+            ${_innerSelect(key,'death_reason','سبب الوفاة', person.death_reason || '', c.death_reason)}
+        </div>` : ''}
+        ${opts.showChildren ? _input(key,'children_count','عدد الأبناء', person.children_count, {type:'number'}) : ''}
+    </div>`;
+}
+
+/* helper لـ death_date مغلف بـ pf-field فارغ */
+function _innerInput(section, field, label, value, opts={}) {
+    return `<label class="pf-label">${label}</label>
+        <input type="${opts.type||'text'}" id="ef_${section}_${field}" class="pf-input"
+               value="${_esc(value||'')}" oninput="onFieldChange('${section}','${field}')">
+        <div class="pf-err" id="err_${section}_${field}"></div>`;
+}
+function _innerSelect(section, field, label, value, options) {
+    const opts = options.map(([v,l]) =>
+        `<option value="${_esc(v)}" ${v===value?'selected':''}>${_esc(l)}</option>`
+    ).join('');
+    return `<label class="pf-label">${label}</label>
+        <select id="ef_${section}_${field}" class="pf-select" onchange="onFieldChange('${section}','${field}')">
+            <option value="">— اختر —</option>${opts}
+        </select>
+        <div class="pf-err" id="err_${section}_${field}"></div>`;
+}
+/* عند تغيير الحالة (حية/متوفى) */
+function onAliveChange(section) {
+    const el = document.getElementById(`ef_${section}_is_alive`);
+    if (!el) return;
+    const alive = el.value === 'true';
+
+    const dateWrap   = document.getElementById(`dd_date_${section}`);
+    const reasonWrap = document.getElementById(`dd_reason_${section}`);
+    if (dateWrap)   dateWrap.style.display   = alive ? 'none' : '';
+    if (reasonWrap) reasonWrap.style.display = alive ? 'none' : '';
+
+    if (!editValues[section]) editValues[section] = {};
+    editValues[section].is_alive = el.value;
+
+    _updateSaveBtn(section);
+}
+
+function renderMother()   { return _personPanel('mother',   '👩 بيانات الأم',   profileData.mother,   { showJob:true, showIncome:true, showAlive:true }); }
+function renderFather()   { return _personPanel('father',   '👨 بيانات الأب',   profileData.father,   { showJob:true, showAlive:true, showChildren:true }); }
+function renderWife()     { return _personPanel('wife',     '💍 بيانات الزوجة', profileData.wife); }
+function renderGuardian() { return _personPanel('guardian', '🧑 المعيل الحالي', profileData.guardian, { showJob:true, showIncome:true, showRelation:true, showDependents:true }); }
+
+/* ════════════════════════════════════════════
+   أفراد الأسرة
+═════════════════════════════════════════════ */
+function renderMembers() {
+    const members = profileData.members || [];
+    const addBtn = `<button class="pf-add-btn" onclick="openAddMember()">➕ إضافة فرد</button>`;
+    const hdr = _sectionHdr(`👥 أفراد الأسرة (${members.length})`, 'members', false, addBtn);
+
+    if (!members.length) return `${hdr}<div class="no-data">
+        <div class="no-data-icon">👥</div><div class="no-data-text">لا يوجد أفراد مسجلون</div></div>`;
+
+    return hdr + members.map((m, i) => `
+        <div class="member-card">
+            <div class="member-header">
+                <span class="member-title">👤 الفرد #${i+1}: ${_esc(m.full_name)}</span>
+                <div class="member-actions">
+                    <button class="member-btn member-btn-edit" onclick="openEditMember(${i})">✏️ تعديل</button>
+                    <button class="member-btn member-btn-delete" onclick="deleteMember(${i})">🗑️ حذف</button>
+                </div>
+            </div>
+            <div class="pf-grid">
+                ${_row('الجنس', m.gender)}${_row('تاريخ الميلاد', m.birth_date)}
+                ${_row('رقم الهوية', m.id_number)}${_row('صلة القرابة', m.relation)}
+                ${_row('الحالة الصحية', m.health_status)}${_row('المستوى التعليمي', m.education_level)}
+                ${_row('الحالة الاجتماعية', m.marital_status)}
+            </div>
+        </div>`).join('');
+}
+
+/* ════════════════════════════════════════════
+   الكافل
+═════════════════════════════════════════════ */
+function renderSponsor() {
+    const sp = profileData.sponsor;
+    if (!sp) return `${_sectionHdr('🤝 الكافل', 'sponsor', false)}
+        <div class="no-data">
+            <div class="no-data-icon">⏳</div>
+            <div class="no-data-text">لا يوجد كافل حالياً</div>
+            <p style="font:500 0.84rem 'Tajawal',sans-serif;color:#9ca3af;margin-top:8px">سيتم إعلامك فور تخصيص كافل لك</p>
+        </div>`;
+
+    return `${_sectionHdr('🤝 الكافل', 'sponsor', false)}
+        <div class="sponsor-card">
+            ${sp.photo ? `<img src="${sp.photo}" class="sponsor-photo">` : `<div class="sponsor-photo-empty">${_esc(sp.full_name?.[0] || '?')}</div>`}
+            <div class="sponsor-info">
+                <div class="sponsor-name">${_esc(sp.full_name)}</div>
+                <div class="sponsor-meta">
+                    ${sp.reg_number ? `<span>📋 ${_esc(sp.reg_number)}</span>` : ''}
+                    ${sp.job ? `<span>💼 ${_esc(sp.job)}</span>` : ''}
+                    ${sp.country ? `<span>🌍 ${_esc(sp.country)}</span>` : ''}
+                    ${sp.city ? `<span>📍 ${_esc(sp.city)}</span>` : ''}
+                    ${sp.date ? `<span>📅 منذ ${_esc(sp.date)}</span>` : ''}
+                </div>
+            </div>
+        </div>`;
+}
+
+/* ════════════════════════════════════════════
+   المرفقات
+═════════════════════════════════════════════ */
+function renderDocs() {
+    const docs = profileData.documents || [], avail = profileData.available_doc_types || [];
+    let html = `${_sectionHdr('📎 المرفقات', 'docs', false)}<div class="docs-grid">`;
+
+    docs.forEach(d => {
+        const icon = d.ext === 'pdf' ? '📋' : '🖼️';
+        const reqBadge = d.required ? '<span class="doc-required-badge">إلزامي</span>' : '';
+        const delBtn = d.required ? '' : `<button class="doc-btn doc-btn-delete" onclick="deleteDoc(${d.id})">🗑️</button>`;
+        html += `<div class="doc-card ${d.required ? 'required' : ''}">
+            <div class="doc-icon">${icon}</div>
+            <div class="doc-label">${_esc(d.label)} ${reqBadge}</div>
+            <div class="doc-name">${_esc(d.name)}</div>
+            <div class="doc-actions">
+                <button class="doc-btn doc-btn-view" onclick="viewDoc('${d.url}','${_esc(d.label)}','${d.ext}')">👁️ عرض</button>
+                <button class="doc-btn doc-btn-replace" onclick="document.getElementById('replace_${d.id}').click()">🔄 استبدال</button>
+                ${delBtn}
+            </div>
+            <input type="file" id="replace_${d.id}" accept=".jpg,.jpeg,.png,.pdf" style="display:none" onchange="uploadDoc('${d.doc_type}', this)">
+        </div>`;
+    });
+
+    avail.forEach(a => {
+        html += `<div class="doc-add-card" onclick="document.getElementById('add_${a.value}').click()">
+            <div style="font-size:1.8rem">➕</div>
+            <div class="doc-label">${_esc(a.label)} ${a.required ? '<span class="doc-required-badge">إلزامي</span>' : ''}</div>
+            <div style="font:500 0.72rem 'Tajawal',sans-serif;color:#9ca3af">اضغط للرفع</div>
+            <input type="file" id="add_${a.value}" accept=".jpg,.jpeg,.png,.pdf" style="display:none" onchange="uploadDoc('${a.value}', this)">
+        </div>`;
+    });
+
+    html += `</div>`;
+    if (!docs.length && !avail.length) html += `<div class="no-data"><div class="no-data-icon">📎</div><div class="no-data-text">لا توجد مرفقات</div></div>`;
+    return html;
+}
+
+/* ════════════════════════════════════════════
+   تهيئة الـ widgets الديناميكية بعد الرسم
+═════════════════════════════════════════════ */
+function initDynamicWidgets(tabId) {
+    if (typeof allCountries === 'undefined' || !allCountries.length) return;
+
+    // تسجيل قوائم الدول الديناميكية في DD_CONFIG وتهيئتها
+    document.querySelectorAll('[id$="_wrap"][id^="nat_"], [id$="_wrap"][id^="ph_"]').forEach(wrap => {
+        const id = wrap.id.replace('_wrap', '');
+        if (DD_CONFIG[id]) return;  // مُهيّأ
+
+        const isPhone = id.startsWith('ph_');
+        if (isPhone) {
+            DD_CONFIG[id] = { type:'phone', hiddenIds:[`${id}_codev`], flagId:`${id}_flag`, dialId:`${id}_dial` };
+        } else {
+            DD_CONFIG[id] = { type:'nat', hiddenIds:[`${id}_value`,`${id}_codev`], flagId:`${id}_flag`, textId:`${id}_text` };
+        }
+        // رسم العناصر
+        if (typeof ddRender === 'function') ddRender(id, allCountries);
+
+        // تعيين القيمة الحالية مرئياً (الـ flag/text/dial من القيمة المخزنة)
+        const codeEl = document.getElementById(`${id}_codev`);
+        const code = codeEl?.value;
+        if (code) {
+            const country = isPhone
+                ? allCountries.find(c => c.dial === code)
+                : allCountries.find(c => c.code === code);
+            if (country) {
+                _setEl(DD_CONFIG[id].flagId, 'text', country.flag || '🌍');
+                if (isPhone) _setEl(DD_CONFIG[id].dialId, 'text', country.dial);
+                else         _setEl(DD_CONFIG[id].textId, 'text', country.name_ar || country.name_en);
+            }
+        }
+    });
+
+    // مراقبة تغيرات قوائم الدول (التي لا تستدعي onFieldChange)
+    document.querySelectorAll('[data-edit-watch="1"]').forEach(hi => {
+        if (hi._watchInited) return;
+        hi._watchInited = true;
+        // patch ddSelect: استخدم MutationObserver
+        const obs = new MutationObserver(() => onHiddenChange(hi));
+        obs.observe(hi, { attributes:true, attributeFilter:['value'] });
+        // patch جانبي: راقب أيضاً تغيير القيمة عبر setValue
+        const orig = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+        Object.defineProperty(hi, 'value', {
+            get: orig.get,
+            set(v) { orig.set.call(this, v); onHiddenChange(hi); }
+        });
+    });
+}
+
+function onHiddenChange(hi) {
+    const section = hi.dataset.section;
+    const field   = hi.dataset.field;
+    if (!section || !field) return;
+    if (!editValues[section]) editValues[section] = {};
+    editValues[section][field] = hi.value;
+    _updateSaveBtn(section);
+}
+
+/* ════════════════════════════════════════════
+   التحرير
+═════════════════════════════════════════════ */
+function startEdit(section)  { editing[section]=true; editValues[section]={}; editErrors[section]={}; refreshCurrentTab(); }
+function cancelEdit(section) { delete editing[section]; delete editValues[section]; delete editErrors[section]; refreshCurrentTab(); }
+
+function onFieldChange(section, field) {
+    const el = document.getElementById(`ef_${section}_${field}`);
+    if (!el) return;
+    const val = (el.value||'').trim();
+    if (!editValues[section]) editValues[section] = {};
+    editValues[section][field] = val;
+
+    // تحقق من المطلوب
+    if (['first_name','father_name','family_name','email','phone','whatsapp'].includes(field) && !val)
+        return _setErr(section, field, 'هذا الحقل مطلوب'), _updateSaveBtn(section);
+
+    // البريد
+    if (field==='email' && val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val))
+        return _setErr(section, field, 'صيغة البريد غير صحيحة'), _updateSaveBtn(section);
+
+    // الجوال/الواتساب — أرقام فقط
+    if (['phone','phone2','whatsapp'].includes(field) && val && !/^\d+$/.test(val))
+        return _setErr(section, field, 'أرقام فقط بدون مفتاح أو رموز'), _updateSaveBtn(section);
+
+    // رقم الهوية للأقارب
+    if (field==='id_number' && section!=='personal' && val && !/^[9847]\d{8}$/.test(val))
+        return _setErr(section, field, '9 أرقام تبدأ بـ 9/8/4/7'), _updateSaveBtn(section);
+
+    // تحقق فوري من التفرّد
+    const apiMap = { email:'email', phone:'phone', whatsapp:'whatsapp' };
+    if (apiMap[field]) {
+        clearTimeout(checkTimers[`${section}_${field}`]);
+        _setLoading(section, field);
+        checkTimers[`${section}_${field}`] = setTimeout(() => _apiCheck(section, field, apiMap[field], val), 600);
+        return;
+    }
+
+    _clearErr(section, field);
+    _updateSaveBtn(section);
+}
+
+async function _apiCheck(section, field, apiField, val) {
+    try {
+        const fd = new FormData();
+        fd.append('csrfmiddlewaretoken', CSRF);
+        fd.append('field', apiField); fd.append('value', val);
+        const r = await fetch('/beneficiary/profile/check-field/', { method:'POST', body:fd });
+        const d = await r.json();
+        if (!d.available) _setErr(section, field, d.message || 'مستخدم مسبقاً');
+        else { _clearErr(section, field); _setOk(section, field); }
+    } catch {}
+    _updateSaveBtn(section);
+}
+
+function _setErr(s, f, msg) {
+    const inp = document.getElementById(`ef_${s}_${f}`);
+    const err = document.getElementById(`err_${s}_${f}`);
+    const ok  = document.getElementById(`ok_${s}_${f}`);
+    if (inp) inp.classList.add('is-invalid');
+    if (err) { err.textContent = msg; err.style.display = 'block'; err.style.color = '#e53e3e'; }
+    if (ok) ok.style.display = 'none';
+    if (!editErrors[s]) editErrors[s] = {};
+    editErrors[s][f] = true;
+}
+function _setLoading(s, f) {
+    const err = document.getElementById(`err_${s}_${f}`);
+    if (err) { err.textContent = '⏳ جار التحقق...'; err.style.display = 'block'; err.style.color = '#9ca3af'; }
+}
+function _setOk(s, f) {
+    const ok = document.getElementById(`ok_${s}_${f}`);
+    if (ok) ok.style.display = 'block';
+}
+function _clearErr(s, f) {
+    const inp = document.getElementById(`ef_${s}_${f}`);
+    const err = document.getElementById(`err_${s}_${f}`);
+    if (inp) inp.classList.remove('is-invalid');
+    if (err) err.style.display = 'none';
+    if (editErrors[s]) delete editErrors[s][f];
+}
+function _updateSaveBtn(s) {
+    const btn = document.getElementById(`save_${s}`);
+    if (!btn) return;
+    const hasErr = editErrors[s] && Object.keys(editErrors[s]).length;
+    const hasChg = editValues[s] && Object.keys(editValues[s]).length;
+    btn.disabled = hasErr || !hasChg;
+}
+
+async function saveSection(section) {
+    if (!editValues[section] || !Object.keys(editValues[section]).length) return;
+    if (editErrors[section] && Object.keys(editErrors[section]).length) {
+        showToast('يوجد أخطاء في الحقول', 'error'); return;
+    }
+
+    const btn = document.getElementById(`save_${section}`);
+    const orig = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '⏳ جار الحفظ...';
+
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('section', section);
+    Object.entries(editValues[section]).forEach(([k,v]) => fd.append(k, v));
+
+    try {
+        const r = await fetch('/beneficiary/profile/edit/', { method:'POST', body:fd });
+        const d = await r.json();
+        if (d.status === 'success') {
+            delete editing[section]; delete editValues[section]; delete editErrors[section];
+            // أعد تحميل البيانات وابقَ في نفس التاب
+            await loadProfile();
+            // اعرض مودل النجاح
+            showSuccessModal('تم حفظ البيانات بنجاح');
+        } else if (d.errors) {
+            Object.entries(d.errors).forEach(([k, m]) => _setErr(section, k, m));
+            showToast('يرجى تصحيح الأخطاء', 'error');
+            btn.disabled = false; btn.textContent = orig;
+        } else {
+            showToast(d.message || 'حدث خطأ', 'error');
+            btn.disabled = false; btn.textContent = orig;
+        }
+    } catch {
+        showToast('فشل الحفظ', 'error');
+        btn.disabled = false; btn.textContent = orig;
+    }
+}
+
+/* ════════════════════════════════════════════
+   الصورة
+═════════════════════════════════════════════ */
+async function uploadPhoto(input) {
+    if (!input.files.length) return;
+    const f = input.files[0];
+    if (f.size > 4*1024*1024) return showToast('الصورة > 4MB', 'error');
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF); fd.append('section','photo'); fd.append('photo', f);
+    showToast('جار الرفع...', 'info');
+    try {
+        const r = await fetch('/beneficiary/profile/edit/', { method:'POST', body:fd });
+        const d = await r.json();
+        if (d.status==='success') { showSuccessModal('تم تحديث الصورة'); await loadProfile(); }
+        else showToast(d.message || 'فشل الرفع', 'error');
+    } catch { showToast('فشل الاتصال', 'error'); }
+    input.value = '';
+}
+
+/* ════════════════════════════════════════════
+   المرفقات
+═════════════════════════════════════════════ */
+async function uploadDoc(docType, input) {
+    if (!input.files.length) return;
+    const f = input.files[0];
+    const ext = f.name.split('.').pop().toLowerCase();
+    if (!['jpg','jpeg','png','pdf'].includes(ext)) return showToast('JPG/PNG/PDF فقط', 'error');
+    if (f.size > 4*1024*1024) return showToast('> 4MB', 'error');
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF); fd.append('doc_type', docType); fd.append('file', f);
+    showToast('جار الرفع...', 'info');
+    try {
+        const r = await fetch('/beneficiary/profile/document/upload/', { method:'POST', body:fd });
+        const d = await r.json();
+        if (d.status==='success') { showSuccessModal('تم رفع المرفق'); await loadProfile(); }
+        else showToast(d.message || 'فشل', 'error');
+    } catch { showToast('فشل الاتصال', 'error'); }
+    input.value = '';
+}
+
+async function deleteDoc(id) {
+    if (!confirm('حذف المرفق نهائياً؟')) return;
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF); fd.append('doc_id', id);
+    try {
+        const r = await fetch('/beneficiary/profile/document/delete/', { method:'POST', body:fd });
+        const d = await r.json();
+        if (d.status==='success') { showSuccessModal('تم الحذف'); await loadProfile(); }
+        else showToast(d.message || 'فشل', 'error');
+    } catch { showToast('فشل الاتصال', 'error'); }
+}
+
+function viewDoc(url, label, ext) {
+    document.getElementById('docViewTitle').textContent = label;
+    document.getElementById('docViewBody').innerHTML = ext==='pdf'
+        ? `<iframe src="${url}"></iframe>` : `<img src="${url}" alt="">`;
+    document.getElementById('docViewModal').classList.add('show');
+}
+function closeDocView() {
+    document.getElementById('docViewModal').classList.remove('show');
+    document.getElementById('docViewBody').innerHTML = '';
+}
+
+/* ════════════════════════════════════════════
+   أفراد الأسرة (مودل)
+═════════════════════════════════════════════ */
+function openAddMember() {
+    memberCtx = { mode:'add', index:-1 };
+    _renderMemberForm({});
+    document.getElementById('memberModalTitle').textContent = '➕ إضافة فرد جديد';
+    document.getElementById('memberModal').classList.add('show');
+}
+function openEditMember(i) {
+    const m = profileData.members[i];
+    memberCtx = { mode:'edit', index:i };
+    _renderMemberForm(m);
+    document.getElementById('memberModalTitle').textContent = `✏️ تعديل ${m.full_name}`;
+    document.getElementById('memberModal').classList.add('show');
+}
+function closeMemberModal() {
+    document.getElementById('memberModal').classList.remove('show');
+    document.getElementById('memberModalBody').innerHTML = '';
+}
+
+function _renderMemberForm(m) {
+    const c = profileData.choices;
+    document.getElementById('memberModalBody').innerHTML = `
+        <div class="pf-grid">
+            ${_input('mem','first_name','الاسم الأول', m.first_name, {required:true})}
+            ${_input('mem','father_name','اسم الأب', m.father_name, {required:true})}
+            ${_input('mem','grand_name','اسم الجد', m.grand_name)}
+            ${_input('mem','family_name','اسم العائلة', m.family_name, {required:true})}
+            ${_input('mem','id_number','رقم الهوية', m.id_number, {required:true})}
+            ${_input('mem','birth_date','تاريخ الميلاد', m.birth_date, {type:'date', required:true})}
+            ${_select('mem','gender','الجنس', m.gender, [['ذكر','ذكر'],['أنثى','أنثى']], true)}
+            ${_select('mem','relation','صلة القرابة', m.relation, c.family_relation, true)}
+            ${_select('mem','health_status','الحالة الصحية', m.health_status, c.health, true)}
+            ${_eduSelect('mem','education_level', m.education_level, c.education, true)}
+            ${_gradeSelect('mem','school_grade', m.school_grade, m.education_level)}
+            ${_select('mem','marital_status','الحالة الاجتماعية', m.marital_status, c.marital, true)}
+        </div>`;
+    setTimeout(() => initDynamicWidgets('member'), 30);
+}
+
+async function saveMember() {
+    const get = id => document.getElementById(`ef_mem_${id}`)?.value?.trim() || '';
+    const data = {
+        first_name:get('first_name'), father_name:get('father_name'),
+        grand_name:get('grand_name'), family_name:get('family_name'),
+        id_number:get('id_number'), birth_date:get('birth_date'),
+        gender:get('gender'), relation:get('relation'),
+        health_status:get('health_status'), education_level:get('education_level'),
+        school_grade:get('school_grade'), marital_status:get('marital_status'),
+    };
+    // تحقق سريع
+    if (!data.first_name || !data.father_name || !data.family_name || !data.id_number || !data.birth_date) {
+        showToast('يرجى تعبئة الحقول المطلوبة', 'error'); return;
+    }
+    if (!/^[9847]\d{8}$/.test(data.id_number)) { showToast('رقم هوية غير صحيح', 'error'); return; }
+
+    const btn = document.getElementById('memberSaveBtn');
+    btn.disabled = true; btn.textContent = '⏳';
+
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('action', memberCtx.mode);
+    if (memberCtx.mode === 'edit') fd.append('index', memberCtx.index);
+    Object.entries(data).forEach(([k,v]) => fd.append(k, v));
+
+    try {
+        const r = await fetch('/beneficiary/profile/member/save/', { method:'POST', body:fd });
+        const d = await r.json();
+        if (d.status === 'success') {
+            closeMemberModal();
+            await loadProfile();
+            showSuccessModal(memberCtx.mode==='add' ? 'تمت إضافة الفرد' : 'تم التعديل');
+        } else {
+            showToast(d.message || 'فشل', 'error');
+        }
+    } catch { showToast('فشل الاتصال', 'error'); }
+    btn.disabled = false; btn.textContent = '💾 حفظ';
+}
+
+async function deleteMember(i) {
+    if (!confirm(`حذف ${profileData.members[i].full_name}؟`)) return;
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('action', 'delete'); fd.append('index', i);
+    try {
+        const r = await fetch('/beneficiary/profile/member/save/', { method:'POST', body:fd });
+        const d = await r.json();
+        if (d.status==='success') { showSuccessModal('تم الحذف'); await loadProfile(); }
+        else showToast(d.message || 'فشل', 'error');
+    } catch { showToast('فشل', 'error'); }
+}
+
+/* ════════════════════════════════════════════
+   الطباعة و التصدير
+═════════════════════════════════════════════ */
+function quickPrint() {
+    const id = profileData?.user?.id;
+    if (id) window.open(`/admin-panel/requests/print/?id=${id}`, '_blank');
+}
+
+async function exportPdf() {
+    const id = profileData?.user?.id;
+    if (!id) return showToast('لا يوجد بيانات', 'error');
+
+    const modal = document.getElementById('pdfProgressModal');
+    const bar   = document.getElementById('pdfProgBar');
+    const pct   = document.getElementById('pdfProgPct');
+    const text  = document.getElementById('pdfProgText');
+    const sub   = document.getElementById('pdfProgSub');
+    const icon  = document.getElementById('pdfProgIcon');
+
+    // إعادة تعيين الحالة
+    icon.textContent = '📋';
+    text.textContent = 'جار تجهيز ملف PDF...';
+    sub.textContent  = 'يرجى الانتظار قليلاً';
+    bar.style.width  = '0%';
+    pct.textContent  = '0%';
+    modal.classList.add('show');
+
+    // محاكاة تقدّم تدريجي حتى 90%
+    let progress = 0;
+    const tick = setInterval(() => {
+        if (progress < 90) {
+            progress += Math.random() * 8 + 2;
+            if (progress > 90) progress = 90;
+            bar.style.width = progress + '%';
+            pct.textContent = Math.floor(progress) + '%';
+        }
+    }, 200);
+
+    try {
+        const r = await fetch(`/admin-panel/requests/export-pdf/?id=${id}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (!r.ok) throw new Error('فشل التصدير');
+
+        const blob = await r.blob();
+
+        // أنهِ الشريط
+        clearInterval(tick);
+        bar.style.width = '100%';
+        pct.textContent = '100%';
+        icon.textContent = '✅';
+        text.textContent = 'تم بنجاح!';
+        sub.textContent  = 'يتم تحميل الملف...';
+
+        // استخراج اسم الملف من الـ headers أو إنشاؤه
+        const cd = r.headers.get('Content-Disposition') || '';
+        const m  = cd.match(/filename\*?=(?:UTF-8'')?["']?([^"';\n]+)/i);
+        const filename = m ? decodeURIComponent(m[1]) : `profile_${profileData.form.form_number}.pdf`;
+
+        // تنزيل تلقائي
+        const url = URL.createObjectURL(blob);
+        const a   = document.createElement('a');
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        // إغلاق المودل بعد 3 ثوانٍ
+        setTimeout(() => modal.classList.remove('show'), 3000);
+
+    } catch (e) {
+        clearInterval(tick);
+        icon.textContent = '❌';
+        text.textContent = 'فشل التصدير';
+        sub.textContent  = 'حاول مرة أخرى';
+        bar.style.background = '#c53030';
+        bar.style.width = '100%';
+        setTimeout(() => modal.classList.remove('show'), 2500);
+    }
+}
+function exportExcel() {
+    showToast('جار تجهيز ملف Excel...', 'info');
+    window.location.href = '/beneficiary/profile/export-excel/';
+}
+
+/* ════════════════════════════════════════════
+   مودل النجاح
+═════════════════════════════════════════════ */
+let _successTimer = null;
+function showSuccessModal(text='تم بنجاح') {
+    const m = document.getElementById('successModal');
+    document.getElementById('successText').textContent = text;
+    // إعادة تشغيل الـ animations
+    const bar = document.getElementById('successBar');
+    bar.style.animation = 'none'; bar.offsetHeight; bar.style.animation = 'shrinkBar 5s linear forwards';
+    const path = m.querySelector('.success-icon path');
+    if (path) { path.style.animation = 'none'; path.offsetHeight; path.style.animation = 'drawCheck 0.6s 0.2s ease forwards'; }
+    m.classList.add('show');
+    clearTimeout(_successTimer);
+    _successTimer = setTimeout(() => m.classList.remove('show'), 1000);
+}
+
+/* ════════════════════════════════════════════
+   مساعدات
+═════════════════════════════════════════════ */
+function _esc(s) { return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function _statusKey(s) { if (!s) return 'مسودة'; if (s.includes('قيد')) return 'قيد'; if (s.includes('التدقيق')) return 'التدقيق'; if (s.includes('التكفل')) return 'التكفل'; return s; }
+function _gradeLabel(g) { const m = {'0':'روضة','1':'الأول','2':'الثاني','3':'الثالث','4':'الرابع','5':'الخامس','6':'السادس','7':'السابع','8':'الثامن','9':'التاسع','10':'العاشر','11':'الحادي عشر','12':'الثاني عشر'}; return m[g] || ''; }
+
+function _flagFromCode(code) {
+    if (typeof allCountries === 'undefined') return '';
+    const c = allCountries.find(x => x.code === code);
+    return c?.flag || '';
+}
+function _flagFromDial(dial) {
+    if (typeof allCountries === 'undefined') return '';
+    const c = allCountries.find(x => x.dial === dial);
+    return c?.flag || '';
+}
+
+function showToast(msg, type='info') {
+    const wrap = document.getElementById('toastWrap');
+    const t = document.createElement('div');
+    t.className = `toast-msg ${type}`; t.textContent = msg;
+    wrap.appendChild(t);
+    setTimeout(() => { t.style.opacity='0'; setTimeout(() => t.remove(), 300); }, 2800);
+}
+
+/* تحميل أولي */
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof loadCountries === 'function') loadCountries();
+    loadProfile();
+});
+</script>
+{% endblock %}

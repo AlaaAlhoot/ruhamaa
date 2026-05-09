@@ -1,0 +1,661 @@
+{% extends 'admin_panel/base.html' %}
+{% block title %}الشكاوى{% endblock %}
+{% block page_title %}📩 الشكاوى والتواصل{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ══ إحصائيات ══ */
+.cp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.cp-stat{background:#fff;border:1px solid rgba(124,58,237,0.08);border-radius:14px;padding:14px 16px;cursor:pointer;transition:all 0.25s;position:relative;overflow:hidden;}
+body.dark-mode .cp-stat{background:#0d0a1a;}
+.cp-stat:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(124,58,237,0.1);}
+.cp-stat.active{border-color:var(--adm);box-shadow:0 0 0 3px rgba(124,58,237,0.1);}
+.cp-stat-val{font-size:1.8rem;font-weight:900;font-family:'Cairo',sans-serif;line-height:1;}
+.cp-stat-lbl{font-size:0.72rem;color:#9ca3af;margin-top:3px;}
+.cp-stat-bar{position:absolute;bottom:0;left:0;right:0;height:3px;}
+
+/* ══ شريط الأدوات ══ */
+.cp-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
+.cp-search{display:flex;align-items:center;background:var(--bg-secondary,#f4f9f6);border:1.5px solid rgba(124,58,237,0.15);border-radius:10px;padding:7px 12px;gap:7px;flex:1;min-width:200px;max-width:340px;}
+body.dark-mode .cp-search{background:#130f24;}
+.cp-search input{border:none;background:transparent;outline:none;font-family:'Tajawal',sans-serif;font-size:0.86rem;color:var(--text,#1a1a2e);width:100%;}
+body.dark-mode .cp-search input{color:#e8f5ee;}
+.cp-sel{background:var(--bg-secondary,#f4f9f6);border:1.5px solid rgba(124,58,237,0.15);border-radius:9px;padding:7px 11px;font-family:'Tajawal',sans-serif;font-size:0.83rem;color:var(--text,#1a1a2e);outline:none;cursor:pointer;}
+body.dark-mode .cp-sel{background:#130f24;color:#e8f5ee;}
+.cp-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:9px;border:1.5px solid;font-family:'Tajawal',sans-serif;font-size:0.81rem;font-weight:700;cursor:pointer;transition:all 0.2s;}
+.cp-btn-p{background:rgba(124,58,237,0.1);color:var(--adm);border-color:rgba(124,58,237,0.2);}
+.cp-btn-g{background:rgba(26,122,74,0.1);color:#1a7a4a;border-color:rgba(26,122,74,0.2);}
+.cp-btn-r{background:rgba(229,62,62,0.1);color:#c53030;border-color:rgba(229,62,62,0.2);}
+.cp-btn-o{background:rgba(245,158,11,0.1);color:#b45309;border-color:rgba(245,158,11,0.2);}
+
+/* ══ بطاقة الشكوى ══ */
+.cp-card{background:#fff;border-radius:14px;border:1px solid rgba(124,58,237,0.06);padding:16px;transition:all 0.2s;margin-bottom:12px;border-right:4px solid transparent;}
+body.dark-mode .cp-card{background:#0d0a1a;}
+.cp-card:hover{box-shadow:0 4px 16px rgba(124,58,237,0.08);}
+.cp-card.cp-new{border-right-color:var(--adm);}
+.cp-card.cp-wait{border-right-color:#b45309;}
+.cp-card.cp-done{border-right-color:#1a7a4a;}
+.cp-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--adm),#a78bfa);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:0.9rem;flex-shrink:0;}
+.cp-priority{padding:2px 8px;border-radius:8px;font-size:0.68rem;font-weight:700;}
+.cp-priority-high{background:rgba(229,62,62,0.1);color:#c53030;}
+.cp-priority-medium{background:rgba(245,158,11,0.1);color:#b45309;}
+.cp-priority-low{background:rgba(26,122,74,0.1);color:#1a7a4a;}
+.cp-act{width:30px;height:30px;border-radius:8px;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:0.85rem;transition:all 0.2s;}
+.cp-act:hover{transform:scale(1.12);}
+
+/* ══ المودلات ══ */
+.m-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1000;align-items:center;justify-content:center;padding:16px;}
+.m-overlay.show{display:flex;}
+.m-box{background:#fff;border-radius:18px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.18);animation:mIn 0.25s ease;overflow:hidden;display:flex;flex-direction:column;}
+body.dark-mode .m-box{background:#0d0a1a;}
+@keyframes mIn{from{transform:scale(0.95);opacity:0}to{transform:scale(1);opacity:1}}
+.m-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid rgba(124,58,237,0.08);flex-shrink:0;}
+.m-title{font-size:0.95rem;font-weight:700;color:var(--text,#1a1a2e);}
+body.dark-mode .m-title{color:#e8f5ee;}
+.m-close{background:none;border:none;font-size:1.1rem;cursor:pointer;color:#9ca3af;padding:4px;border-radius:7px;}
+.m-close:hover{color:var(--adm);}
+.m-body{padding:18px 20px;overflow-y:auto;flex:1;}
+.m-footer{padding:12px 20px;border-top:1px solid rgba(124,58,237,0.08);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0;}
+.m-tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--bg-secondary,#f4f9f6);padding:4px;border-radius:10px;}
+body.dark-mode .m-tabs{background:#130f24;}
+.m-tab{padding:6px 13px;border-radius:8px;border:none;background:transparent;font-family:'Tajawal',sans-serif;font-size:0.8rem;font-weight:600;color:#6b7280;cursor:pointer;transition:all 0.2s;}
+.m-tab.active{background:var(--adm);color:#fff;}
+.m-panel{display:none;}
+.m-panel.active{display:block;}
+.f-input{width:100%;border:1.5px solid rgba(124,58,237,0.18);border-radius:9px;padding:9px 12px;font-family:'Tajawal',sans-serif;font-size:0.88rem;outline:none;background:#fff;color:#1a1a2e;transition:border 0.2s;}
+body.dark-mode .f-input{background:#130f24;color:#e8f5ee;}
+.f-input:focus{border-color:var(--adm);}
+.f-label{font-family:'Tajawal',sans-serif;font-size:0.8rem;font-weight:700;color:#6b7280;display:block;margin-bottom:5px;}
+
+/* ══ timeline الشكوى ══ */
+.cp-tl{position:relative;padding-right:20px;}
+.cp-tl::before{content:'';position:absolute;right:8px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--adm),rgba(124,58,237,0.1));}
+.cp-tl-item{position:relative;margin-bottom:14px;display:flex;gap:12px;}
+.cp-tl-dot{position:absolute;right:-26px;top:4px;width:16px;height:16px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px currentColor;flex-shrink:0;}
+body.dark-mode .cp-tl-dot{border-color:#0d0a1a;}
+.cp-tl-card{flex:1;background:var(--bg-secondary,#f4f9f6);border-radius:9px;padding:10px 13px;}
+body.dark-mode .cp-tl-card{background:#130f24;}
+.cp-tl-title{font-size:0.84rem;font-weight:700;color:var(--text,#1a1a2e);font-family:'Tajawal',sans-serif;}
+body.dark-mode .cp-tl-title{color:#e8f5ee;}
+.cp-tl-time{font-size:0.7rem;color:#9ca3af;font-family:'Tajawal',sans-serif;margin-top:2px;}
+
+/* ══ Toast ══ */
+.toast-wrap{position:fixed;bottom:22px;left:22px;z-index:9999;display:flex;flex-direction:column;gap:7px;}
+.cp-toast{background:#fff;border:1px solid rgba(124,58,237,0.1);border-radius:10px;padding:11px 15px;font-family:'Tajawal',sans-serif;font-size:0.84rem;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,0.1);display:flex;align-items:center;gap:7px;animation:tIn 0.28s ease;min-width:220px;}
+body.dark-mode .cp-toast{background:#0d0a1a;}
+@keyframes tIn{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+.cp-toast.success{border-right:3px solid #1a7a4a;}
+.cp-toast.error{border-right:3px solid #e53e3e;}
+.cp-toast.info{border-right:3px solid var(--adm);}
+
+/* skeleton */
+.skel{background:linear-gradient(90deg,rgba(124,58,237,0.06) 25%,rgba(124,58,237,0.12) 50%,rgba(124,58,237,0.06) 75%);background-size:200% 100%;animation:sk 1.4s infinite;border-radius:5px;height:13px;}
+@keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+@media(max-width:768px){.cp-stats{grid-template-columns:repeat(2,1fr);}.cp-toolbar{flex-direction:column;align-items:stretch;}.m-box{max-height:92vh;}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="toastWrap" class="toast-wrap"></div>
+
+<!-- ══ إحصائيات ══ -->
+<div class="cp-stats fade-in">
+    <div class="cp-stat active" id="stat_all" onclick="applyFilter('all')">
+        <div class="cp-stat-val" id="cnt_all" style="color:var(--adm)">—</div>
+        <div class="cp-stat-lbl">إجمالي الشكاوى</div>
+        <div class="cp-stat-bar" style="background:var(--adm)"></div>
+    </div>
+    <div class="cp-stat" id="stat_unseen" onclick="applyFilter('unseen')">
+        <div class="cp-stat-val" id="cnt_unseen" style="color:#7c3aed">—</div>
+        <div class="cp-stat-lbl">غير مشاهدة</div>
+        <div class="cp-stat-bar" style="background:#7c3aed"></div>
+    </div>
+    <div class="cp-stat" id="stat_unreplied" onclick="applyFilter('unreplied')">
+        <div class="cp-stat-val" id="cnt_unreplied" style="color:#b45309">—</div>
+        <div class="cp-stat-lbl">بانتظار الرد</div>
+        <div class="cp-stat-bar" style="background:#b45309"></div>
+    </div>
+    <div class="cp-stat" id="stat_replied" onclick="applyFilter('replied')">
+        <div class="cp-stat-val" id="cnt_replied" style="color:#1a7a4a">—</div>
+        <div class="cp-stat-lbl">تم الرد</div>
+        <div class="cp-stat-bar" style="background:#1a7a4a"></div>
+    </div>
+</div>
+
+<!-- ══ شريط الأدوات ══ -->
+<div class="dash-card fade-in fade-in-d1" style="margin-bottom:12px;padding:12px 16px">
+    <div class="cp-toolbar">
+        <div class="cp-search">
+            <span>🔍</span>
+            <input type="text" id="searchInp" placeholder="بحث بالاسم أو البريد أو الموضوع..." oninput="debounce(applyFilter,350)()">
+            <button onclick="document.getElementById('searchInp').value='';applyFilter()" style="background:none;border:none;cursor:pointer;color:#9ca3af;font-size:0.78rem">✕</button>
+        </div>
+        <select class="cp-sel" id="priorityFilter" onchange="applyFilter()">
+            <option value="">كل الأولويات</option>
+            <option value="high">🔴 عالية</option>
+            <option value="medium">🟡 متوسطة</option>
+            <option value="low">🟢 منخفضة</option>
+        </select>
+        <select class="cp-sel" id="sortFilter" onchange="applyFilter()">
+            <option value="-date">الأحدث أولاً</option>
+            <option value="date">الأقدم أولاً</option>
+            <option value="-priority">الأعلى أولوية</option>
+        </select>
+        <button class="cp-btn cp-btn-g" onclick="exportComplaints()">📊 تصدير Excel</button>
+        <button class="cp-btn cp-btn-p" onclick="loadComplaints()" style="margin-right:auto">🔄 تحديث</button>
+    </div>
+</div>
+
+<!-- ══ قائمة الشكاوى ══ -->
+<div id="complaintsList" class="fade-in fade-in-d2">
+    {% for i in "12345" %}
+    <div class="cp-card"><div class="skel" style="height:80px;border-radius:8px"></div></div>
+    {% endfor %}
+</div>
+
+<!-- ══ Pagination ══ -->
+<div id="pagination" style="display:flex;align-items:center;justify-content:center;gap:5px;margin-top:16px;flex-wrap:wrap"></div>
+<div id="pageInfo" style="text-align:center;padding:6px 0;font-size:0.76rem;color:#9ca3af;font-family:'Tajawal',sans-serif"></div>
+
+<!-- ══ مودل التفاصيل ══ -->
+<div class="m-overlay" id="detailModal">
+    <div class="m-box" style="max-width:680px;max-height:90vh">
+        <div class="m-hdr">
+            <span class="m-title" id="detailTitle">تفاصيل الشكوى</span>
+            <div style="display:flex;gap:6px">
+                <button class="cp-btn cp-btn-p" style="padding:5px 10px;font-size:0.78rem" id="detailReplyBtn" onclick="openReplyFromDetail()">✉️ رد</button>
+                <button class="m-close" onclick="closeModal('detailModal')">✕</button>
+            </div>
+        </div>
+        <div class="m-body">
+            <div class="m-tabs">
+                <button class="m-tab active" onclick="switchDTab('info',this)">📋 التفاصيل</button>
+                <button class="m-tab" onclick="switchDTab('timeline',this)">📅 السجل</button>
+                <button class="m-tab" onclick="switchDTab('internal',this)">🔒 ملاحظات داخلية</button>
+            </div>
+            <div class="m-panel active" id="dp_info"></div>
+            <div class="m-panel" id="dp_timeline"></div>
+            <div class="m-panel" id="dp_internal">
+                <div class="f-group" style="margin-bottom:10px">
+                    <label class="f-label">إضافة ملاحظة داخلية (غير مرئية للمستخدم)</label>
+                    <textarea id="internalNoteText" class="f-input" rows="4" placeholder="اكتب ملاحظتك الداخلية..."></textarea>
+                </div>
+                <button class="cp-btn cp-btn-p" onclick="saveInternalNote()" style="width:100%;justify-content:center">💾 حفظ الملاحظة</button>
+                <div id="internalNotesList" style="margin-top:14px"></div>
+            </div>
+        </div>
+        <input type="hidden" id="detailCompId">
+    </div>
+</div>
+
+<!-- ══ مودل الرد ══ -->
+<div class="m-overlay" id="replyModal">
+    <div class="m-box" style="max-width:520px">
+        <div class="m-hdr">
+            <span class="m-title">✉️ رد على الشكوى — <span id="replyToName"></span></span>
+            <button class="m-close" onclick="closeModal('replyModal')">✕</button>
+        </div>
+        <div class="m-body">
+            <div style="background:rgba(124,58,237,0.05);border-radius:10px;padding:12px;margin-bottom:14px;font-family:'Tajawal',sans-serif;font-size:0.82rem;color:#6b7280">
+                📧 سيُرسَل الرد إلى: <strong id="replyToEmail" style="color:var(--adm)"></strong>
+            </div>
+            <div style="margin-bottom:10px">
+                <label class="f-label">الموضوع</label>
+                <input type="text" id="replySubject" class="f-input" placeholder="موضوع الرد...">
+            </div>
+            <div>
+                <label class="f-label">نص الرد *</label>
+                <textarea id="replyText" class="f-input" rows="6" placeholder="اكتب ردك هنا..."></textarea>
+            </div>
+        </div>
+        <div class="m-footer">
+            <button class="cp-btn" style="background:var(--bg-secondary,#f4f9f6);border-color:transparent;color:#6b7280" onclick="closeModal('replyModal')">إلغاء</button>
+            <button class="cp-btn cp-btn-p" onclick="sendReply()" id="replyBtn">✉️ إرسال الرد</button>
+        </div>
+        <input type="hidden" id="replyCompId">
+    </div>
+</div>
+
+<!-- ══ مودل الأولوية ══ -->
+<div class="m-overlay" id="priorityModal">
+    <div class="m-box" style="max-width:360px">
+        <div class="m-hdr"><span class="m-title">🏷️ تحديد الأولوية</span><button class="m-close" onclick="closeModal('priorityModal')">✕</button></div>
+        <div class="m-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+                <button onclick="setPriority('high')"   style="background:rgba(229,62,62,0.1);color:#c53030;border:2px solid rgba(229,62,62,0.2);border-radius:10px;padding:14px;cursor:pointer;font-family:'Tajawal',sans-serif;font-weight:700;font-size:0.86rem">🔴<br>عالية</button>
+                <button onclick="setPriority('medium')" style="background:rgba(245,158,11,0.1);color:#b45309;border:2px solid rgba(245,158,11,0.2);border-radius:10px;padding:14px;cursor:pointer;font-family:'Tajawal',sans-serif;font-weight:700;font-size:0.86rem">🟡<br>متوسطة</button>
+                <button onclick="setPriority('low')"    style="background:rgba(26,122,74,0.1);color:#1a7a4a;border:2px solid rgba(26,122,74,0.2);border-radius:10px;padding:14px;cursor:pointer;font-family:'Tajawal',sans-serif;font-weight:700;font-size:0.86rem">🟢<br>منخفضة</button>
+            </div>
+        </div>
+        <input type="hidden" id="priorityCompId">
+    </div>
+</div>
+
+<!-- ══ مودل تأكيد الحذف ══ -->
+<div class="m-overlay" id="deleteModal">
+    <div class="m-box" style="max-width:360px">
+        <div class="m-hdr"><span class="m-title">🗑️ حذف الشكوى</span><button class="m-close" onclick="closeModal('deleteModal')">✕</button></div>
+        <div class="m-body" style="text-align:center;padding:22px">
+            <div style="font-size:3rem;margin-bottom:12px">⚠️</div>
+            <p style="font-family:'Tajawal',sans-serif;font-size:0.9rem;color:var(--text,#1a1a2e)">هل تريد حذف شكوى <strong id="deleteCompName"></strong> نهائياً؟<br><small style="color:#e53e3e">لا يمكن التراجع</small></p>
+        </div>
+        <div class="m-footer">
+            <button class="cp-btn" style="background:var(--bg-secondary);border-color:transparent;color:#6b7280" onclick="closeModal('deleteModal')">إلغاء</button>
+            <button class="cp-btn cp-btn-r" onclick="confirmDelete()">🗑️ حذف نهائياً</button>
+        </div>
+        <input type="hidden" id="deleteCompId">
+    </div>
+</div>
+
+<!-- ══ مودل نجاح ══ -->
+<div class="m-overlay" id="successModal">
+    <div class="m-box" style="max-width:320px">
+        <div class="m-body" style="text-align:center;padding:26px">
+            <div style="font-size:3rem;margin-bottom:10px" id="successIcon">✅</div>
+            <h5 style="font-weight:700;color:var(--text,#1a1a2e);margin-bottom:6px;font-family:'Tajawal',sans-serif" id="successTitle">تم</h5>
+            <p style="color:#6b7280;font-size:0.86rem;font-family:'Tajawal',sans-serif" id="successMsg"></p>
+            <button class="cp-btn cp-btn-p" style="margin-top:14px;width:100%;justify-content:center" onclick="closeModal('successModal')">حسناً</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+'use strict';
+const CSRF = document.cookie.split(';').find(c=>c.trim().startsWith('csrftoken='))?.split('=')[1]||'';
+const PER_PAGE = 15;
+
+let allData      = [];
+let filtered     = [];
+let currentPage  = 1;
+let currentFilter= 'all';
+let currentDetail= null;
+
+/* ══════════════════════════════════════════
+   تحميل البيانات
+══════════════════════════════════════════ */
+async function loadComplaints() {
+    try {
+        const r    = await fetch('/admin-panel/complaints/data/', {headers:{'X-Requested-With':'XMLHttpRequest'}});
+        const data = await r.json();
+        allData = data.complaints || [];
+        updateStats(data.counts || {});
+        applyFilter();
+    } catch { toast('خطأ في تحميل البيانات','error'); }
+}
+
+function updateStats(c) {
+    document.getElementById('cnt_all').textContent      = c.all      || 0;
+    document.getElementById('cnt_unseen').textContent   = c.unseen   || 0;
+    document.getElementById('cnt_unreplied').textContent= c.unreplied|| 0;
+    document.getElementById('cnt_replied').textContent  = c.replied  || 0;
+}
+
+/* ══════════════════════════════════════════
+   فلتر وترتيب
+══════════════════════════════════════════ */
+function applyFilter(status) {
+    if (status) currentFilter = status;
+    // تحديث الإحصائيات المحددة
+    document.querySelectorAll('.cp-stat').forEach(s => s.classList.remove('active'));
+    document.getElementById('stat_' + currentFilter)?.classList.add('active');
+
+    const q        = document.getElementById('searchInp').value.trim().toLowerCase();
+    const priority = document.getElementById('priorityFilter').value;
+    const sort     = document.getElementById('sortFilter').value;
+
+    filtered = allData.filter(c => {
+        const matchStatus = currentFilter === 'all'
+            || (currentFilter === 'unseen'    && !c.is_seen)
+            || (currentFilter === 'unreplied' && !c.is_replied)
+            || (currentFilter === 'replied'   && c.is_replied);
+        const matchQ      = !q || [c.name, c.email, c.subject, c.message].some(v => v && v.toLowerCase().includes(q));
+        const matchP      = !priority || c.priority === priority;
+        return matchStatus && matchQ && matchP;
+    });
+
+    filtered.sort((a, b) => {
+        if (sort === '-date')     return new Date(b.created_at) - new Date(a.created_at);
+        if (sort === 'date')      return new Date(a.created_at) - new Date(b.created_at);
+        if (sort === '-priority') {
+            const order = {high:0, medium:1, low:2, '':3};
+            return (order[a.priority]||3) - (order[b.priority]||3);
+        }
+        return 0;
+    });
+
+    currentPage = 1;
+    renderList();
+}
+
+/* ══════════════════════════════════════════
+   رسم القائمة
+══════════════════════════════════════════ */
+function renderList() {
+    const start = (currentPage - 1) * PER_PAGE;
+    const page  = filtered.slice(start, start + PER_PAGE);
+    const el    = document.getElementById('complaintsList');
+
+    if (!page.length) {
+        el.innerHTML = `<div style="text-align:center;padding:60px;color:#9ca3af;font-family:'Tajawal',sans-serif">
+            <div style="font-size:4rem;margin-bottom:14px">📩</div>
+            <div style="font-weight:700;font-size:1rem">لا توجد شكاوى</div>
+        </div>`;
+        document.getElementById('pagination').innerHTML = '';
+        document.getElementById('pageInfo').textContent = '';
+        return;
+    }
+
+    const PRIORITY_MAP = {
+        high:   ['🔴','عالية','cp-priority-high'],
+        medium: ['🟡','متوسطة','cp-priority-medium'],
+        low:    ['🟢','منخفضة','cp-priority-low'],
+    };
+
+    el.innerHTML = page.map(c => {
+        const cls      = !c.is_seen ? 'cp-new' : !c.is_replied ? 'cp-wait' : 'cp-done';
+        const pInfo    = PRIORITY_MAP[c.priority] || ['','',''];
+        const initial  = (c.name || '?')[0];
+        return `
+        <div class="cp-card ${cls}" id="card_${c.id}">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+                <div style="flex:1;min-width:240px">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                        <div class="cp-avatar">${initial}</div>
+                        <div style="flex:1">
+                            <div style="font-weight:700;color:var(--text,#1a1a2e);font-size:0.9rem">${c.name}</div>
+                            <div style="font-size:0.72rem;color:#9ca3af">${c.email} — ${c.phone||''}</div>
+                        </div>
+                        ${!c.is_seen ? '<span style="background:rgba(124,58,237,0.1);color:var(--adm);padding:2px 8px;border-radius:8px;font-size:0.65rem;font-weight:700">جديد</span>' : ''}
+                        ${pInfo[0] ? `<span class="cp-priority ${pInfo[2]}">${pInfo[0]} ${pInfo[1]}</span>` : ''}
+                    </div>
+                    <div style="font-size:0.78rem;font-weight:700;color:var(--adm);margin-bottom:4px">${c.subject}</div>
+                    <div style="font-size:0.84rem;color:var(--text,#1a1a2e);line-height:1.6;max-height:60px;overflow:hidden">${c.message}</div>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:0.7rem;color:#9ca3af;margin-top:8px">
+                        <span>📅 ${_fmtDate(c.created_at)}</span>
+                        <span>🌐 ${c.ip_address||'—'}</span>
+                        ${c.is_replied ? `<span style="color:#1a7a4a">✅ رد بواسطة ${c.replied_by||'الإدارة'} — ${_fmtDate(c.replied_at)}</span>` : ''}
+                    </div>
+                    ${c.reply_text ? `<div style="margin-top:8px;background:rgba(26,122,74,0.06);border-right:3px solid #1a7a4a;border-radius:0 8px 8px 0;padding:8px 12px;font-size:0.82rem;color:var(--text,#1a1a2e)"><div style="font-size:0.7rem;color:#1a7a4a;font-weight:700;margin-bottom:3px">ردّ الإدارة:</div>${c.reply_text}</div>` : ''}
+                </div>
+                <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
+                    <button class="cp-act" style="background:rgba(124,58,237,0.1);color:var(--adm)" onclick="openDetail('${c.id}')" title="عرض التفاصيل">👁</button>
+                    ${!c.is_seen ? `<button class="cp-act" style="background:rgba(43,108,176,0.1);color:#2b6cb0" onclick="markSeen('${c.id}')" title="تحديد كمشاهدة">✔️</button>` : ''}
+                    ${!c.is_replied ? `<button class="cp-act" style="background:rgba(26,122,74,0.1);color:#1a7a4a" onclick="openReply('${c.id}','${_esc(c.name)}','${_esc(c.email)}')" title="رد">✉️</button>` : ''}
+                    <button class="cp-act" style="background:rgba(245,158,11,0.1);color:#b45309" onclick="openPriority('${c.id}')" title="أولوية">🏷️</button>
+                    <button class="cp-act" style="background:rgba(229,62,62,0.1);color:#c53030" onclick="openDelete('${c.id}','${_esc(c.name)}')" title="حذف">🗑️</button>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+
+    renderPagination();
+    document.getElementById('pageInfo').textContent =
+        `عرض ${start+1}–${Math.min(start+PER_PAGE,filtered.length)} من ${filtered.length}`;
+}
+
+function renderPagination() {
+    const total = Math.ceil(filtered.length / PER_PAGE);
+    if (total <= 1) { document.getElementById('pagination').innerHTML = ''; return; }
+    let html = `<button style="${_pgBtnStyle(currentPage===1)}" ${currentPage===1?'disabled':''} onclick="goPage(${currentPage-1})">←</button>`;
+    for (let i = 1; i <= total; i++) {
+        if (i===1||i===total||Math.abs(i-currentPage)<=2)
+            html += `<button style="${_pgBtnStyle(false,i===currentPage)}" onclick="goPage(${i})">${i}</button>`;
+        else if (Math.abs(i-currentPage)===3)
+            html += `<span style="color:#9ca3af">…</span>`;
+    }
+    html += `<button style="${_pgBtnStyle(currentPage===total)}" ${currentPage===total?'disabled':''} onclick="goPage(${currentPage+1})">→</button>`;
+    document.getElementById('pagination').innerHTML = html;
+}
+function _pgBtnStyle(disabled, active=false) {
+    return `width:32px;height:32px;border-radius:8px;border:1.5px solid ${active?'var(--adm)':'rgba(124,58,237,0.15)'};background:${active?'var(--adm)':'transparent'};color:${active?'#fff':'var(--text,#1a1a2e)'};cursor:${disabled?'not-allowed':'pointer'};font-family:'Cairo',sans-serif;font-size:0.82rem;font-weight:700;opacity:${disabled?'0.4':'1'};display:inline-flex;align-items:center;justify-content:center;`;
+}
+function goPage(p) { currentPage = p; renderList(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+/* ══════════════════════════════════════════
+   مودل التفاصيل
+══════════════════════════════════════════ */
+async function openDetail(id) {
+    currentDetail = id;
+    document.getElementById('detailCompId').value = id;
+    document.getElementById('detailTitle').textContent = 'تفاصيل الشكوى';
+    document.getElementById('dp_info').innerHTML = '<div class="skel" style="height:120px;border-radius:8px"></div>';
+    document.getElementById('dp_timeline').innerHTML = '';
+    document.getElementById('internalNotesList').innerHTML = '';
+    // إعادة التابات
+    document.querySelectorAll('#detailModal .m-tab').forEach((b,i) => b.classList.toggle('active',i===0));
+    document.querySelectorAll('#detailModal .m-panel').forEach((p,i) => p.classList.toggle('active',i===0));
+    openModal('detailModal');
+
+    try {
+        const r    = await fetch(`/admin-panel/complaints/detail/?id=${id}`, {headers:{'X-Requested-With':'XMLHttpRequest'}});
+        const data = await r.json();
+        const c    = data.complaint;
+        if (!c) return;
+
+        document.getElementById('detailTitle').textContent = `شكوى: ${c.name}`;
+        document.getElementById('detailReplyBtn').style.display = c.is_replied ? 'none' : '';
+
+        // تاب التفاصيل
+        const PRIORITY_MAP = {high:'🔴 عالية',medium:'🟡 متوسطة',low:'🟢 منخفضة'};
+        document.getElementById('dp_info').innerHTML = `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+                ${_ri('الاسم',c.name)} ${_ri('البريد',c.email)}
+                ${_ri('الجوال',c.phone||'—')} ${_ri('IP',c.ip_address||'—')}
+                ${_ri('التاريخ',_fmtDate(c.created_at))} ${_ri('الأولوية',PRIORITY_MAP[c.priority]||'—')}
+                ${_ri('حالة المشاهدة',c.is_seen?'✅ مشاهدة':'❌ غير مشاهدة')}
+                ${_ri('حالة الرد',c.is_replied?'✅ تم الرد':'⏳ بانتظار الرد')}
+            </div>
+            <div style="background:var(--bg-secondary,#f4f9f6);border-radius:10px;padding:14px;margin-bottom:12px">
+                <div style="font-size:0.76rem;font-weight:700;color:var(--adm);margin-bottom:6px">${c.subject}</div>
+                <div style="font-size:0.88rem;color:var(--text,#1a1a2e);line-height:1.7;font-family:'Tajawal',sans-serif">${c.message}</div>
+            </div>
+            ${c.reply_text ? `<div style="background:rgba(26,122,74,0.06);border-right:3px solid #1a7a4a;border-radius:0 10px 10px 0;padding:12px 16px">
+                <div style="font-size:0.74rem;color:#1a7a4a;font-weight:700;margin-bottom:5px">ردّ الإدارة — بواسطة: ${c.replied_by||'—'} — ${_fmtDate(c.replied_at)}</div>
+                <div style="font-size:0.86rem;color:var(--text,#1a1a2e);line-height:1.6;font-family:'Tajawal',sans-serif">${c.reply_text}</div>
+            </div>` : ''}`;
+
+        // تاب السجل
+        const events = data.events || [];
+        document.getElementById('dp_timeline').innerHTML = events.length
+            ? `<div class="cp-tl">${events.map(e => `
+                <div class="cp-tl-item">
+                    <div class="cp-tl-dot" style="color:${e.color};background:${e.color}"></div>
+                    <div class="cp-tl-card">
+                        <div class="cp-tl-title">${e.icon} ${e.title}</div>
+                        <div class="cp-tl-time">${e.time}</div>
+                    </div>
+                </div>`).join('')}</div>`
+            : '<p style="color:#9ca3af;font-family:\'Tajawal\',sans-serif;text-align:center;padding:20px">لا توجد أحداث</p>';
+
+        // ملاحظات داخلية
+        renderInternalNotes(data.internal_notes || []);
+
+    } catch(e) { console.error(e); }
+}
+
+function _ri(l, v) {
+    return `<div style="background:var(--bg-secondary,#f4f9f6);border-radius:8px;padding:9px 11px"><div style="font-size:0.62rem;color:#9ca3af;font-weight:700;margin-bottom:3px">${l}</div><div style="font-size:0.85rem;font-weight:700;color:var(--text,#1a1a2e)">${v||'—'}</div></div>`;
+}
+
+function switchDTab(tab, btn) {
+    document.querySelectorAll('#detailModal .m-tab').forEach(b  => b.classList.remove('active'));
+    document.querySelectorAll('#detailModal .m-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('dp_' + tab).classList.add('active');
+}
+
+/* ══ ملاحظات داخلية ══ */
+function renderInternalNotes(notes) {
+    const el = document.getElementById('internalNotesList');
+    if (!notes.length) { el.innerHTML = '<p style="color:#9ca3af;font-family:\'Tajawal\',sans-serif;font-size:0.82rem;text-align:center;padding:14px">لا توجد ملاحظات داخلية</p>'; return; }
+    el.innerHTML = notes.map(n => `
+        <div style="background:rgba(245,158,11,0.06);border-right:3px solid #b45309;border-radius:0 8px 8px 0;padding:10px 13px;margin-bottom:8px">
+            <div style="font-size:0.82rem;color:var(--text,#1a1a2e);font-family:'Tajawal',sans-serif;margin-bottom:4px">${n.text}</div>
+            <div style="font-size:0.7rem;color:#9ca3af;font-family:'Tajawal',sans-serif">🔒 ${n.admin} — ${n.created_at}</div>
+        </div>`).join('');
+}
+
+async function saveInternalNote() {
+    const id   = document.getElementById('detailCompId').value;
+    const text = document.getElementById('internalNoteText').value.trim();
+    if (!text) { toast('اكتب ملاحظة أولاً','error'); return; }
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('complaint_id', id);
+    fd.append('note', text);
+    const r    = await fetch('/admin-panel/complaints/note/', {method:'POST', body:fd});
+    const data = await r.json();
+    if (data.status === 'success') {
+        document.getElementById('internalNoteText').value = '';
+        renderInternalNotes(data.notes);
+        showSuccess('📝', 'تم الحفظ', 'تم حفظ الملاحظة الداخلية بنجاح');
+    } else toast(data.message,'error');
+}
+
+/* ══════════════════════════════════════════
+   عمليات
+══════════════════════════════════════════ */
+async function markSeen(id) {
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('complaint_id', id);
+    const r    = await fetch('/admin-panel/complaints/seen/', {method:'POST', body:fd});
+    const data = await r.json();
+    if (data.status === 'success') {
+        const c = allData.find(x => x.id == id);
+        if (c) c.is_seen = true;
+        applyFilter();
+        updateStats(data.counts);
+        toast('تم التحديد كمشاهدة','success');
+    }
+}
+
+function openReply(id, name, email) {
+    document.getElementById('replyCompId').value         = id;
+    document.getElementById('replyToName').textContent   = name;
+    document.getElementById('replyToEmail').textContent  = email;
+    document.getElementById('replyText').value           = '';
+    document.getElementById('replySubject').value        = '';
+    openModal('replyModal');
+}
+
+function openReplyFromDetail() {
+    const id = document.getElementById('detailCompId').value;
+    const c  = allData.find(x => x.id == id);
+    if (c) { closeModal('detailModal'); openReply(id, c.name, c.email); }
+}
+
+async function sendReply() {
+    const id   = document.getElementById('replyCompId').value;
+    const text = document.getElementById('replyText').value.trim();
+    if (!text) { toast('اكتب نص الرد','error'); return; }
+    const btn = document.getElementById('replyBtn');
+    btn.disabled = true; btn.textContent = '⏳ جار الإرسال...';
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('complaint_id', id);
+    fd.append('reply_text',   text);
+    fd.append('reply_subject',document.getElementById('replySubject').value.trim());
+    const r    = await fetch('/admin-panel/complaints/reply/', {method:'POST', body:fd});
+    const data = await r.json();
+    btn.disabled = false; btn.textContent = '✉️ إرسال الرد';
+    closeModal('replyModal');
+    if (data.status === 'success') {
+        const c = allData.find(x => x.id == id);
+        if (c) { c.is_replied = true; c.is_seen = true; c.reply_text = text; c.replied_by = data.replied_by; c.replied_at = data.replied_at; }
+        applyFilter();
+        updateStats(data.counts);
+        showSuccess('✅','تم الإرسال','تم إرسال الرد بنجاح');
+    } else toast(data.message,'error');
+}
+
+function openPriority(id) {
+    document.getElementById('priorityCompId').value = id;
+    openModal('priorityModal');
+}
+
+async function setPriority(level) {
+    const id = document.getElementById('priorityCompId').value;
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('complaint_id', id);
+    fd.append('priority', level);
+    const r    = await fetch('/admin-panel/complaints/priority/', {method:'POST', body:fd});
+    const data = await r.json();
+    closeModal('priorityModal');
+    if (data.status === 'success') {
+        const c = allData.find(x => x.id == id);
+        if (c) c.priority = level;
+        applyFilter();
+        showSuccess('🏷️', 'تم التحديد', 'تم تحديد أولوية الشكوى بنجاح');
+    }
+}
+
+function openDelete(id, name) {
+    document.getElementById('deleteCompId').value         = id;
+    document.getElementById('deleteCompName').textContent = name;
+    openModal('deleteModal');
+}
+
+async function confirmDelete() {
+    const id = document.getElementById('deleteCompId').value;
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('complaint_id', id);
+    const r    = await fetch('/admin-panel/complaints/delete/', {method:'POST', body:fd});
+    const data = await r.json();
+    closeModal('deleteModal');
+    if (data.status === 'success') {
+        allData = allData.filter(x => x.id != id);
+        applyFilter();
+        updateStats(data.counts);
+        toast('تم الحذف','success');
+    }
+}
+
+function exportComplaints() {
+    const status = currentFilter !== 'all' ? `&status=${currentFilter}` : '';
+    const q      = document.getElementById('searchInp').value.trim();
+    const pr     = document.getElementById('priorityFilter').value;
+    window.location.href = `/admin-panel/complaints/export/?q=${encodeURIComponent(q)}&priority=${pr}${status}`;
+}
+
+/* ══════════════════════════════════════════
+   مساعدات
+══════════════════════════════════════════ */
+function openModal(id)  { document.getElementById(id)?.classList.add('show'); }
+function closeModal(id) { document.getElementById(id)?.classList.remove('show'); }
+
+function showSuccess(icon, title, msg) {
+    document.getElementById('successIcon').textContent  = icon;
+    document.getElementById('successTitle').textContent = title;
+    document.getElementById('successMsg').textContent   = msg;
+    openModal('successModal');
+    setTimeout(() => closeModal('successModal'), 2500);
+}
+
+function toast(msg, type='info') {
+    const c  = document.getElementById('toastWrap');
+    const el = document.createElement('div');
+    el.className = `cp-toast ${type}`;
+    const icons = {success:'✅',error:'⚠️',info:'ℹ️'};
+    el.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span style="font-family:'Tajawal',sans-serif;color:var(--text,#1a1a2e)">${msg}</span>`;
+    c.appendChild(el);
+    setTimeout(() => { el.style.opacity='0'; el.style.transition='opacity 0.3s'; setTimeout(() => el.remove(),300); }, 3500);
+}
+
+function _fmtDate(d) { if(!d) return '—'; return new Date(d).toLocaleString('ar-EG',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function _esc(s)     { return (s||'').replace(/'/g,"\\'"); }
+function debounce(fn, delay) { let t; return function(){ clearTimeout(t); t=setTimeout(fn,delay); }; }
+
+document.querySelectorAll('.m-overlay').forEach(m => {
+    m.addEventListener('click', e => { if(e.target===m) m.classList.remove('show'); });
+});
+
+document.addEventListener('DOMContentLoaded', loadComplaints);
+</script>
+{% endblock %}

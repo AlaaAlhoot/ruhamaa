@@ -1,0 +1,610 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دخول الإدارة — رُحَمَاء</title>
+<link rel="stylesheet" href="{% static 'fonts/cairo/cairo.css' %}">
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+
+body {
+    background: linear-gradient(135deg, #0f0a1e 0%, #1a0f3a 50%, #0a1628 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Tajawal', sans-serif;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* خلفية متحركة */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at 20% 20%, rgba(124,58,237,0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(99,179,237,0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 60% 20%, rgba(167,139,250,0.08) 0%, transparent 40%);
+    pointer-events: none;
+}
+
+/* بطاقة الدخول */
+.admin-card {
+    background: rgba(15,10,30,0.85);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(124,58,237,0.25);
+    border-radius: 28px;
+    padding: 44px 48px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow:
+        0 0 0 1px rgba(124,58,237,0.1),
+        0 24px 64px rgba(0,0,0,0.6),
+        0 0 80px rgba(124,58,237,0.08);
+    position: relative;
+}
+
+/* شريط علوي ملوّن */
+.admin-card::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 24px; left: 24px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #7c3aed, #a78bfa, #7c3aed, transparent);
+    border-radius: 0 0 2px 2px;
+}
+
+/* الشعار */
+.logo-wrap {
+    text-align: center;
+    margin-bottom: 32px;
+}
+.logo-icon {
+    width: 70px; height: 70px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #6d28d9, #a78bfa);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin-bottom: 14px;
+    box-shadow: 0 8px 32px rgba(124,58,237,0.4);
+}
+.logo-title {
+    font-family: 'Amiri', serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #a78bfa, #e9d5ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 4px;
+}
+.logo-sub {
+    font-size: 0.82rem;
+    color: rgba(167,139,250,0.6);
+    font-weight: 500;
+}
+
+/* Badge أدمن */
+.admin-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(124,58,237,0.15);
+    border: 1px solid rgba(124,58,237,0.3);
+    color: #a78bfa;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+}
+
+/* Alert */
+.adm-alert {
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 0.85rem;
+    margin-bottom: 20px;
+    display: none;
+    align-items: center;
+    gap: 9px;
+    font-weight: 600;
+}
+.adm-alert.show    { display: flex; }
+.adm-alert.error   { background: rgba(229,62,62,0.12); color: #fc8181; border: 1px solid rgba(229,62,62,0.25); }
+.adm-alert.success { background: rgba(124,58,237,0.12); color: #a78bfa; border: 1px solid rgba(124,58,237,0.25); }
+.adm-alert.locked  { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
+
+/* Labels */
+.form-label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: rgba(167,139,250,0.8);
+    margin-bottom: 7px;
+}
+
+/* Inputs */
+.form-control {
+    width: 100%;
+    background: rgba(124,58,237,0.08);
+    border: 1.5px solid rgba(124,58,237,0.2);
+    color: #e9d5ff;
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.92rem;
+    transition: all 0.25s;
+    outline: none;
+}
+.form-control:focus {
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.2);
+    background: rgba(124,58,237,0.12);
+}
+.form-control::placeholder { color: rgba(167,139,250,0.3); }
+.form-control.is-invalid {
+    border-color: #e53e3e !important;
+    box-shadow: 0 0 0 3px rgba(229,62,62,0.15) !important;
+}
+
+/* كلمة المرور */
+.pass-wrap { position: relative; }
+.pass-wrap .form-control { padding-left: 44px; }
+.pass-toggle {
+    position: absolute;
+    left: 13px; top: 50%;
+    transform: translateY(-50%);
+    background: none; border: none;
+    cursor: pointer;
+    color: rgba(167,139,250,0.5);
+    font-size: 1rem;
+    transition: color 0.2s;
+    padding: 0;
+}
+.pass-toggle:hover { color: #a78bfa; }
+
+/* خطأ الحقل */
+.field-error {
+    font-size: 0.75rem;
+    color: #fc8181;
+    margin-top: 5px;
+    display: none;
+    align-items: center;
+    gap: 4px;
+}
+.field-error.show { display: flex; }
+
+/* شريط المحاولات */
+.attempts-wrap {
+    margin-top: 10px;
+    display: none;
+}
+.attempts-wrap.show { display: block; }
+.attempts-bar {
+    height: 3px;
+    background: rgba(124,58,237,0.15);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.attempts-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: all 0.4s;
+    background: #7c3aed;
+}
+.attempts-text {
+    font-size: 0.72rem;
+    color: rgba(167,139,250,0.6);
+    margin-top: 4px;
+    text-align: center;
+}
+
+/* عداد الحظر */
+.lockout-section {
+    display: none;
+    text-align: center;
+    padding: 14px;
+    background: rgba(245,158,11,0.08);
+    border: 1px solid rgba(245,158,11,0.2);
+    border-radius: 12px;
+    margin-bottom: 16px;
+}
+.lockout-timer {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #fbbf24;
+    font-family: 'Cairo', monospace;
+}
+.lockout-text {
+    font-size: 0.78rem;
+    color: rgba(251,191,36,0.7);
+    margin-top: 4px;
+}
+
+/* زر الدخول */
+.btn-login {
+    width: 100%;
+    background: linear-gradient(135deg, #6d28d9, #a78bfa);
+    color: #fff;
+    border: none;
+    padding: 14px;
+    border-radius: 50px;
+    font-family: 'Tajawal', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 0 6px 24px rgba(124,58,237,0.4);
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+.btn-login:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 32px rgba(124,58,237,0.5);
+}
+.btn-login:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Remember me */
+.remember-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+.remember-wrap input[type="checkbox"] {
+    width: 16px; height: 16px;
+    accent-color: #7c3aed;
+    cursor: pointer;
+}
+.remember-wrap label {
+    font-size: 0.82rem;
+    color: rgba(167,139,250,0.7);
+    cursor: pointer;
+}
+
+/* رابط العودة */
+.back-link {
+    text-align: center;
+    margin-top: 24px;
+    font-size: 0.82rem;
+    color: rgba(167,139,250,0.5);
+}
+.back-link a {
+    color: #a78bfa;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+.back-link a:hover { color: #e9d5ff; }
+
+/* Security info */
+.security-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 20px;
+    font-size: 0.72rem;
+    color: rgba(124,58,237,0.4);
+}
+
+/* Shake */
+@keyframes shake {
+    0%,100% { transform:translateX(0); }
+    20%     { transform:translateX(-7px); }
+    40%     { transform:translateX(7px); }
+    60%     { transform:translateX(-4px); }
+    80%     { transform:translateX(4px); }
+}
+.shake { animation: shake 0.4s ease; }
+
+/* Honeypot */
+.hp { display: none !important; }
+
+@media (max-width:480px) {
+    .admin-card { padding:32px 22px; border-radius:20px; }
+    .logo-title { font-size:1.5rem; }
+}
+</style>
+</head>
+
+<body>
+<div class="admin-card">
+
+    <!-- شعار -->
+    <div class="logo-wrap">
+        <div class="logo-icon">🛡️</div>
+        <div class="logo-title">رُحَمَاء</div>
+        <div class="logo-sub">منصة جمعية نسائم فلسطين الخيرية</div>
+    </div>
+
+    <!-- Badge -->
+    <div class="text-center">
+        <span class="admin-badge">
+            <span>⚙️</span> لوحة تحكم الإدارة
+        </span>
+    </div>
+
+    {% csrf_token %}
+
+    <!-- Honeypot -->
+    <input type="text" name="honeypot" class="hp" tabindex="-1" autocomplete="off">
+
+    <!-- Alert -->
+    <div class="adm-alert" id="admAlert"></div>
+
+    <!-- عداد الحظر -->
+    <div class="lockout-section" id="lockoutSection">
+        <div class="lockout-timer" id="lockoutTimer">05:00</div>
+        <div class="lockout-text">تم تجميد الدخول مؤقتاً بسبب المحاولات المتكررة</div>
+    </div>
+
+    <!-- اسم المستخدم -->
+    <div style="margin-bottom:18px">
+        <label class="form-label">🔑 اسم المستخدم</label>
+        <input type="text"
+               id="adminUsername"
+               class="form-control"
+               placeholder="أدخل اسم المستخدم"
+               autocomplete="username"
+               oninput="clearErr()">
+        <div class="field-error" id="errUsername">
+            <span>⚠️</span><span id="errUsernameMsg"></span>
+        </div>
+    </div>
+
+    <!-- كلمة المرور -->
+    <div style="margin-bottom:18px">
+        <label class="form-label">🔒 كلمة المرور</label>
+        <div class="pass-wrap">
+            <input type="password"
+                   id="adminPassword"
+                   class="form-control"
+                   placeholder="أدخل كلمة المرور"
+                   autocomplete="current-password"
+                   onkeydown="if(event.key==='Enter')submitAdminLogin()"
+                   oninput="clearErr()">
+            <button class="pass-toggle" type="button"
+                    onclick="togglePass()">👁</button>
+        </div>
+        <div class="field-error" id="errPassword">
+            <span>⚠️</span><span id="errPasswordMsg"></span>
+        </div>
+    </div>
+
+    <!-- شريط المحاولات -->
+    <div class="attempts-wrap" id="attemptsWrap">
+        <div class="attempts-bar">
+            <div class="attempts-fill" id="attemptsFill"
+                 style="width:100%"></div>
+        </div>
+        <div class="attempts-text" id="attemptsText"></div>
+    </div>
+
+    <!-- تذكرني -->
+    <div class="remember-wrap">
+        <input type="checkbox" id="rememberMe">
+        <label for="rememberMe">تذكّرني لمدة 24 ساعة</label>
+    </div>
+
+    <!-- زر الدخول -->
+    <button class="btn-login" id="loginBtn" onclick="submitAdminLogin()">
+        <span>🔐</span>
+        <span>دخول لوحة الإدارة</span>
+    </button>
+
+    <!-- رابط العودة -->
+    <div class="back-link">
+        <a href="/login/">← العودة لصفحة الدخول العامة</a>
+    </div>
+
+    <!-- معلومات الأمان -->
+    <div class="security-info">
+        <span>🔒</span>
+        <span>اتصال مشفّر وآمن</span>
+        <span>•</span>
+        <span>5 محاولات كحد أقصى</span>
+    </div>
+
+</div>
+
+<script>
+const CSRF = document.querySelector('[name=csrfmiddlewaretoken]')?.value
+    || document.cookie.split(';').find(c=>c.trim().startsWith('csrftoken='))?.split('=')[1] || '';
+
+let lockoutInterval = null;
+
+async function submitAdminLogin() {
+    // Honeypot
+    if (document.querySelector('[name=honeypot]')?.value) return;
+
+    const username = document.getElementById('adminUsername').value.trim();
+    const password = document.getElementById('adminPassword').value;
+    const remember = document.getElementById('rememberMe').checked;
+
+    clearErr();
+    let valid = true;
+
+    if (!username) {
+        showFieldErr('errUsername', 'errUsernameMsg', 'اسم المستخدم مطلوب');
+        valid = false;
+    } else if (username.length > 150) {
+        showFieldErr('errUsername', 'errUsernameMsg', 'اسم المستخدم طويل جداً');
+        valid = false;
+    } else if (/<|>|'|"|;|--/.test(username)) {
+        showFieldErr('errUsername', 'errUsernameMsg', 'مدخل غير صالح');
+        valid = false;
+    }
+
+    if (!password) {
+        showFieldErr('errPassword', 'errPasswordMsg', 'كلمة المرور مطلوبة');
+        valid = false;
+    } else if (password.length < 4) {
+        showFieldErr('errPassword', 'errPasswordMsg', 'كلمة المرور قصيرة جداً');
+        valid = false;
+    }
+
+    if (!valid) return;
+
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳</span> <span>جار التحقق...</span>';
+
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('identifier',  username);
+    fd.append('password',    password);
+    fd.append('admin_login', '1');
+    fd.append('remember',    remember ? '1' : '0');
+
+    try {
+        const r    = await fetch('/admin-login/', {
+            method:  'POST',
+            body:    fd,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        const data = await r.json();
+
+        if (data.status === 'success') {
+            btn.innerHTML = '<span>✅</span> <span>تم التحقق، جار التوجيه...</span>';
+            showAlert('success', data.message || 'مرحباً بك في لوحة الإدارة');
+            setTimeout(() => { window.location.href = data.redirect; }, 800);
+            return;
+        }
+
+        if (data.status === 'locked' || r.status === 429) {
+            startLockout(data.remaining || 300);
+            showAlert('locked', data.message || 'تم تجميد الدخول مؤقتاً');
+            btn.disabled = true;
+            btn.innerHTML = '<span>🔒</span> <span>محظور مؤقتاً</span>';
+            return;
+        }
+
+        // خطأ عادي
+        if (data.errors?.identifier) {
+            showFieldErr('errUsername', 'errUsernameMsg', data.errors.identifier);
+        }
+        if (data.errors?.password) {
+            showFieldErr('errPassword', 'errPasswordMsg', data.errors.password);
+        }
+        if (data.message) {
+            showAlert('error', data.message);
+        }
+        if (data.attempts_left !== undefined) {
+            updateAttemptsBar(data.attempts_left);
+        }
+
+        shake('adminUsername');
+        btn.disabled = false;
+        btn.innerHTML = '<span>🔐</span> <span>دخول لوحة الإدارة</span>';
+
+    } catch(e) {
+        showAlert('error', 'حدث خطأ في الاتصال، يرجى المحاولة مجدداً');
+        btn.disabled = false;
+        btn.innerHTML = '<span>🔐</span> <span>دخول لوحة الإدارة</span>';
+    }
+}
+
+function startLockout(seconds) {
+    const section = document.getElementById('lockoutSection');
+    const timer   = document.getElementById('lockoutTimer');
+    section.style.display = 'block';
+    if (lockoutInterval) clearInterval(lockoutInterval);
+
+    let remaining = seconds;
+    function update() {
+        const m = Math.floor(remaining/60).toString().padStart(2,'0');
+        const s = (remaining%60).toString().padStart(2,'0');
+        timer.textContent = `${m}:${s}`;
+        if (remaining <= 0) {
+            clearInterval(lockoutInterval);
+            section.style.display = 'none';
+            const btn = document.getElementById('loginBtn');
+            btn.disabled = false;
+            btn.innerHTML = '<span>🔐</span> <span>دخول لوحة الإدارة</span>';
+            showAlert('success', 'يمكنك المحاولة مجدداً');
+        }
+        remaining--;
+    }
+    update();
+    lockoutInterval = setInterval(update, 1000);
+}
+
+function updateAttemptsBar(left) {
+    const wrap = document.getElementById('attemptsWrap');
+    const fill = document.getElementById('attemptsFill');
+    const text = document.getElementById('attemptsText');
+    wrap.classList.add('show');
+    const pct = (left/5)*100;
+    const colors = ['#e53e3e','#e53e3e','#ed8936','#ecc94b','#a78bfa','#a78bfa'];
+    fill.style.width      = pct + '%';
+    fill.style.background = colors[left] || '#e53e3e';
+    text.textContent      = `متبقّي ${left} محاولة من أصل 5`;
+}
+
+function showAlert(type, msg) {
+    const el = document.getElementById('admAlert');
+    const icons = { error:'⚠️', success:'✅', locked:'🔒' };
+    el.className = 'adm-alert show ' + type;
+    el.innerHTML = `<span>${icons[type]||'⚠️'}</span><span>${msg}</span>`;
+    if (type!=='success') setTimeout(()=>el.classList.remove('show'), 6000);
+}
+
+function showFieldErr(errId, msgId, msg) {
+    const el  = document.getElementById(errId);
+    const msg2= document.getElementById(msgId);
+    if (el)   el.classList.add('show');
+    if (msg2) msg2.textContent = msg;
+    const fieldMap = { errUsername:'adminUsername', errPassword:'adminPassword' };
+    const field = document.getElementById(fieldMap[errId]);
+    if (field) { field.classList.add('is-invalid'); shake(fieldMap[errId]); }
+}
+
+function clearErr() {
+    ['adminUsername','adminPassword'].forEach(id=>{
+        document.getElementById(id)?.classList.remove('is-invalid');
+    });
+    ['errUsername','errPassword'].forEach(id=>{
+        document.getElementById(id)?.classList.remove('show');
+    });
+    document.getElementById('admAlert')?.classList.remove('show');
+}
+
+function togglePass() {
+    const el = document.getElementById('adminPassword');
+    if (el) el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+function shake(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('shake');
+    void el.offsetWidth;
+    el.classList.add('shake');
+    el.addEventListener('animationend',()=>el.classList.remove('shake'),{once:true});
+}
+
+// منع لصق كلمة المرور
+document.getElementById('adminPassword')
+    .addEventListener('paste', e => e.preventDefault());
+</script>
+</body>
+</html>

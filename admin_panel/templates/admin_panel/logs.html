@@ -1,0 +1,652 @@
+{% extends 'admin_panel/base.html' %}
+{% block title %}سجل النشاط{% endblock %}
+{% block page_title %}📜 سجل النشاط{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ══ إحصائيات ══ */
+.lg-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px;}
+.lg-stat{background:#fff;border:1px solid rgba(124,58,237,0.08);border-radius:14px;padding:13px 14px;cursor:pointer;transition:all 0.25s;position:relative;overflow:hidden;}
+body.dark-mode .lg-stat{background:#0d0a1a;}
+.lg-stat:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(124,58,237,0.1);}
+.lg-stat.active{border-color:var(--adm);box-shadow:0 0 0 3px rgba(124,58,237,0.1);}
+.lg-stat-val{font-size:1.5rem;font-weight:900;font-family:'Cairo',sans-serif;line-height:1;}
+.lg-stat-lbl{font-size:0.7rem;color:#9ca3af;margin-top:3px;font-family:'Tajawal',sans-serif;}
+.lg-stat-bar{position:absolute;bottom:0;left:0;right:0;height:3px;}
+.lg-diff{font-size:0.68rem;margin-top:3px;font-family:'Tajawal',sans-serif;}
+
+/* ══ شبكة الرسم + الأكثر نشاطاً ══ */
+.lg-middle-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px;}
+
+/* ══ شريط الأدوات ══ */
+.lg-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.lg-search{display:flex;align-items:center;background:var(--bg-secondary,#f4f9f6);border:1.5px solid rgba(124,58,237,0.15);border-radius:10px;padding:7px 12px;gap:7px;flex:1;min-width:160px;}
+body.dark-mode .lg-search{background:#130f24;}
+.lg-search input{border:none;background:transparent;outline:none;font-family:'Tajawal',sans-serif;font-size:0.85rem;color:var(--text,#1a1a2e);width:100%;min-width:0;}
+body.dark-mode .lg-search input{color:#e8f5ee;}
+.lg-sel{background:var(--bg-secondary,#f4f9f6);border:1.5px solid rgba(124,58,237,0.15);border-radius:9px;padding:7px 10px;font-family:'Tajawal',sans-serif;font-size:0.82rem;color:var(--text,#1a1a2e);outline:none;cursor:pointer;max-width:100%;}
+body.dark-mode .lg-sel{background:#130f24;color:#e8f5ee;}
+.lg-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:9px;border:1.5px solid;font-family:'Tajawal',sans-serif;font-size:0.8rem;font-weight:700;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.lg-btn-p{background:rgba(124,58,237,0.1);color:var(--adm);border-color:rgba(124,58,237,0.2);}
+.lg-btn-g{background:rgba(26,122,74,0.1);color:#1a7a4a;border-color:rgba(26,122,74,0.2);}
+.lg-btn-r{background:rgba(229,62,62,0.1);color:#c53030;border-color:rgba(229,62,62,0.2);}
+
+/* ══ صف الفلاتر ══ */
+.lg-filters-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;width:100%;}
+.lg-filter-group{display:flex;gap:8px;flex-wrap:wrap;flex:1;min-width:0;}
+.lg-actions-group{display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex-shrink:0;}
+.lg-refresh-group{display:flex;align-items:center;gap:6px;}
+
+/* ══ الرسم البياني ══ */
+.lg-chart-wrap{position:relative;height:110px;}
+
+/* ══ كارد السجل ══ */
+.lg-card{background:#fff;border-radius:12px;border:1px solid rgba(124,58,237,0.06);padding:12px 14px;transition:all 0.2s;cursor:pointer;border-right:3px solid transparent;margin-bottom:8px;animation:lgIn 0.3s ease;}
+body.dark-mode .lg-card{background:#0d0a1a;}
+@keyframes lgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.lg-card:hover{box-shadow:0 4px 16px rgba(124,58,237,0.08);}
+.lg-card.danger{border-right-color:#c53030;background:rgba(229,62,62,0.02);}
+.lg-card-inner{display:flex;align-items:flex-start;gap:10px;}
+.lg-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0;font-weight:700;color:#fff;}
+.lg-card-body{flex:1;min-width:0;}
+.lg-card-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;}
+.lg-action-badge{padding:2px 8px;border-radius:7px;font-size:0.7rem;font-weight:700;display:inline-flex;align-items:center;gap:3px;white-space:nowrap;}
+.lg-card-desc{font-size:0.82rem;color:var(--text,#1a1a2e);font-family:'Tajawal',sans-serif;margin-bottom:4px;word-break:break-word;}
+body.dark-mode .lg-card-desc{color:#e8f5ee;}
+.lg-card-meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.lg-ip-btn{background:none;border:none;cursor:pointer;color:#9ca3af;font-size:0.7rem;padding:0;font-family:'Tajawal',sans-serif;transition:color 0.2s;display:inline-flex;align-items:center;gap:3px;}
+.lg-ip-btn:hover{color:var(--adm);}
+.lg-card-icon{font-size:1.3rem;flex-shrink:0;opacity:0.7;display:none;}
+
+/* ══ فاصل اليوم ══ */
+.lg-day-sep{display:flex;align-items:center;gap:8px;margin:14px 0 8px;font-size:0.74rem;font-weight:700;color:var(--adm);font-family:'Cairo',sans-serif;}
+.lg-day-sep::before,.lg-day-sep::after{content:'';flex:1;height:1px;background:rgba(124,58,237,0.1);}
+
+/* ══ Pagination ══ */
+.lg-pages{display:flex;align-items:center;justify-content:center;gap:4px;margin-top:14px;flex-wrap:wrap;}
+.lg-page{width:30px;height:30px;border-radius:8px;border:1.5px solid rgba(124,58,237,0.15);background:transparent;cursor:pointer;font-family:'Cairo',sans-serif;font-size:0.8rem;font-weight:700;color:var(--text,#1a1a2e);transition:all 0.2s;display:flex;align-items:center;justify-content:center;}
+body.dark-mode .lg-page{color:#e8f5ee;}
+.lg-page:hover,.lg-page.active{background:var(--adm);color:#fff;border-color:var(--adm);}
+.lg-page:disabled{opacity:0.4;cursor:not-allowed;}
+
+/* ══ الأكثر نشاطاً ══ */
+.lg-top-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(124,58,237,0.05);}
+.lg-top-item:last-child{border-bottom:none;}
+.lg-top-bar{height:5px;border-radius:3px;background:linear-gradient(90deg,var(--adm),#a78bfa);transition:width 0.6s;}
+
+/* ══ المودلات ══ */
+.m-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1000;align-items:center;justify-content:center;padding:12px;}
+.m-overlay.show{display:flex;}
+.m-box{background:#fff;border-radius:18px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.18);animation:mIn 0.25s ease;overflow:hidden;display:flex;flex-direction:column;max-height:90vh;}
+body.dark-mode .m-box{background:#0d0a1a;}
+@keyframes mIn{from{transform:scale(0.95);opacity:0}to{transform:scale(1);opacity:1}}
+.m-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(124,58,237,0.08);flex-shrink:0;}
+.m-title{font-size:0.92rem;font-weight:700;color:var(--text,#1a1a2e);}
+body.dark-mode .m-title{color:#e8f5ee;}
+.m-close{background:none;border:none;font-size:1.1rem;cursor:pointer;color:#9ca3af;padding:4px;}
+.m-close:hover{color:var(--adm);}
+.m-body{padding:16px 18px;overflow-y:auto;flex:1;}
+.m-footer{padding:10px 18px;border-top:1px solid rgba(124,58,237,0.08);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0;}
+.i-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.i-item{background:var(--bg-secondary,#f4f9f6);border-radius:8px;padding:9px 11px;}
+body.dark-mode .i-item{background:#130f24;}
+.i-lbl{font-size:0.62rem;color:#9ca3af;font-weight:700;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.5px;}
+.i-val{font-size:0.84rem;font-weight:700;color:var(--text,#1a1a2e);word-break:break-all;}
+body.dark-mode .i-val{color:#e8f5ee;}
+.i-full{grid-column:1/-1;}
+
+/* ══ Toast ══ */
+.toast-wrap{position:fixed;bottom:16px;left:16px;z-index:9999;display:flex;flex-direction:column;gap:6px;}
+.lg-toast{background:#fff;border:1px solid rgba(124,58,237,0.1);border-radius:10px;padding:10px 14px;font-family:'Tajawal',sans-serif;font-size:0.83rem;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,0.1);display:flex;align-items:center;gap:7px;animation:tIn 0.28s ease;min-width:180px;max-width:280px;}
+body.dark-mode .lg-toast{background:#0d0a1a;}
+@keyframes tIn{from{transform:translateY(14px);opacity:0}to{transform:translateY(0);opacity:1}}
+.lg-toast.success{border-right:3px solid #1a7a4a;}
+.lg-toast.error{border-right:3px solid #e53e3e;}
+.lg-toast.info{border-right:3px solid var(--adm);}
+
+/* skeleton */
+.skel{background:linear-gradient(90deg,rgba(124,58,237,0.06) 25%,rgba(124,58,237,0.12) 50%,rgba(124,58,237,0.06) 75%);background-size:200% 100%;animation:sk 1.4s infinite;border-radius:5px;height:13px;}
+@keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+.lg-refresh-dot{width:7px;height:7px;border-radius:50%;background:#1a7a4a;display:inline-block;animation:pulse 2s infinite;flex-shrink:0;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* ══ Responsive ══ */
+
+/* 1280px+ : كامل */
+@media(min-width:1281px){
+    .lg-card-icon{display:block;}
+}
+
+/* 1024px - 1280px */
+@media(max-width:1280px){
+    .lg-stats{grid-template-columns:repeat(3,1fr);}
+    .lg-middle-grid{grid-template-columns:3fr 2fr;}
+}
+
+/* 768px - 1024px : تابلت */
+@media(max-width:1024px){
+    .lg-stats{grid-template-columns:repeat(3,1fr);}
+    .lg-middle-grid{grid-template-columns:1fr;}
+    .lg-chart-wrap{height:100px;}
+    .lg-search{max-width:100%;}
+}
+
+/* 600px - 768px : موبايل كبير */
+@media(max-width:768px){
+    .lg-stats{grid-template-columns:repeat(2,1fr);gap:8px;}
+    .lg-stat-val{font-size:1.3rem;}
+    .lg-middle-grid{grid-template-columns:1fr;gap:10px;}
+    .lg-chart-wrap{height:90px;}
+    .lg-toolbar{flex-direction:column;align-items:stretch;}
+    .lg-search{max-width:100%;}
+    .lg-filters-row{flex-direction:column;}
+    .lg-filter-group{flex-direction:column;}
+    .lg-sel{width:100%;}
+    .lg-actions-group{justify-content:flex-start;}
+    .m-box{max-height:88vh;border-radius:14px;}
+    .i-grid{grid-template-columns:1fr;}
+    .toast-wrap{left:10px;bottom:10px;right:10px;}
+    .lg-toast{min-width:unset;max-width:100%;}
+    .lg-card{padding:10px 12px;}
+    .lg-pages{gap:3px;}
+    .lg-page{width:28px;height:28px;font-size:0.75rem;}
+}
+
+/* أقل من 480px : موبايل صغير */
+@media(max-width:480px){
+    .lg-stats{grid-template-columns:1fr 1fr;gap:7px;}
+    .lg-stat{padding:10px 12px;}
+    .lg-stat-val{font-size:1.2rem;}
+    .lg-stat-lbl{font-size:0.65rem;}
+    .lg-card-top{gap:4px;}
+    .lg-action-badge{font-size:0.65rem;padding:1px 6px;}
+    .lg-avatar{width:30px;height:30px;font-size:0.78rem;}
+    .m-hdr{padding:12px 14px;}
+    .m-body{padding:12px 14px;}
+    .lg-btn{padding:6px 10px;font-size:0.76rem;}
+}
+
+/* أقل من 360px : أصغر الشاشات */
+@media(max-width:360px){
+    .lg-stats{grid-template-columns:1fr 1fr;gap:6px;}
+    .lg-stat-val{font-size:1.1rem;}
+    .lg-middle-grid{display:none;}/* إخفاء الرسم على أصغر شاشة */
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="toastWrap" class="toast-wrap"></div>
+
+<!-- ══ إحصائيات ══ -->
+<div class="lg-stats fade-in">
+    <div class="lg-stat active" id="st_all" onclick="setActionFilter('all',this)">
+        <div class="lg-stat-val" id="cnt_total" style="color:var(--adm)">—</div>
+        <div class="lg-stat-lbl">إجمالي السجلات</div>
+        <div class="lg-diff" id="cnt_today_diff"></div>
+        <div class="lg-stat-bar" style="background:var(--adm)"></div>
+    </div>
+    <div class="lg-stat" id="st_today">
+        <div class="lg-stat-val" id="cnt_today" style="color:#2b6cb0">—</div>
+        <div class="lg-stat-lbl">اليوم</div>
+        <div class="lg-stat-bar" style="background:#2b6cb0"></div>
+    </div>
+    <div class="lg-stat" id="st_week">
+        <div class="lg-stat-val" id="cnt_week" style="color:#7c3aed">—</div>
+        <div class="lg-stat-lbl">هذا الأسبوع</div>
+        <div class="lg-stat-bar" style="background:#7c3aed"></div>
+    </div>
+    <div class="lg-stat" onclick="setActionFilter('FAILED_LOGIN',this)" id="st_failed">
+        <div class="lg-stat-val" id="cnt_failed" style="color:#c53030">—</div>
+        <div class="lg-stat-lbl">دخول فاشل اليوم</div>
+        <div class="lg-stat-bar" style="background:#c53030"></div>
+    </div>
+    <div class="lg-stat" onclick="setActionFilter('DELETE',this)" id="st_danger">
+        <div class="lg-stat-val" id="cnt_danger" style="color:#c53030">—</div>
+        <div class="lg-stat-lbl">إجراءات خطرة</div>
+        <div class="lg-stat-bar" style="background:#c53030"></div>
+    </div>
+</div>
+
+<!-- ══ رسم بياني + الأكثر نشاطاً ══ -->
+<div class="lg-middle-grid fade-in fade-in-d1">
+    <div class="dash-card" style="padding:12px 14px">
+        <div style="font-family:'Tajawal',sans-serif;font-size:0.84rem;font-weight:700;color:var(--text,#1a1a2e);margin-bottom:8px">📈 النشاط آخر 7 أيام</div>
+        <div class="lg-chart-wrap"><canvas id="activityChart"></canvas></div>
+    </div>
+    <div class="dash-card" style="padding:12px 14px">
+        <div style="font-family:'Tajawal',sans-serif;font-size:0.84rem;font-weight:700;color:var(--text,#1a1a2e);margin-bottom:8px">🏆 الأكثر نشاطاً</div>
+        <div id="topUsersList"></div>
+    </div>
+</div>
+
+<!-- ══ شريط الأدوات ══ -->
+<div class="dash-card fade-in fade-in-d2" style="margin-bottom:12px;padding:12px 14px">
+    <div class="lg-toolbar">
+        <!-- بحث -->
+        <div class="lg-search" style="flex:1;min-width:160px">
+            <span style="flex-shrink:0">🔍</span>
+            <input type="text" id="searchInp" placeholder="بحث بالمستخدم أو التفاصيل أو IP..." oninput="debounce(doSearch,400)()">
+            <button onclick="document.getElementById('searchInp').value='';doSearch()" style="background:none;border:none;cursor:pointer;color:#9ca3af;font-size:0.78rem;flex-shrink:0">✕</button>
+        </div>
+        <!-- فلاتر -->
+        <div class="lg-filters-row">
+            <div class="lg-filter-group">
+                <select class="lg-sel" id="actionFilter" onchange="doSearch()">
+                    <option value="all">كل الإجراءات</option>
+                    <option value="LOGIN">🔑 دخول</option>
+                    <option value="LOGOUT">🚪 خروج</option>
+                    <option value="FAILED_LOGIN">⚠️ دخول فاشل</option>
+                    <option value="CREATE">➕ إنشاء</option>
+                    <option value="UPDATE">✏️ تعديل</option>
+                    <option value="DELETE">🗑️ حذف</option>
+                    <option value="APPROVE">✅ قبول</option>
+                    <option value="REJECT">❌ رفض</option>
+                    <option value="EXPORT">📊 تصدير</option>
+                    <option value="MESSAGE">✉️ رسالة</option>
+                    <option value="PAYMENT">💰 دفعة</option>
+                </select>
+                <select class="lg-sel" id="userTypeFilter" onchange="doSearch()">
+                    <option value="">كل المستخدمين</option>
+                    <option value="admin">أدمن</option>
+                    <option value="orphan">يتيم</option>
+                    <option value="family">أسرة</option>
+                    <option value="special">ذوو احتياجات</option>
+                    <option value="sponsor">كافل</option>
+                </select>
+                <select class="lg-sel" id="dateFilter" onchange="doSearch()">
+                    <option value="">كل الأوقات</option>
+                    <option value="today">اليوم</option>
+                    <option value="week">الأسبوع</option>
+                    <option value="month">الشهر</option>
+                </select>
+                <select class="lg-sel" id="sortFilter" onchange="doSearch()">
+                    <option value="-date">الأحدث أولاً</option>
+                    <option value="date">الأقدم أولاً</option>
+                    <option value="-action">حسب الإجراء</option>
+                </select>
+            </div>
+            <div class="lg-actions-group">
+                <button class="lg-btn lg-btn-p" onclick="doSearch()">🔍 بحث</button>
+                <button class="lg-btn lg-btn-g" onclick="exportLogs()">📊 Excel</button>
+                <button class="lg-btn lg-btn-r" onclick="openDeleteOld()" title="حذف القديمة">🗑️</button>
+                <div class="lg-refresh-group">
+                    <span class="lg-refresh-dot" id="refreshDot"></span>
+                    <button class="lg-btn" style="background:transparent;border-color:rgba(124,58,237,0.15);color:#6b7280;font-size:0.74rem;padding:5px 9px" onclick="toggleAutoRefresh()" id="autoRefreshBtn">إيقاف</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ القائمة ══ -->
+<div id="logsList" class="fade-in fade-in-d3"></div>
+
+<!-- ══ Pagination ══ -->
+<div class="lg-pages" id="pagination"></div>
+<div style="text-align:center;padding:6px 0;font-size:0.74rem;color:#9ca3af;font-family:'Tajawal',sans-serif" id="pageInfo"></div>
+
+<!-- ══ مودل التفاصيل ══ -->
+<div class="m-overlay" id="detailModal">
+    <div class="m-box" style="max-width:540px">
+        <div class="m-hdr">
+            <span class="m-title" id="detailTitle">تفاصيل السجل</span>
+            <button class="m-close" onclick="closeModal('detailModal')">✕</button>
+        </div>
+        <div class="m-body">
+            <div id="detailContent"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ مودل حذف القديمة ══ -->
+<div class="m-overlay" id="deleteOldModal">
+    <div class="m-box" style="max-width:360px">
+        <div class="m-hdr">
+            <span class="m-title">🗑️ حذف السجلات القديمة</span>
+            <button class="m-close" onclick="closeModal('deleteOldModal')">✕</button>
+        </div>
+        <div class="m-body" style="text-align:center;padding:18px">
+            <div style="font-size:2.8rem;margin-bottom:10px">⚠️</div>
+            <p style="font-family:'Tajawal',sans-serif;font-size:0.88rem;color:var(--text,#1a1a2e);margin-bottom:12px">حذف السجلات الأقدم من:</p>
+            <select id="deleteDays" class="lg-sel" style="width:100%;text-align:center">
+                <option value="30">30 يوم</option>
+                <option value="60">60 يوم</option>
+                <option value="90">90 يوم</option>
+                <option value="180">6 أشهر</option>
+                <option value="365">سنة</option>
+            </select>
+        </div>
+        <div class="m-footer">
+            <button class="lg-btn" style="background:var(--bg-secondary,#f4f9f6);border-color:transparent;color:#6b7280" onclick="closeModal('deleteOldModal')">إلغاء</button>
+            <button class="lg-btn lg-btn-r" onclick="confirmDeleteOld()">🗑️ حذف</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ مودل نجاح ══ -->
+<div class="m-overlay" id="successModal">
+    <div class="m-box" style="max-width:300px">
+        <div class="m-body" style="text-align:center;padding:24px">
+            <div style="font-size:2.8rem;margin-bottom:10px" id="successIcon">✅</div>
+            <h5 style="font-weight:700;color:var(--text,#1a1a2e);margin-bottom:6px;font-family:'Tajawal',sans-serif" id="successTitle">تم</h5>
+            <p style="color:#6b7280;font-size:0.84rem;font-family:'Tajawal',sans-serif" id="successMsg"></p>
+            <button class="lg-btn lg-btn-p" style="margin-top:12px;width:100%;justify-content:center" onclick="closeModal('successModal')">حسناً</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+'use strict';
+const CSRF = document.cookie.split(';').find(c=>c.trim().startsWith('csrftoken='))?.split('=')[1]||'';
+
+let currentPage   = 1;
+let totalPages    = 1;
+let autoRefresh   = true;
+let refreshTimer  = null;
+let chartInstance = null;
+
+/* ══ تحميل البيانات ══ */
+async function loadLogs(page) {
+    currentPage = page || 1;
+    const el    = document.getElementById('logsList');
+    if (currentPage === 1) {
+        el.innerHTML = [1,2,3,4].map(() =>
+            `<div class="lg-card"><div class="skel" style="height:54px;border-radius:8px"></div></div>`
+        ).join('');
+    }
+    const params = new URLSearchParams({
+        page:      currentPage,
+        action:    document.getElementById('actionFilter').value,
+        q:         document.getElementById('searchInp').value.trim(),
+        user_type: document.getElementById('userTypeFilter').value,
+        date:      document.getElementById('dateFilter').value,
+        sort:      document.getElementById('sortFilter').value,
+    });
+    try {
+        const r    = await fetch(`/admin-panel/logs/data/?${params}`, {headers:{'X-Requested-With':'XMLHttpRequest'}});
+        const data = await r.json();
+        updateStats(data.stats || {});
+        renderLogs(data.logs || []);
+        renderPagination(data.pagination || {});
+        renderTopUsers(data.top_users || []);
+        renderChart(data.charts || []);
+    } catch {
+        el.innerHTML = '<p style="text-align:center;color:#c53030;font-family:\'Tajawal\',sans-serif;padding:24px">⚠️ خطأ في التحميل</p>';
+    }
+}
+
+function doSearch() { loadLogs(1); }
+
+/* ══ إحصائيات ══ */
+function updateStats(s) {
+    document.getElementById('cnt_total').textContent  = (s.total  || 0).toLocaleString('ar');
+    document.getElementById('cnt_today').textContent  = (s.today  || 0).toLocaleString('ar');
+    document.getElementById('cnt_week').textContent   = (s.week   || 0).toLocaleString('ar');
+    document.getElementById('cnt_failed').textContent = (s.failed_logins || 0).toLocaleString('ar');
+    document.getElementById('cnt_danger').textContent = (s.danger || 0).toLocaleString('ar');
+    const diff   = s.today_diff || 0;
+    const diffEl = document.getElementById('cnt_today_diff');
+    if (diff !== 0) {
+        diffEl.textContent = (diff > 0 ? '▲ +' : '▼ ') + Math.abs(diff) + ' عن أمس';
+        diffEl.style.color = diff > 0 ? '#1a7a4a' : '#c53030';
+    }
+}
+
+function setActionFilter(action, stat) {
+    document.getElementById('actionFilter').value = action;
+    document.querySelectorAll('.lg-stat').forEach(s => s.classList.remove('active'));
+    if (stat) stat.classList.add('active');
+    doSearch();
+}
+
+/* ══ رسم السجلات ══ */
+function renderLogs(logs) {
+    const el = document.getElementById('logsList');
+    if (!logs.length) {
+        el.innerHTML = `<div style="text-align:center;padding:50px;color:#9ca3af;font-family:'Tajawal',sans-serif">
+            <div style="font-size:3.5rem;margin-bottom:12px">📜</div>
+            <div style="font-weight:700;font-size:0.94rem">لا توجد سجلات</div>
+        </div>`;
+        return;
+    }
+    // تجميع حسب اليوم
+    const grouped = {};
+    logs.forEach(l => {
+        const day = l.created_at.split('T')[0];
+        if (!grouped[day]) grouped[day] = [];
+        grouped[day].push(l);
+    });
+    const UC = {admin:'#7c3aed',orphan:'#22c55e',family:'#3b82f6',special:'#f59e0b',sponsor:'#a855f7'};
+    const UL = {admin:'أدمن',orphan:'يتيم',family:'أسرة',special:'ذوو احتياجات',sponsor:'كافل'};
+
+    el.innerHTML = Object.entries(grouped).map(([day, dayLogs]) => `
+        <div class="lg-day-sep">${_fmtDay(day)} <span style="opacity:0.6;font-size:0.68rem">(${dayLogs.length})</span></div>
+        ${dayLogs.map(l => {
+            const ac = UC[l.user_type] || '#6b7280';
+            const init = (l.user || 'ن')[0];
+            return `
+            <div class="lg-card ${l.is_danger ? 'danger' : ''}" onclick="openDetail('${l.id}')" style="border-right-color:${l.action_color}">
+                <div class="lg-card-inner">
+                    <div class="lg-avatar" style="background:${ac}">${init}</div>
+                    <div class="lg-card-body">
+                        <div class="lg-card-top">
+                            <span style="font-weight:700;font-size:0.86rem;color:var(--text,#1a1a2e)">${l.user}</span>
+                            ${l.user_type ? `<span style="font-size:0.67rem;background:${ac}20;color:${ac};padding:1px 6px;border-radius:7px;font-weight:700">${UL[l.user_type]||l.user_type}</span>` : ''}
+                            <span class="lg-action-badge" style="background:${l.action_color}18;color:${l.action_color}">${l.action_icon} ${l.action_label}</span>
+                            ${l.is_danger ? '<span style="background:rgba(229,62,62,0.1);color:#c53030;padding:1px 6px;border-radius:7px;font-size:0.65rem;font-weight:700">⚠️</span>' : ''}
+                        </div>
+                        <div class="lg-card-desc">${l.description}</div>
+                        <div class="lg-card-meta">
+                            <span style="font-size:0.7rem;color:#9ca3af">${l.created_fmt}</span>
+                            ${l.ip_address ? `
+                            <button class="lg-ip-btn" onclick="event.stopPropagation();copyIp('${l.ip_address}')">🌐 ${l.ip_address}</button>
+                            <button class="lg-ip-btn" onclick="event.stopPropagation();window.open('https://ipinfo.io/${l.ip_address}','_blank')">📍</button>` : ''}
+                            ${l.target_model ? `<span style="font-size:0.68rem;color:#9ca3af;background:var(--bg-secondary,#f4f9f6);padding:1px 6px;border-radius:6px">${l.target_model}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="lg-card-icon">${l.action_icon}</div>
+                </div>
+            </div>`;
+        }).join('')}`).join('');
+}
+
+/* ══ Pagination ══ */
+function renderPagination(pg) {
+    totalPages   = pg.total_pages || 1;
+    const total  = pg.total || 0;
+    const perPage= pg.per_page || 30;
+    const start  = ((pg.page||1) - 1) * perPage + 1;
+    const end    = Math.min(start + perPage - 1, total);
+    document.getElementById('pageInfo').textContent = total ? `عرض ${start}–${end} من ${total.toLocaleString('ar')}` : '';
+    if (totalPages <= 1) { document.getElementById('pagination').innerHTML = ''; return; }
+    let html = `<button class="lg-page" ${currentPage===1?'disabled':''} onclick="loadLogs(${currentPage-1})">←</button>`;
+    for (let i = 1; i <= totalPages; i++) {
+        if (i===1||i===totalPages||Math.abs(i-currentPage)<=2)
+            html += `<button class="lg-page ${i===currentPage?'active':''}" onclick="loadLogs(${i})">${i}</button>`;
+        else if (Math.abs(i-currentPage)===3)
+            html += `<span style="color:#9ca3af;padding:0 2px">…</span>`;
+    }
+    html += `<button class="lg-page" ${currentPage===totalPages?'disabled':''} onclick="loadLogs(${currentPage+1})">→</button>`;
+    document.getElementById('pagination').innerHTML = html;
+}
+
+/* ══ رسم بياني ══ */
+function renderChart(data) {
+    const ctx = document.getElementById('activityChart')?.getContext('2d');
+    if (!ctx) return;
+    if (chartInstance) chartInstance.destroy();
+    const isDark = document.body.classList.contains('dark-mode');
+    Chart.defaults.font.family = "'Tajawal',sans-serif";
+    chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels:   data.map(d => d.date),
+            datasets: [{
+                data:            data.map(d => d.count),
+                backgroundColor: 'rgba(124,58,237,0.6)',
+                borderRadius:    4,
+                borderSkipped:   false,
+            }],
+        },
+        options: {
+            responsive:true, maintainAspectRatio:false,
+            plugins:{legend:{display:false},tooltip:{callbacks:{label: ctx => ctx.parsed.y + ' سجل'}}},
+            scales:{
+                y:{grid:{color:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)'},ticks:{color:'#9ca3af',font:{size:10},maxTicksLimit:4}},
+                x:{grid:{display:false},ticks:{color:'#9ca3af',font:{size:10}}},
+            },
+        },
+    });
+}
+
+/* ══ الأكثر نشاطاً ══ */
+function renderTopUsers(users) {
+    const el  = document.getElementById('topUsersList');
+    if (!users.length) { el.innerHTML = '<p style="color:#9ca3af;font-family:\'Tajawal\',sans-serif;font-size:0.78rem;text-align:center;padding:10px">لا بيانات</p>'; return; }
+    const max = users[0]?.count || 1;
+    el.innerHTML = users.map((u, i) => `
+        <div class="lg-top-item">
+            <div style="font-size:0.76rem;font-weight:700;color:var(--adm);width:16px;flex-shrink:0">${i+1}</div>
+            <div style="flex:1;min-width:0">
+                <div style="font-size:0.8rem;font-weight:700;color:var(--text,#1a1a2e);font-family:'Tajawal',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.name}</div>
+                <div class="lg-top-bar" style="width:${Math.round(u.count/max*100)}%;margin-top:3px"></div>
+            </div>
+            <div style="font-size:0.76rem;font-weight:700;color:var(--adm);font-family:'Cairo',sans-serif;flex-shrink:0;margin-right:4px">${u.count}</div>
+        </div>`).join('');
+}
+
+/* ══ مودل التفاصيل ══ */
+async function openDetail(id) {
+    openModal('detailModal');
+    document.getElementById('detailContent').innerHTML =
+        '<div class="skel" style="height:180px;border-radius:8px"></div>';
+    try {
+        const r    = await fetch(`/admin-panel/logs/detail/?id=${id}`, {headers:{'X-Requested-With':'XMLHttpRequest'}});
+        const data = await r.json();
+        const l    = data.log;
+        if (!l) return;
+        document.getElementById('detailTitle').textContent = `${l.action_icon} تفاصيل السجل`;
+        document.getElementById('detailContent').innerHTML = `
+            <div class="i-grid">
+                <div class="i-item"><div class="i-lbl">المستخدم</div><div class="i-val">${l.user}</div></div>
+                <div class="i-item"><div class="i-lbl">الإجراء</div><div class="i-val" style="color:${l.action_color}">${l.action_icon} ${l.action_label}</div></div>
+                <div class="i-item"><div class="i-lbl">النموذج</div><div class="i-val">${l.target_model||'—'}</div></div>
+                <div class="i-item"><div class="i-lbl">المعرف</div><div class="i-val">${l.target_id||'—'}</div></div>
+                <div class="i-item"><div class="i-lbl">التاريخ</div><div class="i-val">${l.created_fmt}</div></div>
+                <div class="i-item">
+                    <div class="i-lbl">عنوان IP</div>
+                    <div class="i-val" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                        <span>${l.ip_address||'—'}</span>
+                        ${l.ip_address ? `
+                        <button onclick="copyIp('${l.ip_address}')" style="background:rgba(124,58,237,0.1);color:var(--adm);border:none;border-radius:5px;padding:2px 7px;font-size:0.68rem;cursor:pointer;font-family:'Tajawal',sans-serif">نسخ</button>
+                        <a href="https://ipinfo.io/${l.ip_address}" target="_blank" style="background:rgba(43,108,176,0.1);color:#2b6cb0;border:none;border-radius:5px;padding:2px 7px;font-size:0.68rem;cursor:pointer;text-decoration:none;font-family:'Tajawal',sans-serif">📍 موقع</a>` : ''}
+                    </div>
+                </div>
+                <div class="i-item i-full">
+                    <div class="i-lbl">التفاصيل</div>
+                    <div class="i-val" style="font-weight:400;font-size:0.86rem;line-height:1.6;font-family:'Tajawal',sans-serif">${l.description}</div>
+                </div>
+            </div>
+            ${l.is_danger ? `<div style="background:rgba(229,62,62,0.06);border-right:3px solid #c53030;border-radius:0 8px 8px 0;padding:10px 13px;margin-top:10px;font-family:'Tajawal',sans-serif;font-size:0.82rem;color:#c53030;font-weight:700">⚠️ هذا إجراء يحتاج مراجعة</div>` : ''}`;
+    } catch {}
+}
+
+/* ══ حذف القديمة ══ */
+function openDeleteOld() { openModal('deleteOldModal'); }
+
+async function confirmDeleteOld() {
+    const days = document.getElementById('deleteDays').value;
+    const fd   = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('days', days);
+    const r    = await fetch('/admin-panel/logs/delete-old/', {method:'POST', body:fd});
+    const data = await r.json();
+    closeModal('deleteOldModal');
+    if (data.status === 'success') { showSuccess('🗑️','تم الحذف',data.message); loadLogs(1); }
+    else toast(data.message,'error');
+}
+
+/* ══ تصدير ══ */
+function exportLogs() {
+    const params = new URLSearchParams({
+        action:    document.getElementById('actionFilter').value,
+        q:         document.getElementById('searchInp').value.trim(),
+        user_type: document.getElementById('userTypeFilter').value,
+        date:      document.getElementById('dateFilter').value,
+    });
+    window.location.href = `/admin-panel/logs/export/?${params}`;
+}
+
+/* ══ تحديث تلقائي ══ */
+function startAutoRefresh() {
+    refreshTimer = setInterval(() => { if (currentPage === 1) loadLogs(1); }, 30000);
+}
+
+function toggleAutoRefresh() {
+    autoRefresh = !autoRefresh;
+    const dot = document.getElementById('refreshDot');
+    const btn = document.getElementById('autoRefreshBtn');
+    if (autoRefresh) {
+        startAutoRefresh();
+        dot.style.animation = 'pulse 2s infinite';
+        dot.style.opacity   = '1';
+        btn.textContent = 'إيقاف';
+    } else {
+        clearInterval(refreshTimer);
+        dot.style.animation = 'none';
+        dot.style.opacity   = '0.3';
+        btn.textContent = 'تفعيل';
+    }
+}
+
+/* ══ مساعدات ══ */
+function copyIp(ip) {
+    navigator.clipboard?.writeText(ip).then(() => toast('تم نسخ: ' + ip,'success'));
+}
+
+function _fmtDay(dayStr) {
+    try {
+        const d    = new Date(dayStr);
+        const now  = new Date();
+        const diff = Math.floor((now - d) / 86400000);
+        if (diff === 0) return 'اليوم';
+        if (diff === 1) return 'أمس';
+        return d.toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    } catch { return dayStr; }
+}
+
+function openModal(id)  { document.getElementById(id)?.classList.add('show'); }
+function closeModal(id) { document.getElementById(id)?.classList.remove('show'); }
+
+function showSuccess(icon, title, msg) {
+    document.getElementById('successIcon').textContent  = icon;
+    document.getElementById('successTitle').textContent = title;
+    document.getElementById('successMsg').textContent   = msg;
+    openModal('successModal');
+    setTimeout(() => closeModal('successModal'), 2500);
+}
+
+function toast(msg, type='info') {
+    const c  = document.getElementById('toastWrap');
+    const el = document.createElement('div');
+    el.className = `lg-toast ${type}`;
+    el.innerHTML = `<span>${{success:'✅',error:'⚠️',info:'ℹ️'}[type]||'ℹ️'}</span><span style="font-family:'Tajawal',sans-serif;color:var(--text,#1a1a2e)">${msg}</span>`;
+    c.appendChild(el);
+    setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity 0.3s'; setTimeout(()=>el.remove(),300); },3500);
+}
+
+function debounce(fn, delay) { let t; return function(){ clearTimeout(t); t=setTimeout(fn,delay); }; }
+
+document.querySelectorAll('.m-overlay').forEach(m => {
+    m.addEventListener('click', e => { if(e.target===m) m.classList.remove('show'); });
+});
+
+document.addEventListener('DOMContentLoaded', () => { loadLogs(1); startAutoRefresh(); });
+</script>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% comment %}
+Parameters:
+  field_id  : معرّف الحقل (يُستخدم في id و name)
+  label     : اسم الحقل
+  required  : True / False
+  multi     : True / False (رفع أكثر من ملف)
+{% endcomment %}
+
+<div class="col-md-6">
+
+    <label class="form-label">
+        {% if required %}
+            <span class="file-req-badge">مطلوب</span>
+        {% else %}
+            <span class="file-opt-badge">اختياري</span>
+        {% endif %}
+        {{ label }}
+        {% if required %}<span class="req">*</span>{% endif %}
+    </label>
+
+    <div class="file-upload-box {% if required %}file-required{% endif %}"
+         id="box_{{ field_id }}"
+         onclick="document.getElementById('file_{{ field_id }}').click()"
+         ondragover="event.preventDefault();this.classList.add('dragover')"
+         ondragleave="this.classList.remove('dragover')"
+         ondrop="handleFileDrop(event,'{{ field_id }}',{% if required %}true{% else %}false{% endif %})">
+
+        <input type="file"
+               id="file_{{ field_id }}"
+               name="{{ field_id }}"
+               {% if multi %}multiple{% endif %}
+               accept=".jpg,.jpeg,.png,.pdf"
+               data-required="{% if required %}true{% else %}false{% endif %}"
+               onchange="handleFileChange(this,'{{ field_id }}',{% if required %}true{% else %}false{% endif %})"
+               onclick="event.stopPropagation()">
+
+        <div class="file-upload-icon" id="ficon_{{ field_id }}">📎</div>
+
+        <div class="file-upload-text" id="ftext_{{ field_id }}">
+            اضغط لرفع الملف أو اسحب وأفلت<br>
+            <small>JPG • PNG • PDF — الحد الأقصى 4MB</small>
+            {% if multi %}
+                <br><small style="color:#1a7a4a">يمكن رفع أكثر من ملف</small>
+            {% endif %}
+        </div>
+
+        <div class="file-upload-name" id="name_{{ field_id }}"></div>
+
+    </div>
+
+    <div class="field-error" id="err_{{ field_id }}"></div>
+
+</div>

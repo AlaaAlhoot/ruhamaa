@@ -1,0 +1,1301 @@
+{% extends 'sponsor/base.html' %}
+{% block title %}محفظتي{% endblock %}
+{% block page_title %}💳 محفظتي{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+    --green:#1a7a4a;--green-light:#2ecc71;--green-dim:rgba(26,122,74,0.1);
+    --blue:#2b6cb0;--blue-dim:rgba(43,108,176,0.1);
+    --red:#c53030;--red-dim:rgba(229,62,62,0.1);
+    --orange:#b45309;--orange-dim:rgba(245,158,11,0.1);
+    --purple:#7c3aed;--purple-dim:rgba(124,58,237,0.1);
+    --card-bg:#fff;--card-border:rgba(26,122,74,0.1);--input-bg:#f4f9f6;
+}
+body.dark-mode{--card-bg:#0d1a12;--card-border:rgba(46,204,113,0.1);--input-bg:#111e16;}
+
+/* ══ Stats ══ */
+.wl-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px;}
+.wl-stat{background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:18px 20px;display:flex;align-items:center;gap:14px;transition:all 0.3s;position:relative;overflow:hidden;}
+.wl-stat::after{content:'';position:absolute;bottom:0;left:0;width:100%;height:3px;background:linear-gradient(90deg,var(--green),var(--green-light));transform:scaleX(0);transition:transform 0.3s;transform-origin:right;}
+.wl-stat:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(26,122,74,0.12);}
+.wl-stat:hover::after{transform:scaleX(1);transform-origin:left;}
+.ws-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;}
+.ws-val{font-size:1.6rem;font-weight:900;line-height:1;font-family:'Cairo',sans-serif;}
+.ws-lbl{font-size:0.75rem;color:#9ca3af;margin-top:3px;}
+
+/* ══ Upload Form ══ */
+.upload-form{background:var(--card-bg);border:1px solid var(--card-border);border-radius:18px;padding:24px;margin-bottom:24px;}
+.form-title{font-size:1rem;font-weight:700;color:var(--text,#1a1a2e);margin-bottom:20px;display:flex;align-items:center;gap:8px;}
+body.dark-mode .form-title{color:#e8f5ee;}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;}
+.f-group{display:flex;flex-direction:column;gap:6px;}
+.f-label{font-size:0.78rem;font-weight:700;color:#6b7280;}
+.f-input,.f-select,.f-textarea{
+    padding:10px 14px;border:1.5px solid rgba(26,122,74,0.18);border-radius:12px;
+    font-family:'Tajawal',sans-serif;font-size:0.88rem;
+    background:var(--input-bg);color:var(--text,#1a1a2e);transition:all 0.25s;width:100%;
+}
+body.dark-mode .f-input,body.dark-mode .f-select,body.dark-mode .f-textarea{color:#e8f5ee;border-color:rgba(46,204,113,0.15);}
+.f-input:focus,.f-select:focus,.f-textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(26,122,74,0.1);outline:none;}
+.f-textarea{resize:vertical;min-height:80px;}
+.f-error{font-size:0.72rem;color:var(--red);margin-top:3px;display:none;}
+.f-error.show{display:block;}
+.f-hint{font-size:0.7rem;color:#9ca3af;margin-top:3px;}
+
+/* الصورة */
+.img-upload-wrap{border:2px dashed rgba(26,122,74,0.25);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:all 0.25s;position:relative;}
+.img-upload-wrap:hover{border-color:var(--green);background:var(--green-dim);}
+.img-upload-wrap input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.img-preview{width:100%;max-height:180px;object-fit:contain;border-radius:8px;margin-top:10px;display:none;}
+.img-preview.show{display:block;}
+.img-upload-icon{font-size:2rem;margin-bottom:6px;}
+.img-upload-txt{font-size:0.82rem;color:#9ca3af;}
+
+/* شريط تقدم الرفع */
+.upload-progress{margin-top:10px;display:none;}
+.upload-progress.show{display:block;}
+.up-bar-wrap{background:rgba(26,122,74,0.1);border-radius:50px;height:6px;overflow:hidden;}
+.up-bar{height:100%;background:linear-gradient(90deg,#1a7a4a,#2ecc71);border-radius:50px;transition:width 0.3s ease;width:0%;}
+.up-txt{font-size:0.72rem;color:#9ca3af;margin-top:4px;text-align:center;}
+
+/* تحويل العملة */
+.currency-result{background:var(--green-dim);border:1px solid rgba(26,122,74,0.15);border-radius:10px;padding:10px 14px;margin-top:8px;font-size:0.82rem;display:none;}
+.currency-result.show{display:flex;gap:16px;flex-wrap:wrap;}
+.cr-item{display:flex;align-items:center;gap:6px;}
+.cr-val{font-weight:700;color:var(--green);}
+body.dark-mode .cr-val{color:#4ade80;}
+
+/* فحص رقم الوصل */
+.unique-status{font-size:0.72rem;margin-top:3px;}
+.us-ok{color:var(--green);}
+.us-err{color:var(--red);}
+
+/* ══ Tabs ══ */
+.wl-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.wl-tab{padding:9px 20px;border-radius:50px;font-size:0.86rem;font-weight:600;cursor:pointer;border:1.5px solid rgba(26,122,74,0.2);background:transparent;color:#6b7280;font-family:'Tajawal',sans-serif;transition:all 0.2s;display:flex;align-items:center;gap:6px;}
+.wl-tab:hover{border-color:var(--green);color:var(--green);}
+.wl-tab.active{background:linear-gradient(135deg,#1a7a4a,#2ecc71);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(26,122,74,0.25);}
+.tab-badge{min-width:20px;height:20px;border-radius:50px;font-size:0.7rem;padding:0 5px;display:inline-flex;align-items:center;justify-content:center;}
+.wl-tab.active .tab-badge{background:rgba(255,255,255,0.25);}
+.wl-tab:not(.active) .tab-badge{background:rgba(26,122,74,0.1);color:var(--green);}
+
+/* ══ Receipt Cards ══ */
+.receipts-list{display:flex;flex-direction:column;gap:12px;}
+.rc-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:16px 20px;transition:all 0.25s;position:relative;overflow:hidden;}
+body.dark-mode .rc-card{background:var(--card-bg);border-color:var(--card-border);}
+.rc-card:hover{box-shadow:0 6px 20px rgba(26,122,74,0.1);}
+.rc-card::before{content:'';position:absolute;top:0;right:0;width:4px;height:100%;border-radius:0 16px 16px 0;}
+.rc-pending::before{background:linear-gradient(135deg,#b45309,#f6ad55);}
+.rc-approved::before{background:linear-gradient(135deg,#1a7a4a,#2ecc71);}
+.rc-rejected::before{background:linear-gradient(135deg,#c53030,#fc8181);}
+
+.rc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+.rc-ref{font-size:0.75rem;font-weight:700;color:var(--blue);background:var(--blue-dim);padding:3px 10px;border-radius:20px;font-family:'Cairo',sans-serif;}
+.rc-status{font-size:0.72rem;font-weight:700;padding:3px 10px;border-radius:20px;}
+.rs-pending{background:var(--orange-dim);color:var(--orange);}
+.rs-approved{background:var(--green-dim);color:var(--green);}
+.rs-rejected{background:var(--red-dim);color:var(--red);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.7}}
+
+.rc-body{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:12px;}
+.rc-item{background:var(--input-bg);border-radius:9px;padding:8px 10px;}
+.rc-lbl{font-size:0.6rem;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:2px;}
+.rc-val{font-size:0.82rem;font-weight:700;color:var(--text,#1a1a2e);}
+body.dark-mode .rc-val{color:#e8f5ee;}
+.rc-val.green{color:var(--green);}
+
+/* صورة الوصل */
+.rc-img-wrap{margin-bottom:10px;}
+.rc-img{width:100%;max-height:160px;object-fit:contain;border-radius:8px;border:1px solid var(--card-border);cursor:pointer;}
+
+/* سبب الرفض */
+.reject-reason{background:var(--red-dim);border:1px solid rgba(229,62,62,0.2);border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:0.82rem;color:var(--red);}
+body.dark-mode .reject-reason{color:#fc8181;}
+.rr-title{font-weight:700;margin-bottom:4px;}
+
+/* أزرار الكارد */
+.rc-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.btn-sm{padding:7px 14px;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;border:none;font-family:'Tajawal',sans-serif;transition:all 0.2s;display:flex;align-items:center;gap:5px;}
+.btn-sm-green{background:var(--green-dim);color:var(--green);}
+.btn-sm-green:hover{background:rgba(26,122,74,0.18);}
+.btn-sm-purple{background:var(--purple-dim);color:var(--purple);}
+.btn-sm-purple:hover{background:rgba(124,58,237,0.18);}
+.btn-sm-red{background:var(--red-dim);color:var(--red);}
+.btn-sm-red:hover{background:rgba(229,62,62,0.18);}
+.btn-sm-orange{background:var(--orange-dim);color:var(--orange);}
+.btn-sm-orange:hover{background:rgba(245,158,11,0.18);}
+
+/* ══ Skeleton ══ */
+.skel{background:linear-gradient(90deg,rgba(26,122,74,0.06) 25%,rgba(26,122,74,0.12) 50%,rgba(26,122,74,0.06) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:8px;}
+body.dark-mode .skel{background:linear-gradient(90deg,#111e16 25%,#1a2e1e 50%,#111e16 75%);background-size:200% 100%;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ══ Pagination ══ */
+.pag-wrap{display:flex;align-items:center;justify-content:space-between;margin-top:18px;flex-wrap:wrap;gap:10px;}
+.pag-btns{display:flex;align-items:center;gap:5px;}
+.pag-btn{width:34px;height:34px;border-radius:10px;border:1.5px solid rgba(26,122,74,0.18);background:var(--card-bg);color:var(--text,#1a1a2e);font-size:0.82rem;font-weight:600;cursor:pointer;font-family:'Cairo',sans-serif;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
+body.dark-mode .pag-btn{border-color:rgba(46,204,113,0.15);color:#e8f5ee;}
+.pag-btn:hover{border-color:var(--green);color:var(--green);}
+.pag-btn.active{background:linear-gradient(135deg,#1a7a4a,#2ecc71);color:#fff;border-color:transparent;}
+.pag-btn:disabled{opacity:0.4;cursor:default;}
+.pag-info{font-size:0.78rem;color:#9ca3af;}
+
+/* ══ Empty ══ */
+.empty-box{text-align:center;padding:48px 24px;color:#9ca3af;}
+.empty-box .ei{font-size:3rem;margin-bottom:12px;}
+.empty-box .et{font-size:0.86rem;}
+
+/* ══ Modals ══ */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:var(--card-bg);border-radius:22px;width:100%;max-width:600px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,0.18);animation:mIn 0.28s cubic-bezier(0.34,1.56,0.64,1) both;}
+@keyframes mIn{from{opacity:0;transform:scale(0.93) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--card-border);flex-shrink:0;}
+.modal-title{font-size:0.96rem;font-weight:700;color:var(--text,#1a1a2e);}
+body.dark-mode .modal-title{color:#e8f5ee;}
+.modal-close{width:32px;height:32px;border-radius:9px;border:none;background:var(--red-dim);color:var(--red);cursor:pointer;font-size:0.9rem;display:flex;align-items:center;justify-content:center;}
+.modal-close:hover{background:rgba(229,62,62,0.18);}
+.modal-body{flex:1;overflow-y:auto;padding:20px;}
+.modal-ftr{padding:12px 20px;border-top:1px solid var(--card-border);display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;}
+
+/* PDF Modal */
+.pdf-box{max-width:340px;}
+
+.btn-green{background:linear-gradient(135deg,#1a7a4a,#2ecc71);color:#fff;border:none;padding:9px 20px;border-radius:12px;font-family:'Tajawal',sans-serif;font-size:0.86rem;font-weight:700;cursor:pointer;transition:all 0.2s;}
+.btn-sec{background:var(--input-bg);color:#6b7280;border:1.5px solid rgba(26,122,74,0.15);padding:9px 20px;border-radius:12px;font-family:'Tajawal',sans-serif;font-size:0.86rem;font-weight:600;cursor:pointer;transition:all 0.2s;}
+.btn-sec:hover{border-color:var(--green);color:var(--green);}
+
+.alert-box{max-width:400px;}
+.alert-body{padding:24px;text-align:center;}
+.alert-icon{font-size:2.6rem;margin-bottom:10px;}
+.alert-msg{font-size:0.88rem;color:var(--text,#1a1a2e);line-height:1.6;}
+body.dark-mode .alert-msg{color:#e8f5ee;}
+
+.spinner{width:36px;height:36px;border:3px solid rgba(26,122,74,0.15);border-top-color:var(--green);border-radius:50%;animation:spin 0.7s linear infinite;margin:32px auto;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media(max-width:576px){.form-grid{grid-template-columns:1fr;}.rc-body{grid-template-columns:1fr 1fr;}}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══ إحصائيات ══ -->
+<div class="wl-stats fade-in">
+    <div class="wl-stat">
+        <div class="ws-icon" style="background:var(--blue-dim)">💳</div>
+        <div>
+            <div class="ws-val" style="color:var(--blue)" id="statTotal">0</div>
+            <div class="ws-lbl">إجمالي الوصولات</div>
+        </div>
+    </div>
+    <div class="wl-stat">
+        <div class="ws-icon" style="background:var(--green-dim)">✅</div>
+        <div>
+            <div class="ws-val" style="color:var(--green)" id="statApproved">0</div>
+            <div class="ws-lbl">مقبولة</div>
+            <div style="font-size:0.7rem;color:#9ca3af;margin-top:2px">
+                {{ total_ils }} ₪ / ${{ total_usd }}
+            </div>
+        </div>
+    </div>
+    <div class="wl-stat">
+        <div class="ws-icon" style="background:var(--orange-dim)">⏳</div>
+        <div>
+            <div class="ws-val" style="color:var(--orange)" id="statPending">0</div>
+            <div class="ws-lbl">في الانتظار</div>
+            <div style="font-size:0.7rem;color:#9ca3af;margin-top:2px">
+                {{ pending_ils }} ₪ / ${{ pending_usd }}
+            </div>
+        </div>
+    </div>
+    <div class="wl-stat">
+        <div class="ws-icon" style="background:var(--red-dim)">❌</div>
+        <div>
+            <div class="ws-val" style="color:var(--red)" id="statRejected">0</div>
+            <div class="ws-lbl">مرفوضة</div>
+            <div style="font-size:0.7rem;color:#9ca3af;margin-top:2px">
+                {{ rejected_ils }} ₪ / ${{ rejected_usd }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ فورم رفع وصل جديد ══ -->
+<!-- بدل upload-form كاملاً -->
+<div style="display:flex;justify-content:flex-end;margin-bottom:24px">
+    <button class="btn-green" onclick="openModal('uploadModal')">
+        📤 رفع وصل مالي جديد
+    </button>
+</div>
+
+<!-- ══ الوصولات ══ -->
+<div class="dash-card fade-in fade-in-d2">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <div class="wl-tabs">
+            <button class="wl-tab active" id="tab-pending"  onclick="switchTab('بانتظار المراجعة')">⏳ في الانتظار <span class="tab-badge" id="badge-pending">{{ pending_count }}</span></button>
+            <button class="wl-tab"        id="tab-approved" onclick="switchTab('موافق')">✅ مقبولة <span class="tab-badge" id="badge-approved">{{ approved_count }}</span></button>
+            <button class="wl-tab"        id="tab-rejected" onclick="switchTab('مرفوض')">❌ مرفوضة <span class="tab-badge" id="badge-rejected">{{ rejected_count }}</span></button>
+        </div>
+        <div style="display:flex;gap:8px">
+            <button class="btn-sm btn-sm-green" id="exportBtn" onclick="exportExcel()" style="display:none">📊 Excel</button>
+        </div>
+    </div>
+
+    <!-- بحث -->
+    <div style="position:relative;margin-bottom:16px">
+        <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#9ca3af;pointer-events:none">🔍</span>
+        <input type="text" id="searchInput" placeholder="ابحث برقم الوصل أو اسم المرسل…"
+               style="width:100%;padding:9px 14px 9px 40px;border:1.5px solid rgba(26,122,74,0.18);border-radius:50px;font-family:'Tajawal',sans-serif;font-size:0.88rem;background:var(--input-bg);color:var(--text,#1a1a2e);transition:all 0.25s"
+               oninput="onSearch(this.value)">
+    </div>
+
+    <div id="skeletonArea">
+        {% for i in "123" %}
+        <div style="background:var(--card-bg);border:1px solid rgba(26,122,74,0.08);border-radius:16px;padding:16px;margin-bottom:12px">
+            <div class="skel" style="height:12px;width:40%;margin-bottom:10px"></div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+                {% for j in "1234" %}<div class="skel" style="height:50px;border-radius:9px"></div>{% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="receipts-list" id="receiptsList" style="display:none"></div>
+    <div class="empty-box" id="emptyBox" style="display:none"><div class="ei">💳</div><div class="et">لا توجد وصولات في هذا القسم</div></div>
+
+    <div class="pag-wrap" id="pagWrap" style="display:none">
+        <span class="pag-info" id="pagInfo"></span>
+        <div class="pag-btns" id="pagBtns"></div>
+    </div>
+</div>
+
+<!-- ══ مودال معاينة الصورة ══ -->
+<div class="modal-overlay" id="imgModal" onclick="closeBg('imgModal',event)">
+<div class="modal-box" style="max-width:800px">
+    <div class="modal-hdr"><span class="modal-title">معاينة الوصل</span><button class="modal-close" onclick="closeModal('imgModal')">✕</button></div>
+    <div class="modal-body" style="padding:14px;text-align:center" id="imgModalBody"></div>
+</div>
+</div>
+<!-- ══ مودال رفع وصل جديد ══ -->
+<div class="modal-overlay" id="uploadModal" onclick="closeBg('uploadModal',event)">
+<div class="modal-box" style="max-width:660px">
+    <div class="modal-hdr">
+        <span class="modal-title">📤 رفع وصل مالي جديد</span>
+        <button class="modal-close" onclick="closeModal('uploadModal')">✕</button>
+    </div>
+
+    <div class="modal-body" style="padding:22px">
+
+        <!-- المستفيد -->
+        <div class="f-group" style="margin-bottom:16px">
+            <label class="f-label">👤 المستفيد <span style="color:var(--red)">*</span></label>
+            <select class="f-select" id="fBeneficiary">
+                <option value="">— اختر المستفيد —</option>
+                {% for b in beneficiaries %}
+                <option value="{{ b.id }}">{{ b.name }} — {{ b.reg }}</option>
+                {% endfor %}
+            </select>
+            <div class="f-error" id="err-beneficiary_id"></div>
+        </div>
+
+        <!-- صف 1: رقم الوصل + اسم المرسل -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+
+            <div class="f-group">
+                <label class="f-label">🔢 رقم الوصل الفريد <span style="color:var(--red)">*</span></label>
+                <input type="text" class="f-input" id="fUniqueNumber"
+                       placeholder="مثال: TRX123456"
+                       oninput="sanitizeUniqueNumber(this);checkUnique(this.value)">
+                <div class="unique-status" id="uniqueStatus"></div>
+                <div class="f-hint">أحرف إنجليزية وأرقام فقط — بدون مسافات أو رموز</div>
+                <div class="f-error" id="err-unique_number"></div>
+            </div>
+
+            <div class="f-group">
+                <label class="f-label">👤 اسم المرسل <span style="color:var(--red)">*</span></label>
+                <input type="text" class="f-input" id="fSenderName"
+                       placeholder="الاسم الكامل"
+                       oninput="sanitizeSenderName(this)">
+                <div class="f-hint">أحرف عربية أو إنجليزية ومسافات فقط</div>
+                <div class="f-error" id="err-sender_name"></div>
+            </div>
+
+        </div>
+
+        <!-- صف 2: المبلغ + العملة + زر التحويل -->
+        <div style="margin-bottom:16px">
+            <label class="f-label">💵 المبلغ والعملة <span style="color:var(--red)">*</span></label>
+            <div style="display:flex;gap:10px;align-items:center;margin-top:6px">
+                <input type="number" class="f-input" id="fAmount"
+                       placeholder="0.00" style="flex:1;min-width:0"
+                       oninput="onAmountInput()">
+                <select class="f-select" id="fCurrency"
+                        style="width:140px;flex-shrink:0"
+                        onchange="onAmountInput()">
+                    {% for code, name in currency_choices %}
+                    <option value="{{ code }}" {% if code == 'USD' %}selected{% endif %}>
+                        {{ code }} — {{ name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <button id="convertBtn"
+                        onclick="openConvertModal()"
+                        disabled
+                        title="عرض المعادل بكل العملات"
+                        style="width:42px;height:42px;border-radius:12px;border:1.5px solid rgba(26,122,74,0.2);
+                               background:var(--input-bg);color:#9ca3af;font-size:1.1rem;cursor:not-allowed;
+                               transition:all 0.2s;flex-shrink:0;display:flex;align-items:center;justify-content:center">
+                    💱
+                </button>
+            </div>
+            <div class="f-error" id="err-amount_original"></div>
+        </div>
+
+        <!-- صف 3: تاريخ الوصل -->
+        <div class="f-group" style="margin-bottom:16px">
+            <label class="f-label">📅 تاريخ الوصل <span style="color:var(--red)">*</span></label>
+            <input type="date" class="f-input" id="fDate">
+            <div class="f-error" id="err-receipt_date"></div>
+        </div>
+
+        <!-- صف 4: صورة الوصل -->
+        <div class="f-group" style="margin-bottom:16px">
+            <label class="f-label">🖼️ صورة الوصل <span style="color:var(--red)">*</span></label>
+            <div class="img-upload-wrap" id="imgWrap">
+                <input type="file" id="fImage" accept="image/*,.pdf" onchange="previewImage(this)">
+                <div class="img-upload-icon">📎</div>
+                <div class="img-upload-txt">
+                    اضغط لاختيار الصورة أو اسحبها هنا<br>
+                    <span style="font-size:0.68rem">JPG, PNG, PDF — حد أقصى 5MB</span>
+                </div>
+                <img class="img-preview" id="imgPreview" alt="معاينة">
+            </div>
+            <div class="upload-progress" id="uploadProgress">
+                <div class="up-bar-wrap"><div class="up-bar" id="upBar"></div></div>
+                <div class="up-txt" id="upTxt">جاري الرفع…</div>
+            </div>
+            <div class="f-error" id="err-receipt_image"></div>
+        </div>
+
+        <!-- ملاحظات -->
+        <div class="f-group">
+            <label class="f-label">📝 ملاحظات (اختياري)</label>
+            <textarea class="f-textarea" id="fNotes"
+                      placeholder="أي ملاحظات إضافية…"></textarea>
+        </div>
+
+        <input type="hidden" id="fAmountShekel">
+        <input type="hidden" id="fAmountDollar">
+
+    </div>
+
+    <div class="modal-ftr">
+        <button class="btn-sec" onclick="resetForm()">🗑️ مسح</button>
+        <button class="btn-green" id="submitBtn" onclick="submitReceipt()">
+            📤 إرسال للمراجعة
+        </button>
+    </div>
+</div>
+</div>
+<!-- ══ مودال إعادة الإرسال ══ -->
+<div class="modal-overlay" id="resubmitModal" onclick="closeBg('resubmitModal',event)">
+<div class="modal-box">
+    <div class="modal-hdr"><span class="modal-title">🔄 إعادة إرسال الوصل</span><button class="modal-close" onclick="closeModal('resubmitModal')">✕</button></div>
+    <div class="modal-body" id="resubmitBody"></div>
+    <div class="modal-ftr">
+        <button class="btn-sec" onclick="closeModal('resubmitModal')">إلغاء</button>
+        <button class="btn-green" id="resubmitBtn" onclick="submitResubmit()">🔄 إعادة الإرسال</button>
+    </div>
+</div>
+</div>
+
+<!-- ══ مودال PDF ══ -->
+<div class="modal-overlay" id="pdfModal">
+<div class="modal-box pdf-box">
+    <div class="modal-body" style="padding:28px 22px;text-align:center">
+        <div style="font-size:2.2rem;margin-bottom:12px">📥</div>
+        <div style="font-size:0.96rem;font-weight:700;color:var(--text,#1a1a2e);margin-bottom:5px" id="pdfTitle">جاري تجهيز الملف…</div>
+        <div style="font-size:0.78rem;color:#9ca3af;margin-bottom:18px" id="pdfSub">يرجى الانتظار</div>
+        <div style="background:rgba(26,122,74,0.1);border-radius:50px;height:5px;overflow:hidden">
+            <div id="pdfBar" style="height:100%;width:0%;background:linear-gradient(90deg,#1a7a4a,#2ecc71);border-radius:50px;transition:width 0.4s ease"></div>
+        </div>
+    </div>
+</div>
+</div>
+<!-- ══ مودال تحويل العملة ══ -->
+<div class="modal-overlay" id="convertModal" onclick="closeBg('convertModal',event)">
+<div class="modal-box" style="max-width:420px">
+    <div class="modal-hdr">
+        <span class="modal-title">💱 معادل العملات</span>
+        <button class="modal-close" onclick="closeModal('convertModal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:20px" id="convertModalBody"></div>
+    <div class="modal-ftr" style="justify-content:center">
+        <button class="btn-green" onclick="closeModal('convertModal')">حسناً</button>
+    </div>
+</div>
+</div>
+<div class="modal-overlay" id="pdfModal">
+<div class="modal-box pdf-box">
+    <div class="modal-body" style="padding:28px 22px;text-align:center">
+        <div style="font-size:2.2rem;margin-bottom:12px">📥</div>
+        <div style="font-size:0.96rem;font-weight:700;color:var(--text,#1a1a2e);margin-bottom:5px" id="pdfTitle">جاري تجهيز الملف…</div>
+        <div style="font-size:0.78rem;color:#9ca3af;margin-bottom:18px" id="pdfSub">يرجى الانتظار</div>
+        <div style="background:rgba(26,122,74,0.1);border-radius:50px;height:5px;overflow:hidden">
+            <div id="pdfBar" style="height:100%;width:0%;background:linear-gradient(90deg,#1a7a4a,#2ecc71);border-radius:50px;transition:width 0.4s ease"></div>
+        </div>
+        <button id="pdfCloseBtn"
+                onclick="closeModal('pdfModal')"
+                style="display:none;margin-top:18px;background:linear-gradient(135deg,#1a7a4a,#2ecc71);
+                       color:#fff;border:none;padding:10px 24px;border-radius:12px;
+                       font-family:'Tajawal',sans-serif;font-size:0.86rem;font-weight:700;cursor:pointer">
+            ✅ إغلاق
+        </button>
+    </div>
+</div>
+</div>
+<!-- ══ مودال رسالة ══ -->
+<div class="modal-overlay" id="alertModal" onclick="closeBg('alertModal',event)">
+<div class="modal-box alert-box">
+    <div class="modal-hdr"><span class="modal-title" id="alertTitle">رسالة</span><button class="modal-close" onclick="closeModal('alertModal')">✕</button></div>
+    <div class="alert-body"><div class="alert-icon" id="alertIcon">ℹ️</div><div class="alert-msg" id="alertMsg">—</div></div>
+    <div class="modal-ftr"><button class="btn-green" onclick="closeModal('alertModal')">حسناً</button></div>
+</div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ══ الحالة ══
+let currentStatus = 'بانتظار المراجعة';
+let currentPage   = 1;
+let searchQ       = '';
+let searchTimer   = null;
+let uniqueTimer   = null;
+let resubmitId    = null;
+let receiptsCache = {};
+const RATES       = {{ rates|safe }};
+
+// ══ Counter ══
+function animateCounter(el, target) {
+    if (!el) return;
+    const dur=800, t0=performance.now();
+    const up = now => {
+        const p=Math.min((now-t0)/dur,1);
+        el.textContent=Math.round(target*(1-Math.pow(1-p,3))).toLocaleString('ar');
+        if(p<1) requestAnimationFrame(up);
+    };
+    requestAnimationFrame(up);
+}
+
+// ══ تحميل الوصولات ══
+function loadReceipts(status, page, q) {
+    currentStatus = status;
+    currentPage   = page;
+    searchQ       = q || '';
+    showSkeleton();
+    const params = new URLSearchParams({status, page, q:searchQ});
+    fetch(`/sponsor/wallet/data/?${params}`)
+    .then(r=>r.json())
+    .then(data=>{
+        hideSkeleton();
+        if (!data.items?.length) { document.getElementById('emptyBox').style.display='block'; return; }
+        const list = document.getElementById('receiptsList');
+        list.innerHTML='';
+        data.items.forEach(r=>list.appendChild(buildCard(r)));
+        list.style.display='flex';
+        if (data.pages>1||data.total>0) renderPagination(data.current_page,data.pages,data.total);
+    })
+    .catch(()=>{ hideSkeleton(); showAlert('error','حدث خطأ في التحميل','⚠️'); });
+}
+
+function showSkeleton() {
+    document.getElementById('skeletonArea').style.display='block';
+    document.getElementById('receiptsList').style.display='none';
+    document.getElementById('emptyBox').style.display='none';
+    document.getElementById('pagWrap').style.display='none';
+}
+function hideSkeleton() {
+    document.getElementById('skeletonArea').style.display='none';
+}
+
+// ══ بناء كارد الوصل ══
+function buildCard(r) {
+    const div      = document.createElement('div');
+    receiptsCache[r.id] = r;
+    const stClass  = r.status==='موافق' ? 'rc-approved' : r.status==='مرفوض' ? 'rc-rejected' : 'rc-pending';
+    const stBadge  = r.status==='موافق' ? 'rs-approved' : r.status==='مرفوض' ? 'rs-rejected' : 'rs-pending';
+    div.className  = `rc-card ${stClass}`;
+
+    const imgHtml = r.receipt_image
+        ? `<div class="rc-img-wrap"><img src="${r.receipt_image}" class="rc-img" alt="وصل" onclick="viewImg('${r.receipt_image}')"></div>`
+        : '';
+
+    const rejectHtml = r.status==='مرفوض' && r.reject_reason
+        ? `<div class="reject-reason"><div class="rr-title">سبب الرفض:</div>${r.reject_reason}</div>`
+        : '';
+
+    let actionsHtml = '';
+    if (r.status === 'موافق') {
+        actionsHtml = `
+            <button class="btn-sm btn-sm-green"  onclick="viewImg('${r.receipt_image}')">👁️ عرض</button>
+            <button class="btn-sm btn-sm-purple" onclick="downloadPdf(${r.id})">📥 PDF</button>`;
+    } else if (r.status === 'مرفوض') {
+        actionsHtml = `
+            <button class="btn-sm btn-sm-orange" onclick="openResubmit(${r.id})">🔄 إعادة إرسال</button>
+            ${r.receipt_image ? `<button class="btn-sm btn-sm-green" onclick="viewImg('${r.receipt_image}')">👁️ عرض الوصل</button>` : ''}`;
+    } else {
+        actionsHtml = r.receipt_image
+            ? `<button class="btn-sm btn-sm-green" onclick="viewImg('${r.receipt_image}')">👁️ عرض الوصل</button>`
+            : '';
+    }
+
+    div.innerHTML = `
+        <div class="rc-head">
+            <span class="rc-ref">${r.system_ref || r.unique_number}</span>
+            <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:0.72rem;color:#9ca3af">${r.submitted_at}</span>
+                <span class="rc-status ${stBadge}">${r.status}</span>
+            </div>
+        </div>
+        ${imgHtml}
+        ${rejectHtml}
+        <div class="rc-body">
+            <div class="rc-item"><div class="rc-lbl">المستفيد</div><div class="rc-val">${r.beneficiary}</div></div>
+            <div class="rc-item"><div class="rc-lbl">المبلغ الأصلي</div><div class="rc-val green">${r.amount_original} ${r.currency}</div></div>
+            <div class="rc-item"><div class="rc-lbl">بالشيقل</div><div class="rc-val green">${r.amount_shekel} ₪</div></div>
+            <div class="rc-item"><div class="rc-lbl">بالدولار</div><div class="rc-val green">$${r.amount_dollar}</div></div>
+            <div class="rc-item"><div class="rc-lbl">اسم المرسل</div><div class="rc-val">${r.sender_name}</div></div>
+            <div class="rc-item"><div class="rc-lbl">تاريخ الوصل</div><div class="rc-val">${r.receipt_date||'—'}</div></div>
+            ${r.reviewed_at ? `<div class="rc-item"><div class="rc-lbl">تاريخ المراجعة</div><div class="rc-val">${r.reviewed_at}</div></div>` : ''}
+            ${r.notes ? `<div class="rc-item" style="grid-column:span 2"><div class="rc-lbl">ملاحظات الإدارة</div><div class="rc-val">${r.notes}</div></div>` : ''}
+        </div>
+        <div class="rc-actions">${actionsHtml}</div>`;
+    return div;
+}
+
+// ══ تبديل التاب ══
+function switchTab(status) {
+    const map = {'بانتظار المراجعة':'pending','موافق':'approved','مرفوض':'rejected'};
+    Object.keys(map).forEach(s => {
+        document.getElementById(`tab-${map[s]}`).classList.toggle('active', s===status);
+    });
+    document.getElementById('exportBtn').style.display = status==='موافق' ? 'flex' : 'none';
+    loadReceipts(status, 1, searchQ);
+}
+
+// ══ Sanitize ══
+function sanitizeUniqueNumber(input) {
+    // أحرف إنجليزية وأرقام فقط — بدون مسافات أو رموز أو عربي
+    input.value = input.value.replace(/[^a-zA-Z0-9]/g, '');
+}
+
+function sanitizeSenderName(input) {
+    // عربي أو إنجليزي ومسافات فقط — بدون أرقام أو رموز
+    input.value = input.value.replace(/[^a-zA-Z\u0600-\u06FF\s]/g, '');
+}
+
+// ══ تفعيل زر التحويل ══
+function onAmountInput() {
+    const amount  = parseFloat(document.getElementById('fAmount').value) || 0;
+    const btn     = document.getElementById('convertBtn');
+    const enabled = amount > 0;
+
+    btn.disabled          = !enabled;
+    btn.style.cursor      = enabled ? 'pointer'       : 'not-allowed';
+    btn.style.color       = enabled ? 'var(--green)'  : '#9ca3af';
+    btn.style.borderColor = enabled ? 'var(--green)'  : 'rgba(26,122,74,0.2)';
+    btn.style.background  = enabled ? 'var(--green-dim)' : 'var(--input-bg)';
+    btn.title             = enabled ? 'عرض المعادل بكل العملات' : 'أدخل مبلغاً أولاً';
+
+    // تحديث الحقول المخفية
+    if (enabled) _calcConversion();
+}
+
+// ══ حساب التحويل ══
+function _calcConversion() {
+    const amount   = parseFloat(document.getElementById('fAmount').value) || 0;
+    const currency = document.getElementById('fCurrency').value;
+
+    const conv = {
+        ILS: { ILS:1,      USD:RATES.ILS_TO_USD||0.27,  JOD:(RATES.ILS_TO_USD||0.27)/(RATES.JOD_TO_USD||1.41), SAR:(RATES.ILS_TO_USD||0.27)/(RATES.SAR_TO_USD||0.27), EGP:(RATES.ILS_TO_USD||0.27)/(RATES.EGP_TO_USD||0.021) },
+        USD: { ILS:RATES.USD_TO_ILS||3.7, USD:1, JOD:1/(RATES.JOD_TO_USD||1.41), SAR:1/(RATES.SAR_TO_USD||0.27), EGP:1/(RATES.EGP_TO_USD||0.021) },
+        JOD: { ILS:(RATES.JOD_TO_USD||1.41)*(RATES.USD_TO_ILS||3.7), USD:RATES.JOD_TO_USD||1.41, JOD:1, SAR:(RATES.JOD_TO_USD||1.41)/(RATES.SAR_TO_USD||0.27), EGP:(RATES.JOD_TO_USD||1.41)/(RATES.EGP_TO_USD||0.021) },
+        SAR: { ILS:(RATES.SAR_TO_USD||0.27)*(RATES.USD_TO_ILS||3.7), USD:RATES.SAR_TO_USD||0.27, JOD:(RATES.SAR_TO_USD||0.27)/(RATES.JOD_TO_USD||1.41), SAR:1, EGP:(RATES.SAR_TO_USD||0.27)/(RATES.EGP_TO_USD||0.021) },
+        EGP: { ILS:(RATES.EGP_TO_USD||0.021)*(RATES.USD_TO_ILS||3.7), USD:RATES.EGP_TO_USD||0.021, JOD:(RATES.EGP_TO_USD||0.021)/(RATES.JOD_TO_USD||1.41), SAR:(RATES.EGP_TO_USD||0.021)/(RATES.SAR_TO_USD||0.27), EGP:1 },
+    };
+
+    const rates = conv[currency] || conv['USD'];
+    const results = {};
+    ['ILS','USD','JOD','SAR','EGP'].forEach(c => {
+        results[c] = (amount * (rates[c]||1)).toFixed(2);
+    });
+
+    // حقول مخفية للإرسال
+    document.getElementById('fAmountShekel').value = results['ILS'];
+    document.getElementById('fAmountDollar').value = results['USD'];
+
+    return results;
+}
+
+// ══ مودال التحويل ══
+function openConvertModal() {
+    const amount   = parseFloat(document.getElementById('fAmount').value) || 0;
+    const currency = document.getElementById('fCurrency').value;
+    if (!amount) return;
+
+    const results = _calcConversion();
+    const labels  = { ILS:'🇮🇱 شيقل إسرائيلي', USD:'🇺🇸 دولار أمريكي', JOD:'🇯🇴 دينار أردني', SAR:'🇸🇦 ريال سعودي', EGP:'🇪🇬 جنيه مصري' };
+
+    document.getElementById('convertModalBody').innerHTML = `
+        <div style="text-align:center;margin-bottom:18px">
+            <div style="font-size:1.6rem;font-weight:900;color:var(--green);font-family:'Cairo',sans-serif">
+                ${amount.toLocaleString('ar')} ${currency}
+            </div>
+            <div style="font-size:0.78rem;color:#9ca3af;margin-top:4px">يعادل بالعملات الأخرى</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+            ${['ILS','USD','JOD','SAR','EGP'].map(c => `
+                <div style="display:flex;align-items:center;justify-content:space-between;
+                            padding:12px 16px;border-radius:12px;
+                            background:${c===currency?'var(--green-dim)':'var(--input-bg)'};
+                            border:1.5px solid ${c===currency?'rgba(26,122,74,0.25)':'transparent'}">
+                    <span style="font-size:0.86rem;color:#6b7280">${labels[c]}</span>
+                    <span style="font-size:1rem;font-weight:800;color:${c===currency?'var(--green)':'var(--text,#1a1a2e)'}">
+                        ${parseFloat(results[c]).toLocaleString('ar', {minimumFractionDigits:2})}
+                        <span style="font-size:0.72rem;font-weight:600;opacity:0.7">${c}</span>
+                        ${c===currency ? '<span style="font-size:0.65rem;background:var(--green);color:#fff;padding:1px 6px;border-radius:10px;margin-right:4px">الحالية</span>' : ''}
+                    </span>
+                </div>`).join('')}
+        </div>
+        <div style="margin-top:14px;padding:10px 14px;background:var(--orange-dim);border-radius:10px;font-size:0.72rem;color:var(--orange);text-align:center">
+            ⚠️ الأسعار تقريبية بناءً على أسعار الصرف الحالية
+        </div>`;
+
+    openModal('convertModal');
+}
+
+// ══ رفع وصل جديد ══
+function submitReceipt() {
+    clearErrors();
+
+    // validation إضافي
+    const uniqueVal  = document.getElementById('fUniqueNumber').value;
+    const senderVal  = document.getElementById('fSenderName').value;
+    const uniqueStat = document.getElementById('uniqueStatus');
+
+    if (!/^[a-zA-Z0-9]+$/.test(uniqueVal)) {
+        showFieldError('unique_number', 'أحرف إنجليزية وأرقام فقط بدون مسافات');
+        return;
+    }
+    if (uniqueStat.classList.contains('us-err')) {
+        showFieldError('unique_number', 'رقم الوصل مستخدم مسبقاً');
+        return;
+    }
+    if (!/^[a-zA-Z\u0600-\u06FF\s]+$/.test(senderVal.trim())) {
+        showFieldError('sender_name', 'أحرف عربية أو إنجليزية ومسافات فقط');
+        return;
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled=true; btn.textContent='⏳ جاري الإرسال…';
+
+    const prog = document.getElementById('uploadProgress');
+    const bar  = document.getElementById('upBar');
+    const txt  = document.getElementById('upTxt');
+    prog.classList.add('show');
+    let pct=0;
+    const interval = setInterval(()=>{ pct=Math.min(pct+10,90); bar.style.width=pct+'%'; },200);
+
+    const fd = new FormData();
+    fd.append('beneficiary_id', document.getElementById('fBeneficiary').value);
+    fd.append('unique_number',  uniqueVal);
+    fd.append('sender_name',    senderVal);
+    fd.append('amount_original',document.getElementById('fAmount').value);
+    fd.append('currency',       document.getElementById('fCurrency').value);
+    fd.append('amount_shekel',  document.getElementById('fAmountShekel').value || '0');
+    fd.append('amount_dollar',  document.getElementById('fAmountDollar').value || '0');
+    fd.append('receipt_date',   document.getElementById('fDate').value);
+    fd.append('notes',          document.getElementById('fNotes').value);
+    const imgFile = document.getElementById('fImage').files[0];
+    if (imgFile) fd.append('receipt_image', imgFile);
+
+    fetch('/sponsor/wallet/submit/', {method:'POST', headers:{'X-CSRFToken':csrf()}, body:fd})
+    .then(r=>r.json())
+    .then(res=>{
+        clearInterval(interval); bar.style.width='100%'; txt.textContent='تم ✅';
+        setTimeout(()=>{ prog.classList.remove('show'); bar.style.width='0%'; },1500);
+        btn.disabled=false; btn.textContent='📤 إرسال للمراجعة';
+        if (res.status==='success') {
+            showAlert('success', res.message, '✅');
+            resetForm();
+            closeModal('uploadModal');
+            const b=document.getElementById('badge-pending');
+            if (b) b.textContent=parseInt(b.textContent||0)+1;
+            animateCounter(document.getElementById('statPending'), parseInt(document.getElementById('statPending').textContent)+1);
+            if (currentStatus==='بانتظار المراجعة') loadReceipts(currentStatus,1,searchQ);
+        } else {
+            showErrors(res.errors || {});
+            if (res.message) showAlert('error', res.message,'⚠️');
+        }
+    })
+    .catch(()=>{
+        clearInterval(interval); prog.classList.remove('show');
+        btn.disabled=false; btn.textContent='📤 إرسال للمراجعة';
+        showAlert('error','حدث خطأ في الإرسال','⚠️');
+    });
+}
+
+function resetForm() {
+    ['fBeneficiary','fUniqueNumber','fSenderName','fAmount','fDate','fNotes'].forEach(id=>{
+        const el=document.getElementById(id); if(el) el.value='';
+    });
+    document.getElementById('fCurrency').value='USD';
+    document.getElementById('fImage').value='';
+    document.getElementById('imgPreview').classList.remove('show');
+    document.getElementById('uniqueStatus').textContent='';
+    onAmountInput(); // يعيد تعطيل زر التحويل
+    clearErrors();
+}
+
+function clearErrors() {
+    document.querySelectorAll('.f-error').forEach(el=>{ el.textContent=''; el.classList.remove('show'); });
+    document.querySelectorAll('.f-input,.f-select,.f-textarea').forEach(el=>el.style.borderColor='');
+}
+
+function showErrors(errors) {
+    Object.entries(errors).forEach(([key, msg])=> showFieldError(key, msg));
+}
+
+function showFieldError(key, msg) {
+    const errEl = document.getElementById(`err-${key}`);
+    if (errEl) { errEl.textContent=msg; errEl.classList.add('show'); }
+}
+
+// ══ معاينة الصورة ══
+function previewImage(input) {
+    const file    = input.files[0];
+    const preview = document.getElementById('imgPreview');
+    if (!file) return;
+    if (file.name.toLowerCase().endsWith('.pdf')) {
+        preview.classList.remove('show');
+        document.querySelector('.img-upload-txt').innerHTML =
+            `📋 ${file.name}<br><span style="font-size:0.68rem;color:#9ca3af">ملف PDF</span>`;
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => { preview.src=e.target.result; preview.classList.add('show'); };
+    reader.readAsDataURL(file);
+}
+
+// ══ فحص رقم الوصل ══
+function checkUnique(val) {
+    const status = document.getElementById('uniqueStatus');
+    clearTimeout(uniqueTimer);
+    if (!val.trim()) { status.textContent=''; return; }
+
+    // لا نفحص إذا كان يحتوي أحرف غير مسموحة
+    if (!/^[a-zA-Z0-9]+$/.test(val)) {
+        status.textContent='⚠️ أحرف غير مسموحة';
+        status.className='unique-status us-err';
+        return;
+    }
+
+    status.textContent='⏳ جاري الفحص…';
+    status.className='unique-status';
+    uniqueTimer = setTimeout(()=>{
+        fetch(`/sponsor/wallet/check-unique/?number=${encodeURIComponent(val)}`)
+        .then(r=>r.json())
+        .then(data=>{
+            if (data.exists) {
+                status.textContent='⚠️ رقم الوصل مستخدم مسبقاً';
+                status.className='unique-status us-err';
+            } else {
+                status.textContent='✅ رقم الوصل متاح';
+                status.className='unique-status us-ok';
+            }
+        });
+    },500);
+}
+
+// ══ إعادة إرسال ══
+function openResubmit(id) {
+    resubmitId = id;
+    const r = receiptsCache[id] || {};
+
+    const imgSection = r.receipt_image ? `
+        <div class="f-group" style="grid-column:span 2;margin-bottom:4px">
+            <label class="f-label">🖼️ صورة الوصل الحالية</label>
+            <div style="position:relative;display:inline-block;width:100%">
+                <img src="${r.receipt_image}" id="rCurrentImg"
+                     style="width:100%;max-height:160px;object-fit:contain;border-radius:10px;
+                            border:1px solid var(--card-border);cursor:pointer"
+                     onclick="viewImg('${r.receipt_image}')">
+                <button onclick="removeCurrentImg()"
+                        style="position:absolute;top:6px;left:6px;background:var(--red);color:#fff;
+                               border:none;border-radius:8px;padding:4px 10px;font-size:0.75rem;
+                               cursor:pointer;font-family:'Tajawal',sans-serif">
+                    🗑️ حذف واستبدال
+                </button>
+            </div>
+        </div>` : '';
+
+    document.getElementById('resubmitBody').innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+<!-- المستفيد -->
+<div class="f-group" style="grid-column:span 2;margin-bottom:4px">
+    <label class="f-label">👤 المستفيد <span style="color:var(--red)">*</span></label>
+    <select class="f-select" id="rBeneficiary">
+        <option value="">— اختر المستفيد —</option>
+        {% for b in beneficiaries %}
+        <option value="{{ b.id }}"
+            ${r.beneficiary_id === '{{ b.id }}' ? 'selected' : ''}>
+            {{ b.name }} — {{ b.reg }}
+        </option>
+        {% endfor %}
+    </select>
+    <div class="f-error" id="rerr-beneficiary_id"></div>
+</div>
+            <!-- رقم الوصل -->
+            <div class="f-group">
+                <label class="f-label">🔢 رقم الوصل <span style="color:var(--red)">*</span></label>
+                <input type="text" class="f-input" id="rUniqueNumber"
+                       value="${r.unique_number || ''}"
+                       placeholder="مثال: TRX123456"
+                       oninput="sanitizeUniqueNumber(this); checkUniqueResubmit(this.value, ${id})">
+                <div class="unique-status" id="rUniqueStatus"></div>
+                <div class="f-hint">أحرف إنجليزية وأرقام فقط</div>
+                <div class="f-error" id="rerr-unique_number"></div>
+            </div>
+
+            <!-- اسم المرسل -->
+            <div class="f-group">
+                <label class="f-label">👤 اسم المرسل <span style="color:var(--red)">*</span></label>
+                <input type="text" class="f-input" id="rSenderName"
+                       value="${r.sender_name || ''}"
+                       placeholder="الاسم الكامل"
+                       oninput="sanitizeSenderName(this)">
+                <div class="f-hint">عربي أو إنجليزي ومسافات فقط</div>
+                <div class="f-error" id="rerr-sender_name"></div>
+            </div>
+
+           <!-- المبلغ والعملة -->
+<div class="f-group" style="grid-column:span 2">
+    <label class="f-label">💵 المبلغ والعملة <span style="color:var(--red)">*</span></label>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:6px">
+        <input type="number" class="f-input" id="rAmount"
+               value="${r.amount_original || ''}"
+               placeholder="0.00" style="flex:1"
+               oninput="convertResubmit(); onRAmountInput()">
+        <select class="f-select" id="rCurrency"
+                style="width:140px;flex-shrink:0"
+                onchange="convertResubmit(); onRAmountInput()">
+            {% for code, name in currency_choices %}
+            <option value="{{ code }}"
+                ${r.currency === '{{ code }}' ? 'selected' : ''}>
+                {{ code }} — {{ name }}
+            </option>
+            {% endfor %}
+        </select>
+        <button id="rConvertBtn"
+                onclick="openRConvertModal()"
+                title="عرض المعادل بكل العملات"
+                style="width:42px;height:42px;border-radius:12px;border:1.5px solid rgba(26,122,74,0.2);
+                       background:var(--input-bg);color:#9ca3af;font-size:1.1rem;cursor:not-allowed;
+                       transition:all 0.2s;flex-shrink:0;display:flex;align-items:center;justify-content:center">
+            💱
+        </button>
+    </div>
+    <div class="f-error" id="rerr-amount_original"></div>
+</div>
+
+            <!-- تاريخ الوصل -->
+            <div class="f-group">
+                <label class="f-label">📅 تاريخ الوصل <span style="color:var(--red)">*</span></label>
+                <input type="date" class="f-input" id="rDate"
+                       value="${r.receipt_date || ''}">
+                <div class="f-error" id="rerr-receipt_date"></div>
+            </div>
+
+            <!-- صورة جديدة -->
+            <div class="f-group" id="rNewImgGroup" style="${r.receipt_image ? 'display:none' : ''}">
+                <label class="f-label">🖼️ صورة الوصل <span style="color:var(--red)" id="rImgRequired">${r.receipt_image ? '' : '*'}</span></label>
+                <div class="img-upload-wrap" style="padding:14px">
+                    <input type="file" id="rImage" accept="image/*,.pdf"
+                           onchange="previewRImage(this)">
+                    <div class="img-upload-icon" style="font-size:1.5rem">📎</div>
+                    <div class="img-upload-txt" style="font-size:0.78rem">اضغط لاختيار صورة جديدة</div>
+                    <img class="img-preview" id="rImgPreview" alt="معاينة">
+                </div>
+                <div class="f-error" id="rerr-receipt_image"></div>
+            </div>
+
+            <!-- صورة الوصل الحالية -->
+            ${imgSection}
+
+            <!-- ملاحظات -->
+            <div class="f-group" style="grid-column:span 2">
+                <label class="f-label">📝 ملاحظات</label>
+                <textarea class="f-textarea" id="rNotes"
+                          placeholder="اشرح سبب التعديل…">${r.notes || ''}</textarea>
+            </div>
+
+            <input type="hidden" id="rAmountShekel" value="${r.amount_shekel || ''}">
+            <input type="hidden" id="rAmountDollar" value="${r.amount_dollar || ''}">
+            <input type="hidden" id="rHasImage" value="${r.receipt_image ? '1' : '0'}">
+        </div>`;
+
+    openModal('resubmitModal');
+}
+// فحص رقم الوصل في مودل إعادة الإرسال (مع استثناء الوصل الحالي)
+let rUniqueTimer = null;
+function checkUniqueResubmit(val, excludeId) {
+    const status = document.getElementById('rUniqueStatus');
+    clearTimeout(rUniqueTimer);
+    if (!val.trim()) { status.textContent = ''; return; }
+    if (!/^[a-zA-Z0-9]+$/.test(val)) {
+        status.textContent = '⚠️ أحرف غير مسموحة';
+        status.className = 'unique-status us-err';
+        return;
+    }
+    status.textContent = '⏳ جاري الفحص…';
+    status.className = 'unique-status';
+    rUniqueTimer = setTimeout(() => {
+        fetch(`/sponsor/wallet/check-unique/?number=${encodeURIComponent(val)}&exclude=${excludeId}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.exists) {
+                status.textContent = '⚠️ رقم الوصل مستخدم مسبقاً';
+                status.className = 'unique-status us-err';
+            } else {
+                status.textContent = '✅ رقم الوصل متاح';
+                status.className = 'unique-status us-ok';
+            }
+        });
+    }, 500);
+}
+// تفعيل/تعطيل زر التحويل في مودل إعادة الإرسال
+function onRAmountInput() {
+    const amount  = parseFloat(document.getElementById('rAmount')?.value) || 0;
+    const btn     = document.getElementById('rConvertBtn');
+    if (!btn) return;
+    const enabled = amount > 0;
+    btn.disabled          = !enabled;
+    btn.style.cursor      = enabled ? 'pointer'           : 'not-allowed';
+    btn.style.color       = enabled ? 'var(--green)'      : '#9ca3af';
+    btn.style.borderColor = enabled ? 'var(--green)'      : 'rgba(26,122,74,0.2)';
+    btn.style.background  = enabled ? 'var(--green-dim)'  : 'var(--input-bg)';
+}
+
+// فتح مودل التحويل من مودل إعادة الإرسال
+function openRConvertModal() {
+    const amount   = parseFloat(document.getElementById('rAmount')?.value) || 0;
+    const currency = document.getElementById('rCurrency')?.value || 'USD';
+    if (!amount) return;
+
+    // نفس منطق _calcConversion لكن من حقول الـ resubmit
+    const conv = {
+        ILS: { ILS:1, USD:RATES.ILS_TO_USD||0.27, JOD:(RATES.ILS_TO_USD||0.27)/(RATES.JOD_TO_USD||1.41), SAR:(RATES.ILS_TO_USD||0.27)/(RATES.SAR_TO_USD||0.27), EGP:(RATES.ILS_TO_USD||0.27)/(RATES.EGP_TO_USD||0.021) },
+        USD: { ILS:RATES.USD_TO_ILS||3.7, USD:1, JOD:1/(RATES.JOD_TO_USD||1.41), SAR:1/(RATES.SAR_TO_USD||0.27), EGP:1/(RATES.EGP_TO_USD||0.021) },
+        JOD: { ILS:(RATES.JOD_TO_USD||1.41)*(RATES.USD_TO_ILS||3.7), USD:RATES.JOD_TO_USD||1.41, JOD:1, SAR:(RATES.JOD_TO_USD||1.41)/(RATES.SAR_TO_USD||0.27), EGP:(RATES.JOD_TO_USD||1.41)/(RATES.EGP_TO_USD||0.021) },
+        SAR: { ILS:(RATES.SAR_TO_USD||0.27)*(RATES.USD_TO_ILS||3.7), USD:RATES.SAR_TO_USD||0.27, JOD:(RATES.SAR_TO_USD||0.27)/(RATES.JOD_TO_USD||1.41), SAR:1, EGP:(RATES.SAR_TO_USD||0.27)/(RATES.EGP_TO_USD||0.021) },
+        EGP: { ILS:(RATES.EGP_TO_USD||0.021)*(RATES.USD_TO_ILS||3.7), USD:RATES.EGP_TO_USD||0.021, JOD:(RATES.EGP_TO_USD||0.021)/(RATES.JOD_TO_USD||1.41), SAR:(RATES.EGP_TO_USD||0.021)/(RATES.SAR_TO_USD||0.27), EGP:1 },
+    };
+    const rates   = conv[currency] || conv['USD'];
+    const results = {};
+    ['ILS','USD','JOD','SAR','EGP'].forEach(c => results[c] = (amount * (rates[c]||1)).toFixed(2));
+
+    const labels = { ILS:'🇮🇱 شيقل إسرائيلي', USD:'🇺🇸 دولار أمريكي', JOD:'🇯🇴 دينار أردني', SAR:'🇸🇦 ريال سعودي', EGP:'🇪🇬 جنيه مصري' };
+
+    document.getElementById('convertModalBody').innerHTML = `
+        <div style="text-align:center;margin-bottom:18px">
+            <div style="font-size:1.6rem;font-weight:900;color:var(--green);font-family:'Cairo',sans-serif">
+                ${amount.toLocaleString('ar')} ${currency}
+            </div>
+            <div style="font-size:0.78rem;color:#9ca3af;margin-top:4px">يعادل بالعملات الأخرى</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+            ${['ILS','USD','JOD','SAR','EGP'].map(c => `
+                <div style="display:flex;align-items:center;justify-content:space-between;
+                            padding:12px 16px;border-radius:12px;
+                            background:${c===currency?'var(--green-dim)':'var(--input-bg)'};
+                            border:1.5px solid ${c===currency?'rgba(26,122,74,0.25)':'transparent'}">
+                    <span style="font-size:0.86rem;color:#6b7280">${labels[c]}</span>
+                    <span style="font-size:1rem;font-weight:800;color:${c===currency?'var(--green)':'var(--text,#1a1a2e)'}">
+                        ${parseFloat(results[c]).toLocaleString('ar',{minimumFractionDigits:2})}
+                        <span style="font-size:0.72rem;font-weight:600;opacity:0.7">${c}</span>
+                        ${c===currency?'<span style="font-size:0.65rem;background:var(--green);color:#fff;padding:1px 6px;border-radius:10px;margin-right:4px">الحالية</span>':''}
+                    </span>
+                </div>`).join('')}
+        </div>
+        <div style="margin-top:14px;padding:10px 14px;background:var(--orange-dim);border-radius:10px;font-size:0.72rem;color:var(--orange);text-align:center">
+            ⚠️ الأسعار تقريبية بناءً على أسعار الصرف الحالية
+        </div>`;
+
+    openModal('convertModal');
+}
+// حذف الصورة الحالية وإظهار حقل الرفع
+function removeCurrentImg() {
+    const currentImgWrap = document.getElementById('rCurrentImg')?.parentElement?.parentElement;
+    if (currentImgWrap) currentImgWrap.style.display = 'none';
+    document.getElementById('rHasImage').value = '0';
+    const newGroup = document.getElementById('rNewImgGroup');
+    newGroup.style.display = '';
+    document.getElementById('rImgRequired').textContent = '*';
+}
+
+// معاينة صورة في مودل إعادة الإرسال
+function previewRImage(input) {
+    const file = input.files[0];
+    const preview = document.getElementById('rImgPreview');
+    if (!file) return;
+    if (file.name.toLowerCase().endsWith('.pdf')) {
+        preview.classList.remove('show');
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => { preview.src = e.target.result; preview.classList.add('show'); };
+    reader.readAsDataURL(file);
+}
+function convertResubmit() {
+    const amount   = parseFloat(document.getElementById('rAmount')?.value) || 0;
+    const currency = document.getElementById('rCurrency')?.value || 'USD';
+    let ils=0, usd=0;
+    if      (currency==='USD') { ils=amount*(RATES.USD_TO_ILS||3.7);  usd=amount; }
+    else if (currency==='ILS') { ils=amount; usd=amount*(RATES.ILS_TO_USD||0.27); }
+    else if (currency==='JOD') { ils=amount*(RATES.JOD_TO_USD||1.41)*(RATES.USD_TO_ILS||3.7); usd=amount*(RATES.JOD_TO_USD||1.41); }
+    else if (currency==='SAR') { ils=amount*(RATES.SAR_TO_USD||0.27)*(RATES.USD_TO_ILS||3.7); usd=amount*(RATES.SAR_TO_USD||0.27); }
+    else if (currency==='EGP') { ils=amount*(RATES.EGP_TO_USD||0.021)*(RATES.USD_TO_ILS||3.7); usd=amount*(RATES.EGP_TO_USD||0.021); }
+    document.getElementById('rAmountShekel').value = ils.toFixed(2);
+    document.getElementById('rAmountDollar').value  = usd.toFixed(2);
+}
+
+function submitResubmit() {
+    // ── Validation ──
+    const uniqueVal  = document.getElementById('rUniqueNumber').value.trim();
+    const senderVal  = document.getElementById('rSenderName').value.trim();
+    const amountVal  = parseFloat(document.getElementById('rAmount').value) || 0;
+    const dateVal    = document.getElementById('rDate').value;
+    const hasImage   = document.getElementById('rHasImage').value === '1';
+    const newImg     = document.getElementById('rImage')?.files[0];
+    const uniqueStat = document.getElementById('rUniqueStatus');
+    const beneficiaryVal = document.getElementById('rBeneficiary').value;
+
+    // مسح أخطاء سابقة
+    document.querySelectorAll('[id^="rerr-"]').forEach(el => { el.textContent = ''; el.classList.remove('show'); });
+
+    let valid = true;
+
+    if (!uniqueVal) {
+        const e = document.getElementById('rerr-unique_number');
+        e.textContent = 'رقم الوصل مطلوب'; e.classList.add('show'); valid = false;
+    } else if (uniqueStat.classList.contains('us-err')) {
+        const e = document.getElementById('rerr-unique_number');
+        e.textContent = 'رقم الوصل مستخدم مسبقاً'; e.classList.add('show'); valid = false;
+    }
+
+    if (!senderVal) {
+        const e = document.getElementById('rerr-sender_name');
+        e.textContent = 'اسم المرسل مطلوب'; e.classList.add('show'); valid = false;
+    }
+    if (!beneficiaryVal) {
+    const e = document.getElementById('rerr-beneficiary_id');
+    e.textContent = 'يرجى اختيار المستفيد'; e.classList.add('show'); valid = false;
+    }
+
+    if (amountVal <= 0) {
+        const e = document.getElementById('rerr-amount_original');
+        e.textContent = 'المبلغ يجب أن يكون أكبر من صفر'; e.classList.add('show'); valid = false;
+    }
+
+    if (!dateVal) {
+        const e = document.getElementById('rerr-receipt_date');
+        e.textContent = 'تاريخ الوصل مطلوب'; e.classList.add('show'); valid = false;
+    }
+
+    if (!hasImage && !newImg) {
+        const e = document.getElementById('rerr-receipt_image');
+        e.textContent = 'صورة الوصل مطلوبة'; e.classList.add('show'); valid = false;
+    }
+
+    if (!valid) return;
+
+    // ── الإرسال ──
+    const btn = document.getElementById('resubmitBtn');
+    btn.disabled = true; btn.textContent = '⏳ جاري الإرسال…';
+
+    convertResubmit();
+
+    const fd = new FormData();
+    fd.append('receipt_id',      resubmitId);
+    fd.append('unique_number',   uniqueVal);
+    fd.append('sender_name',     senderVal);
+    fd.append('amount_original', document.getElementById('rAmount').value || '0');
+    fd.append('currency',        document.getElementById('rCurrency').value || 'USD');
+    fd.append('amount_shekel',   document.getElementById('rAmountShekel').value || '0');
+    fd.append('amount_dollar',   document.getElementById('rAmountDollar').value || '0');
+    fd.append('receipt_date',    dateVal);
+    fd.append('beneficiary_id', beneficiaryVal);
+    fd.append('notes',           document.getElementById('rNotes').value || '');
+    if (newImg) fd.append('receipt_image', newImg);
+
+    fetch('/sponsor/wallet/resubmit/', { method:'POST', headers:{'X-CSRFToken':csrf()}, body:fd })
+    .then(r => r.json())
+    .then(res => {
+        btn.disabled = false; btn.textContent = '🔄 إعادة الإرسال';
+        closeModal('resubmitModal');
+        if (res.status === 'success') {
+            showAlert('success', res.message, '✅');
+            loadReceipts(currentStatus, currentPage, searchQ);
+        } else {
+            showAlert('error', res.message || 'حدث خطأ', '⚠️');
+        }
+    })
+    .catch(() => {
+        btn.disabled = false; btn.textContent = '🔄 إعادة الإرسال';
+        closeModal('resubmitModal');
+        showAlert('error', 'حدث خطأ', '⚠️');
+    });
+}
+
+// ══ عرض الصورة ══
+function viewImg(url) {
+    const ext=url.split('.').pop().toLowerCase();
+    document.getElementById('imgModalBody').innerHTML = ext==='pdf'
+        ? `<iframe src="${url}" style="width:100%;height:70vh;border:none;border-radius:8px"></iframe>`
+        : `<img src="${url}" style="max-width:100%;max-height:70vh;border-radius:8px">`;
+    openModal('imgModal');
+}
+// ══ تحميل PDF ══
+async function downloadPdf(id) {
+    document.getElementById('pdfCloseBtn').style.display = 'none';
+    openModal('pdfModal');
+
+    const bar   = document.getElementById('pdfBar');
+    const title = document.getElementById('pdfTitle');
+    const sub   = document.getElementById('pdfSub');
+    bar.style.width = '0%';
+
+    // شريط وهمي أثناء الانتظار
+    title.textContent = 'جاري تجهيز البيانات…';
+    sub.textContent   = 'يرجى الانتظار';
+
+    const steps = [
+        { pct: 20, d: 300,  m: 'جاري تجهيز البيانات…',  s: 'يرجى الانتظار' },
+        { pct: 50, d: 800,  m: 'جاري إنشاء الملف…',     s: 'بضع ثوانٍ'      },
+        { pct: 75, d: 1400, m: 'جاري المعالجة…',         s: 'جار تجهيز الملف خلال دقيقتين'          },
+    ];
+
+    // ابدأ الشريط الوهمي
+    const timers = steps.map(x =>
+        setTimeout(() => {
+            bar.style.width       = x.pct + '%';
+            title.textContent     = x.m;
+            sub.textContent       = x.s;
+        }, x.d)
+    );
+
+    try {
+        // الطلب الفعلي — يكتمل الشريط فقط عند انتهائه
+        const response = await fetch(`/sponsor/wallet/receipt-pdf/?id=${id}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        // استقبال الملف كـ blob
+        const blob = await response.blob();
+
+        // ── اكتمل التحميل الفعلي ──
+        timers.forEach(t => clearTimeout(t)); // إلغاء الخطوات الوهمية المتبقية
+        bar.style.width       = '100%';
+        title.textContent     = 'تم التحميل ✅';
+        sub.textContent       = 'سيتم إغلاق هذه النافذة تلقائياً…';
+
+        // تحميل الملف
+        const url      = URL.createObjectURL(blob);
+        const anchor   = document.createElement('a');
+        anchor.href    = url;
+        anchor.download = `وصل-${id}.pdf`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(url);
+
+        // إغلاق النافذة تلقائياً بعد ثانية
+        setTimeout(() => closeModal('pdfModal'), 1000);
+
+    } catch (err) {
+        timers.forEach(t => clearTimeout(t));
+        bar.style.width       = '100%';
+        bar.style.background  = '#dc2626';
+        title.textContent     = 'حدث خطأ ❌';
+        sub.textContent       = 'يرجى المحاولة مجدداً';
+        document.getElementById('pdfCloseBtn').style.display = 'block';
+        console.error('PDF download error:', err);
+    }
+}
+
+// ══ تصدير Excel ══
+function exportExcel() {
+    window.location.href=`/sponsor/wallet/export/?status=${currentStatus}`;
+}
+
+// ══ بحث ══
+function onSearch(val) {
+    clearTimeout(searchTimer);
+    searchTimer=setTimeout(()=>loadReceipts(currentStatus,1,val),350);
+}
+
+// ══ Pagination ══
+function renderPagination(cur,total,count) {
+    const wrap=document.getElementById('pagWrap'),info=document.getElementById('pagInfo'),btns=document.getElementById('pagBtns');
+    wrap.style.display='flex';
+    info.textContent=`عرض ${(cur-1)*20+1}–${Math.min(cur*20,count)} من ${count}`;
+    btns.innerHTML='';
+    btns.appendChild(mkBtn('‹',cur===1,()=>loadReceipts(currentStatus,cur-1,searchQ)));
+    getRange(cur,total).forEach(p=>{
+        if(p==='...'){const s=document.createElement('span');s.className='pag-info';s.textContent='…';btns.appendChild(s);}
+        else btns.appendChild(mkBtn(p,false,()=>loadReceipts(currentStatus,p,searchQ),p===cur));
+    });
+    btns.appendChild(mkBtn('›',cur===total,()=>loadReceipts(currentStatus,cur+1,searchQ)));
+}
+function mkBtn(t,dis,fn,active=false){
+    const b=document.createElement('button');
+    b.className='pag-btn'+(active?' active':'');
+    b.textContent=t; b.disabled=dis; b.onclick=fn; return b;
+}
+function getRange(c,t){
+    if(t<=7)return Array.from({length:t},(_,i)=>i+1);
+    const r=[1]; if(c>3)r.push('...');
+    for(let i=Math.max(2,c-1);i<=Math.min(t-1,c+1);i++)r.push(i);
+    if(c<t-2)r.push('...'); r.push(t); return r;
+}
+
+// ══ Modal Helpers ══
+function openModal(id)  { document.getElementById(id).classList.add('show'); document.body.style.overflow='hidden'; }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); document.body.style.overflow=''; }
+function closeBg(id,e)  { if(e.target===document.getElementById(id)) closeModal(id); }
+function showAlert(type,msg,icon) {
+    document.getElementById('alertIcon').textContent  = icon;
+    document.getElementById('alertMsg').textContent   = msg;
+    document.getElementById('alertTitle').textContent = type==='success'?'تمّ بنجاح':'تنبيه';
+    openModal('alertModal');
+}
+function csrf() { return document.cookie.split(';').find(c=>c.trim().startsWith('csrftoken='))?.split('=')[1]||''; }
+
+// ══ التحميل الأولي ══
+window.addEventListener('load', ()=>{
+    animateCounter(document.getElementById('statTotal'),   {{ total_count }});
+    animateCounter(document.getElementById('statApproved'),{{ approved_count }});
+    animateCounter(document.getElementById('statPending'), {{ pending_count }});
+    animateCounter(document.getElementById('statRejected'),{{ rejected_count }});
+    document.getElementById('fDate').valueAsDate = new Date();
+    loadReceipts('بانتظار المراجعة', 1, '');
+});
+</script>
+{% endblock %}

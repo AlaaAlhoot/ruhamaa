@@ -1,0 +1,866 @@
+{% extends 'beneficiary/base.html' %}
+{% load static %}
+{% block title %}الدفعات{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+    --card: #fff;
+    --border: rgba(0,0,0,0.08);
+    --text: #1a1a2e;
+    --bg-secondary: #f4f9f6;
+}
+body.dark-mode {
+    --card: #111e16;
+    --border: rgba(46,204,113,0.12);
+    --text: #e8f5ee;
+    --bg-secondary: #0d1a12;
+}
+
+* { box-sizing: border-box; }
+
+.pay-wrap { max-width: 1200px; margin: 0 auto; padding: 0; }
+
+/* ── الإحصائيات ── */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+}
+.stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: 0 4px 16px rgba(26,122,74,0.05);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.25s;
+    min-width: 0;
+}
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 22px rgba(26,122,74,0.12); }
+.stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; flex-shrink: 0; }
+.stat-icon.green   { background: linear-gradient(135deg,rgba(26,122,74,0.15),rgba(46,204,113,0.08)); }
+.stat-icon.blue    { background: linear-gradient(135deg,rgba(43,108,176,0.15),rgba(99,179,237,0.08)); }
+.stat-icon.purple  { background: linear-gradient(135deg,rgba(124,58,237,0.15),rgba(167,139,250,0.08)); }
+.stat-icon.orange  { background: linear-gradient(135deg,rgba(245,158,11,0.15),rgba(251,191,36,0.08)); }
+.stat-info { flex: 1; min-width: 0; }
+.stat-val { font: 700 1.35rem 'Cairo',sans-serif; color: var(--text); margin-bottom: 2px; word-break: break-word; }
+.stat-lbl { font: 600 0.78rem 'Tajawal',sans-serif; color: #6b7280; }
+body.dark-mode .stat-lbl { color: #95a89d; }
+
+/* ── الفلاتر ── */
+.pay-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 20px;
+    box-shadow: 0 6px 20px rgba(26,122,74,0.05);
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+.pay-toolbar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+}
+.filters-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+}
+.pay-filter {
+    background: var(--bg-secondary);
+    border: 1.5px solid rgba(26,122,74,0.15);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font: 600 0.84rem 'Tajawal',sans-serif;
+    color: var(--text);
+    width: 100%;
+    transition: all 0.2s;
+}
+.pay-filter:focus { border-color: #1a7a4a; box-shadow: 0 0 0 3px rgba(26,122,74,0.12); outline: none; }
+
+.pay-actions { display: flex; gap: 8px; flex-wrap: wrap; flex-shrink: 0; }
+.pay-btn {
+    padding: 9px 14px;
+    border-radius: 11px;
+    font: 700 0.82rem 'Tajawal',sans-serif;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.pay-btn-excel { background: rgba(26,122,74,0.1); color: #1a7a4a; border-color: rgba(26,122,74,0.2); }
+.pay-btn-pdf { background: rgba(229,62,62,0.1); color: #c53030; border-color: rgba(229,62,62,0.2); }
+.pay-btn-clear { background: rgba(107,114,128,0.1); color: #6b7280; border-color: rgba(107,114,128,0.2); }
+.pay-btn:hover { transform: translateY(-2px); }
+
+/* ── نظام الكروت ── */
+.cards-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.cards-count {
+    font: 600 0.84rem 'Tajawal',sans-serif;
+    color: #6b7280;
+}
+.cards-count strong { color: #1a7a4a; font-family: 'Cairo',sans-serif; }
+body.dark-mode .cards-count strong { color: #4ade80; }
+
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
+}
+
+.pay-pcard {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.22s;
+    box-shadow: 0 2px 10px rgba(26,122,74,0.04);
+    position: relative;
+    overflow: hidden;
+}
+.pay-pcard::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, #1a7a4a, #2ecc71);
+    border-radius: 0 16px 16px 0;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.pay-pcard:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 28px rgba(26,122,74,0.12);
+    border-color: rgba(26,122,74,0.2);
+}
+.pay-pcard:hover::before { opacity: 1; }
+
+/* رأس الكارد */
+.pcard-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+.pcard-num {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: rgba(26,122,74,0.1);
+    color: #1a7a4a;
+    font: 700 0.78rem 'Cairo',sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+body.dark-mode .pcard-num { background: rgba(74,222,128,0.12); color: #4ade80; }
+
+.pcard-date {
+    font: 600 0.8rem 'Tajawal',sans-serif;
+    color: #6b7280;
+    display: flex; align-items: center; gap: 4px;
+}
+
+/* المبالغ */
+.pcard-amounts {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+.pcard-ils {
+    font: 700 1.5rem 'Cairo',sans-serif;
+    color: #1a7a4a;
+    line-height: 1;
+}
+body.dark-mode .pcard-ils { color: #4ade80; }
+.pcard-usd {
+    font: 500 0.85rem 'Cairo',sans-serif;
+    color: #9ca3af;
+}
+
+/* معلومات إضافية */
+.pcard-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+.pcard-separator {
+    width: 100%;
+    height: 1px;
+    background: var(--border);
+    margin: 12px 0;
+}
+.pcard-sponsor {
+    font: 500 0.8rem 'Tajawal',sans-serif;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.pcard-note {
+    font: 500 0.78rem 'Tajawal',sans-serif;
+    color: #9ca3af;
+    margin-top: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* الـ badges */
+.pay-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 50px;
+    font: 700 0.72rem 'Tajawal',sans-serif;
+    white-space: nowrap;
+}
+.pay-badge.paid    { background: rgba(26,122,74,0.15); color: #1a7a4a; }
+.pay-badge.pending { background: rgba(245,158,11,0.15); color: #b45309; }
+.pay-badge.late    { background: rgba(229,62,62,0.15); color: #c53030; }
+
+.source-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 50px;
+    font: 700 0.72rem 'Tajawal',sans-serif;
+    white-space: nowrap;
+}
+.source-sponsor  { background: rgba(124,58,237,0.12); color: #7c3aed; }
+.source-admin    { background: rgba(43,108,176,0.12); color: #2b6cb0; }
+.source-external { background: rgba(245,158,11,0.12); color: #b45309; }
+
+/* ── Pagination ── */
+.pagination-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+}
+.pg-btn {
+    min-width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    font: 600 0.84rem 'Cairo',sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px;
+    transition: all 0.18s;
+}
+.pg-btn:hover:not(:disabled) {
+    border-color: #1a7a4a;
+    color: #1a7a4a;
+    background: rgba(26,122,74,0.06);
+}
+.pg-btn.active {
+    background: linear-gradient(135deg,#1a7a4a,#2ecc71);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(26,122,74,0.3);
+}
+.pg-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.pg-dots {
+    font: 600 0.9rem 'Cairo',sans-serif;
+    color: #9ca3af;
+    padding: 0 4px;
+}
+.pg-info {
+    font: 600 0.8rem 'Tajawal',sans-serif;
+    color: #9ca3af;
+    text-align: center;
+    margin-top: 10px;
+}
+
+/* ── empty state ── */
+.empty-state {
+    text-align: center;
+    padding: 50px 20px;
+    background: rgba(26,122,74,0.02);
+    border: 2px dashed rgba(26,122,74,0.15);
+    border-radius: 14px;
+}
+.empty-icon { font-size: 3rem; margin-bottom: 8px; }
+.empty-text { font: 700 0.95rem 'Tajawal',sans-serif; color: #6b7280; }
+
+/* ── المودلات ── */
+.pay-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; align-items: center; justify-content: center; padding: 16px; }
+.pay-modal.show { display: flex; animation: modalIn 0.25s ease; }
+@keyframes modalIn { from{opacity:0} to{opacity:1} }
+.pay-modal-box { background: #fff; border-radius: 16px; max-width: 600px; width: 100%; max-height: 92vh; display: flex; flex-direction: column; animation: boxIn 0.3s ease; }
+@keyframes boxIn { from{transform:translateY(20px); opacity:0} to{transform:translateY(0); opacity:1} }
+body.dark-mode .pay-modal-box { background: #111e16; }
+.pay-modal-hdr { padding: 14px 18px; border-bottom: 1px solid rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+body.dark-mode .pay-modal-hdr { border-color: rgba(255,255,255,0.08); }
+.pay-modal-title { font: 700 1rem 'Tajawal',sans-serif; color: #1a7a4a; flex: 1; min-width: 0; }
+body.dark-mode .pay-modal-title { color: #4ade80; }
+.pay-modal-body { padding: 18px; flex: 1; overflow: auto; }
+.pay-modal-close { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #9ca3af; flex-shrink: 0; }
+.pay-modal-close:hover { color: #c53030; }
+
+.detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.detail-item { background: var(--bg-secondary); border-radius: 10px; padding: 10px 14px; }
+.detail-lbl { font: 600 0.72rem 'Tajawal',sans-serif; color: #6b7280; margin-bottom: 4px; }
+.detail-val { font: 700 0.88rem 'Tajawal',sans-serif; color: var(--text); word-break: break-word; }
+
+/* ── مودل تقدّم ── */
+.prog-box { max-width: 380px; text-align: center; padding: 30px 24px; }
+.prog-icon { font-size: 3rem; margin-bottom: 12px; }
+.prog-title { font: 700 1rem 'Tajawal',sans-serif; color: #1a7a4a; margin-bottom: 6px; }
+body.dark-mode .prog-title { color: #4ade80; }
+.prog-sub { font: 500 0.84rem 'Tajawal',sans-serif; color: #6b7280; margin-bottom: 14px; }
+.prog-bar-wrap { background: rgba(26,122,74,0.1); border-radius: 50px; height: 6px; overflow: hidden; }
+.prog-bar { height: 100%; background: linear-gradient(90deg,#1a7a4a,#2ecc71); border-radius: 50px; width: 0%; transition: width 0.3s ease; }
+.prog-pct { margin-top: 8px; font: 600 0.78rem 'Tajawal',sans-serif; color: #6b7280; }
+
+/* ── مودل كلمة المرور (PDF) ── */
+.pwd-modal-box { max-width: 420px; padding: 28px; text-align: center; }
+.pwd-icon { font-size: 2.6rem; margin-bottom: 10px; }
+.pwd-title { font: 700 1.05rem 'Tajawal',sans-serif; color: #1a7a4a; margin-bottom: 6px; }
+.pwd-text { font: 500 0.86rem 'Tajawal',sans-serif; color: #6b7280; margin-bottom: 14px; line-height: 1.6; }
+.pwd-display { background: linear-gradient(135deg,rgba(26,122,74,0.1),rgba(46,204,113,0.05)); border: 2px dashed rgba(26,122,74,0.3); border-radius: 12px; padding: 14px; font: 700 1.6rem 'Cairo',monospace; color: #1a7a4a; margin: 12px 0; letter-spacing: 4px; }
+
+/* ── Toast ── */
+.toast-wrap { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; flex-direction: column; gap: 8px; max-width: calc(100vw - 32px); }
+.toast-msg { padding: 11px 18px; border-radius: 11px; font: 600 0.84rem 'Tajawal',sans-serif; box-shadow: 0 8px 22px rgba(0,0,0,0.12); animation: toastIn 0.3s ease; }
+.toast-msg.success { background: #1a7a4a; color: #fff; }
+.toast-msg.error { background: #c53030; color: #fff; }
+.toast-msg.info { background: #2b6cb0; color: #fff; }
+@keyframes toastIn { from{opacity:0; transform:translateY(-12px)} to{opacity:1; transform:translateY(0)} }
+
+/* ── skeleton ── */
+.skel { background: linear-gradient(90deg,rgba(26,122,74,0.05) 25%,rgba(26,122,74,0.12) 50%,rgba(26,122,74,0.05) 75%); background-size: 200% 100%; animation: skelMove 1.4s infinite; border-radius: 8px; }
+@keyframes skelMove { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* ── انيمشن ظهور الكروت ── */
+@keyframes cardIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.pay-pcard { animation: cardIn 0.28s ease both; }
+
+/* ── Responsive ── */
+@media (max-width: 991px) {
+    .pay-wrap { padding: 0 8px; }
+}
+@media (max-width: 767px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .stat-card { padding: 12px 14px; }
+    .stat-val { font-size: 1.15rem; }
+    .stat-lbl { font-size: 0.72rem; }
+    .pay-card { padding: 14px; }
+    .pay-toolbar { flex-direction: column; align-items: stretch; }
+    .filters-row { grid-template-columns: 1fr 1fr; }
+    .pay-actions { width: 100%; }
+    .pay-actions .pay-btn { flex: 1; justify-content: center; }
+    .cards-grid { grid-template-columns: 1fr; gap: 10px; }
+    .detail-grid { grid-template-columns: 1fr; }
+    .pay-modal-body { padding: 14px; }
+}
+@media (max-width: 480px) {
+    .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stat-card { padding: 10px 12px; gap: 8px; }
+    .stat-icon { width: 40px; height: 40px; font-size: 1.3rem; }
+    .stat-val { font-size: 1rem; }
+    .filters-row { grid-template-columns: 1fr; }
+    .cards-grid { grid-template-columns: 1fr; }
+    .pcard-ils { font-size: 1.3rem; }
+}
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="pay-wrap">
+
+    <!-- الإحصائيات -->
+    <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><div class="skel" style="width:48px;height:48px;border-radius:12px"></div><div style="flex:1"><div class="skel" style="width:80px;height:24px;margin-bottom:6px"></div><div class="skel" style="width:120px;height:14px"></div></div></div>
+        <div class="stat-card"><div class="skel" style="width:48px;height:48px;border-radius:12px"></div><div style="flex:1"><div class="skel" style="width:80px;height:24px;margin-bottom:6px"></div><div class="skel" style="width:120px;height:14px"></div></div></div>
+        <div class="stat-card"><div class="skel" style="width:48px;height:48px;border-radius:12px"></div><div style="flex:1"><div class="skel" style="width:80px;height:24px;margin-bottom:6px"></div><div class="skel" style="width:120px;height:14px"></div></div></div>
+        <div class="stat-card"><div class="skel" style="width:48px;height:48px;border-radius:12px"></div><div style="flex:1"><div class="skel" style="width:80px;height:24px;margin-bottom:6px"></div><div class="skel" style="width:120px;height:14px"></div></div></div>
+    </div>
+
+    <!-- الفلاتر -->
+    <div class="pay-card">
+        <div class="pay-toolbar">
+            <div class="filters-row">
+                <input type="text" class="pay-filter" id="fQ" placeholder="🔍 بحث..." oninput="onFilterChange()">
+                <select class="pay-filter" id="fSource" onchange="onFilterChange()">
+                    <option value="">— جميع المصادر —</option>
+                </select>
+                <select class="pay-filter" id="fStatus" onchange="onFilterChange()">
+                    <option value="">— جميع الحالات —</option>
+                </select>
+                <input type="date" class="pay-filter" id="fFrom" onchange="onFilterChange()" title="من تاريخ">
+                <input type="date" class="pay-filter" id="fTo" onchange="onFilterChange()" title="إلى تاريخ">
+            </div>
+<div class="pay-actions">
+    <button class="pay-btn pay-btn-clear" onclick="clearFilters()">🔄 إعادة</button>
+    <button class="pay-btn pay-btn-excel" onclick="exportExcel()">📊 Excel</button>
+    <button class="pay-btn pay-btn-pdf" onclick="downloadPdf()">⬇️ تحميل PDF</button>
+    <button class="pay-btn pay-btn-pdf" onclick="openPrintPage()">🖨️ طباعة PDF</button>
+</div>
+        </div>
+    </div>
+
+    <!-- الكروت -->
+    <div class="pay-card">
+        <div id="cardsWrap">
+            <div class="cards-grid">
+                <div class="skel" style="height:150px;border-radius:16px"></div>
+                <div class="skel" style="height:150px;border-radius:16px"></div>
+                <div class="skel" style="height:150px;border-radius:16px"></div>
+                <div class="skel" style="height:150px;border-radius:16px"></div>
+                <div class="skel" style="height:150px;border-radius:16px"></div>
+                <div class="skel" style="height:150px;border-radius:16px"></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- مودل التفاصيل -->
+<div class="pay-modal" id="detailModal" onclick="if(event.target===this)closeDetail()">
+    <div class="pay-modal-box">
+        <div class="pay-modal-hdr">
+            <span class="pay-modal-title">💰 تفاصيل الدفعة</span>
+            <button class="pay-modal-close" onclick="closeDetail()">✕</button>
+        </div>
+        <div class="pay-modal-body" id="detailBody"></div>
+    </div>
+</div>
+
+<!-- مودل تقدّم التصدير -->
+<div class="pay-modal" id="progressModal">
+    <div class="pay-modal-box prog-box">
+        <div class="prog-icon" id="progIcon">📋</div>
+        <div class="prog-title" id="progTitle">جار التصدير...</div>
+        <div class="prog-sub" id="progSub">يرجى الانتظار قليلاً</div>
+        <div class="prog-bar-wrap"><div class="prog-bar" id="progBar"></div></div>
+        <div class="prog-pct" id="progPct">0%</div>
+    </div>
+</div>
+
+<!-- مودل كلمة مرور PDF -->
+<div class="pay-modal" id="pwdModal" onclick="if(event.target===this)closePwd()">
+    <div class="pay-modal-box pwd-modal-box">
+        <div class="pwd-icon">🔒</div>
+        <div class="pwd-title">كلمة مرور الملف</div>
+        <div class="pwd-text">
+            تم تشفير ملف PDF بكلمة مرور لحماية بياناتك.<br>
+            استخدم كلمة المرور التالية لفتح الملف:
+        </div>
+        <div class="pwd-display" id="pwdDisplay">0000</div>
+        <div style="font:500 0.78rem 'Tajawal',sans-serif;color:#6b7280;margin-top:8px">
+            (آخر 4 أرقام من رقم هويتك)
+        </div>
+        <button class="pay-btn pay-btn-excel" onclick="closePwd()" style="margin-top:14px;padding:9px 28px">
+            ✅ فهمت
+        </button>
+    </div>
+</div>
+
+<!-- Toasts -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+{% csrf_token %}
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+'use strict';
+
+const CSRF = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+let allData = null;
+let filters = { q:'', paid_by:'', status:'', date_from:'', date_to:'' };
+let _filterTimer = null;
+
+/* ════════ Pagination ════════ */
+const PAGE_SIZE = 20;
+let currentPage = 1;
+
+/* ════════ تحميل البيانات ════════ */
+async function loadData() {
+    try {
+        const params = new URLSearchParams(filters).toString();
+        const r = await fetch(`/beneficiary/payments/data/?${params}`, {
+            headers: {'X-Requested-With':'XMLHttpRequest'}
+        });
+        const d = await r.json();
+        if (d.status !== 'success') return showToast(d.message || 'خطأ', 'error');
+        allData = d.data;
+        currentPage = 1;
+        renderStats();
+        renderFilters();
+        renderCards();
+    } catch { showToast('فشل الاتصال', 'error'); }
+}
+
+/* ════════ الإحصائيات ════════ */
+function renderStats() {
+    const d = allData;
+    document.getElementById('statsGrid').innerHTML = `
+        <div class="stat-card">
+            <div class="stat-icon green">💰</div>
+            <div class="stat-info">
+                <div class="stat-val">${_fmt(d.total_ils)} ₪</div>
+                <div class="stat-lbl">إجمالي الدفعات</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon blue">💵</div>
+            <div class="stat-info">
+                <div class="stat-val">${_fmt(d.total_usd, 2)} $</div>
+                <div class="stat-lbl">المبلغ بالدولار</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon purple">📅</div>
+            <div class="stat-info">
+                <div class="stat-val">${_fmt(d.month_ils)} ₪</div>
+                <div class="stat-lbl">هذا الشهر (${d.month_count})</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon orange">📋</div>
+            <div class="stat-info">
+                <div class="stat-val">${d.count}</div>
+                <div class="stat-lbl">عدد الدفعات</div>
+            </div>
+        </div>`;
+}
+
+/* ════════ ملء الفلاتر ════════ */
+let _filtersInit = false;
+function renderFilters() {
+    if (_filtersInit) return;
+    _filtersInit = true;
+    const sourceSel = document.getElementById('fSource');
+    const statusSel = document.getElementById('fStatus');
+    allData.paid_by_choices.forEach(c => {
+        sourceSel.insertAdjacentHTML('beforeend', `<option value="${c.value}">${_esc(c.label)}</option>`);
+    });
+    allData.status_choices.forEach(c => {
+        statusSel.insertAdjacentHTML('beforeend', `<option value="${c.value}">${_esc(c.label)}</option>`);
+    });
+}
+
+/* ════════ الكروت ════════ */
+function renderCards() {
+    const payments = allData.payments;
+    const wrap = document.getElementById('cardsWrap');
+
+    if (!payments.length) {
+        wrap.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">💳</div>
+                <div class="empty-text">لا توجد دفعات تطابق الفلاتر الحالية</div>
+            </div>`;
+        return;
+    }
+
+    const total    = payments.length;
+    const pages    = Math.ceil(total / PAGE_SIZE);
+    currentPage    = Math.min(currentPage, pages);
+    const start    = (currentPage - 1) * PAGE_SIZE;
+    const pageData = payments.slice(start, start + PAGE_SIZE);
+
+    /* ── الكروت ── */
+    const cards = pageData.map((p, idx) => {
+        const globalIdx = start + idx + 1;
+
+        let source = `<span class="source-badge source-${p.paid_by}">${_esc(p.paid_by_label)}</span>`;
+        if (p.paid_by === 'external' && p.paid_by_note) {
+            source += ` <small style="color:#6b7280;font-size:0.72rem">${_esc(p.paid_by_note)}</small>`;
+        }
+
+        const sponsor = p.sponsor
+            ? `<span class="pcard-sponsor">🤝 ${_esc(p.sponsor)}</span>`
+            : `<span class="pcard-sponsor" style="color:#9ca3af">— لا يوجد كافل —</span>`;
+
+        const note = p.note
+            ? `<div class="pcard-note">📝 ${_esc(p.note)}</div>`
+            : '';
+
+        return `
+            <div class="pay-pcard" onclick="openDetail(${p.id})" style="animation-delay:${idx * 0.03}s">
+                <div class="pcard-top">
+                    <div class="pcard-num">${globalIdx}</div>
+                    <div class="pcard-date">📅 ${_esc(p.date)}</div>
+                    <span class="pay-badge ${p.status}">${_esc(p.status_label)}</span>
+                </div>
+                <div class="pcard-amounts">
+                    <span class="pcard-ils">${_fmt(p.amount_ils)} ₪</span>
+                    <span class="pcard-usd">${_fmt(p.amount_usd, 2)} $</span>
+                </div>
+                <div class="pcard-separator"></div>
+                <div class="pcard-meta">
+                    ${source}
+                    ${sponsor}
+                </div>
+                ${note}
+            </div>`;
+    }).join('');
+
+    /* ── Pagination ── */
+    const pagination = buildPagination(currentPage, pages, total);
+
+    wrap.innerHTML = `
+        <div class="cards-header">
+            <div class="cards-count">
+                عرض <strong>${start + 1}–${Math.min(start + PAGE_SIZE, total)}</strong>
+                من <strong>${total}</strong> دفعة
+            </div>
+        </div>
+        <div class="cards-grid">${cards}</div>
+        ${pagination}`;
+}
+
+/* ════════ بناء الـ Pagination ════════ */
+function buildPagination(page, pages, total) {
+    if (pages <= 1) return '';
+
+    /* حساب الأرقام الظاهرة */
+    const visible = new Set();
+    visible.add(1);
+    visible.add(pages);
+    for (let i = Math.max(1, page - 2); i <= Math.min(pages, page + 2); i++) visible.add(i);
+    const nums = [...visible].sort((a, b) => a - b);
+
+    let btns = '';
+
+    /* زر السابق */
+    btns += `<button class="pg-btn" onclick="goPage(${page - 1})" ${page === 1 ? 'disabled' : ''}>&#8594;</button>`;
+
+    /* الأرقام */
+    let prev = 0;
+    for (const n of nums) {
+        if (n - prev > 1) btns += `<span class="pg-dots">…</span>`;
+        btns += `<button class="pg-btn ${n === page ? 'active' : ''}" onclick="goPage(${n})">${n}</button>`;
+        prev = n;
+    }
+
+    /* زر التالي */
+    btns += `<button class="pg-btn" onclick="goPage(${page + 1})" ${page === pages ? 'disabled' : ''}>&#8592;</button>`;
+
+    const from = (page - 1) * PAGE_SIZE + 1;
+    const to   = Math.min(page * PAGE_SIZE, total);
+
+    return `
+        <div class="pagination-wrap">${btns}</div>
+        <div class="pg-info">صفحة ${page} من ${pages} &nbsp;|&nbsp; الدفعات ${from}–${to}</div>`;
+}
+
+function goPage(n) {
+    const pages = Math.ceil(allData.payments.length / PAGE_SIZE);
+    if (n < 1 || n > pages) return;
+    currentPage = n;
+    renderCards();
+    /* scroll للأعلى بهدوء */
+    document.getElementById('cardsWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ════════ الفلاتر ════════ */
+function onFilterChange() {
+    filters.q         = document.getElementById('fQ').value;
+    filters.paid_by   = document.getElementById('fSource').value;
+    filters.status    = document.getElementById('fStatus').value;
+    filters.date_from = document.getElementById('fFrom').value;
+    filters.date_to   = document.getElementById('fTo').value;
+    clearTimeout(_filterTimer);
+    _filterTimer = setTimeout(loadData, 300);
+}
+
+function clearFilters() {
+    filters = { q:'', paid_by:'', status:'', date_from:'', date_to:'' };
+    document.getElementById('fQ').value = '';
+    document.getElementById('fSource').value = '';
+    document.getElementById('fStatus').value = '';
+    document.getElementById('fFrom').value = '';
+    document.getElementById('fTo').value = '';
+    loadData();
+}
+
+/* ════════ تفاصيل الدفعة ════════ */
+async function openDetail(id) {
+    try {
+        const r = await fetch(`/beneficiary/payments/detail/?id=${id}`);
+        const d = await r.json();
+        if (d.status !== 'success') return showToast(d.message, 'error');
+        const p = d.data;
+
+        let source = p.paid_by_label;
+        if (p.paid_by === 'external' && p.paid_by_note) source += ` (${p.paid_by_note})`;
+
+        document.getElementById('detailBody').innerHTML = `
+            <div class="detail-grid">
+                <div class="detail-item"><div class="detail-lbl">📅 التاريخ</div><div class="detail-val">${_esc(p.date)}</div></div>
+                <div class="detail-item"><div class="detail-lbl">💰 المبلغ ₪</div><div class="detail-val" style="color:#1a7a4a">${_fmt(p.amount_ils)} ₪</div></div>
+                <div class="detail-item"><div class="detail-lbl">💵 المبلغ $</div><div class="detail-val">${_fmt(p.amount_usd, 2)} $</div></div>
+                <div class="detail-item"><div class="detail-lbl">🏷️ الحالة</div><div class="detail-val"><span class="pay-badge ${p.status}">${_esc(p.status_label)}</span></div></div>
+                <div class="detail-item"><div class="detail-lbl">🌍 المصدر</div><div class="detail-val">${_esc(source)}</div></div>
+                <div class="detail-item"><div class="detail-lbl">🤝 الكافل</div><div class="detail-val">${_esc(p.sponsor || '— لا يوجد —')}</div></div>
+                ${p.created_by ? `<div class="detail-item"><div class="detail-lbl">👤 أضافها</div><div class="detail-val">${_esc(p.created_by)}</div></div>` : ''}
+                ${p.created_at ? `<div class="detail-item"><div class="detail-lbl">⏰ وقت الإضافة</div><div class="detail-val" style="font-size:0.78rem">${_esc(p.created_at.replace('T', ' ').slice(0,16))}</div></div>` : ''}
+            </div>
+            ${p.note ? `<div class="detail-item" style="margin-top:12px;grid-column:1/-1">
+                <div class="detail-lbl">📝 الملاحظة</div>
+                <div class="detail-val">${_esc(p.note)}</div>
+            </div>` : ''}`;
+        document.getElementById('detailModal').classList.add('show');
+    } catch { showToast('فشل التحميل', 'error'); }
+}
+
+function closeDetail() {
+    document.getElementById('detailModal').classList.remove('show');
+}
+
+/* ════════ التصدير ════════ */
+async function exportExcel() {
+    const params = new URLSearchParams(filters).toString();
+    await _exportFile(`/beneficiary/payments/export-excel/?${params}`, 'Excel', '📊', 'xlsx');
+}
+
+async function exportPdf() {
+    const params = new URLSearchParams(filters).toString();
+    await _exportFile(`/beneficiary/payments/export-pdf/?${params}`, 'PDF', '📋', 'pdf');
+}
+
+async function _exportFile(url, type, icon, ext) {
+    const m = document.getElementById('progressModal');
+    const bar = document.getElementById('progBar');
+    const pct = document.getElementById('progPct');
+    const title = document.getElementById('progTitle');
+    const sub = document.getElementById('progSub');
+    const ic = document.getElementById('progIcon');
+
+    ic.textContent = icon;
+    title.textContent = `جار تجهيز ملف ${type}...`;
+    sub.textContent = 'يرجى الانتظار قليلاً';
+    bar.style.background = 'linear-gradient(90deg,#1a7a4a,#2ecc71)';
+    bar.style.width = '0%';
+    pct.textContent = '0%';
+    m.classList.add('show');
+
+    let progress = 0;
+    const tick = setInterval(() => {
+        if (progress < 90) {
+            progress += Math.random() * 8 + 2;
+            if (progress > 90) progress = 90;
+            bar.style.width = progress + '%';
+            pct.textContent = Math.floor(progress) + '%';
+        }
+    }, 200);
+
+    try {
+        const r = await fetch(url, { headers:{'X-Requested-With':'XMLHttpRequest'} });
+        if (!r.ok) throw new Error();
+
+        const blob = await r.blob();
+        const pwd = r.headers.get('X-PDF-Password');
+
+        clearInterval(tick);
+        bar.style.width = '100%'; pct.textContent = '100%';
+        ic.textContent = '✅';
+        title.textContent = 'تم التجهيز!';
+        sub.textContent = 'يتم تحميل الملف...';
+
+        const cd = r.headers.get('Content-Disposition') || '';
+        const mt = cd.match(/filename\*?=(?:UTF-8'')?["']?([^"';\n]+)/i);
+        const filename = mt ? decodeURIComponent(mt[1]) : `payments_${Date.now()}.${ext}`;
+
+        const u = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = u; a.download = filename;
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(u);
+
+        setTimeout(() => {
+            m.classList.remove('show');
+            if (type === 'PDF' && pwd) {
+                document.getElementById('pwdDisplay').textContent = pwd;
+                setTimeout(() => document.getElementById('pwdModal').classList.add('show'), 200);
+            }
+        }, 1500);
+
+    } catch {
+        clearInterval(tick);
+        ic.textContent = '❌';
+        title.textContent = 'فشل التصدير';
+        sub.textContent = 'حاول مرة أخرى';
+        bar.style.background = '#c53030';
+        bar.style.width = '100%';
+        setTimeout(() => m.classList.remove('show'), 2500);
+    }
+}
+
+function closePwd() {
+    document.getElementById('pwdModal').classList.remove('show');
+}
+
+/* ════════ Toast ════════ */
+function showToast(msg, type='info') {
+    const wrap = document.getElementById('toastWrap');
+    const t = document.createElement('div');
+    t.className = `toast-msg ${type}`; t.textContent = msg;
+    wrap.appendChild(t);
+    setTimeout(() => { t.style.opacity='0'; setTimeout(() => t.remove(), 300); }, 2800);
+}
+
+/* ════════ مساعدات ════════ */
+function _esc(s) {
+    return String(s==null?'':s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+        .replace(/'/g,'&#39;');
+}
+function _fmt(v, dec=0) {
+    const n = parseFloat(v);
+    if (isNaN(n)) return '0';
+    return n.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+function openPrintPage() {
+    const params = new URLSearchParams(filters).toString();
+    window.open(`/beneficiary/payments/print/?${params}`, '_blank');
+}
+async function downloadPdf() {
+    const params = new URLSearchParams(filters).toString();
+    await _exportFile(`/beneficiary/payments/download-pdf/?${params}`, 'PDF', '📋', 'pdf');
+}
+document.addEventListener('DOMContentLoaded', loadData);
+</script>
+{% endblock %}

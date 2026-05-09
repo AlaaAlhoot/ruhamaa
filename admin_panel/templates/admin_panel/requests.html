@@ -1,0 +1,1212 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% block title %}طلبات التسجيل{% endblock %}
+{% block page_title %}📋 طلبات التسجيل{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ══ إحصائيات ══ */
+.req-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px;}
+@media(max-width:768px){.req-stats{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:480px){.req-stats{grid-template-columns:1fr;}}
+.req-stat{background:#fff;border:1px solid rgba(124,58,237,0.08);border-radius:16px;padding:16px 18px;transition:all 0.25s;}
+body.dark-mode .req-stat{background:#0d0a1a;border-color:rgba(139,92,246,0.1);}
+.req-stat:hover{transform:translateY(-3px);box-shadow:0 8px 22px rgba(124,58,237,0.1);}
+.req-stat-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.req-stat-icon{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
+.req-stat-title{font-size:0.82rem;font-weight:700;color:var(--text,#1a1a2e);}
+body.dark-mode .req-stat-title{color:#e8f5ee;}
+.req-stat-total{font-size:1.8rem;font-weight:900;color:var(--adm);font-family:'Cairo',sans-serif;line-height:1;margin-bottom:10px;}
+.req-stat-row{display:flex;justify-content:space-between;font-size:0.72rem;padding:4px 0;border-top:1px solid rgba(124,58,237,0.06);}
+.req-stat-row span:first-child{color:var(--text-muted,#9ca3af);}
+.req-stat-row span:last-child{font-weight:700;}
+.s-pending{color:#b45309;}
+.s-approved{color:#1a7a4a;}
+.s-rejected{color:#c53030;}
+
+/* ══ شريط الأدوات ══ */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px;}
+.search-box{display:flex;align-items:center;background:var(--bg-secondary,#f4f9f6);border:1.5px solid rgba(124,58,237,0.15);border-radius:12px;padding:8px 14px;gap:8px;flex:1;min-width:200px;max-width:340px;}
+body.dark-mode .search-box{background:#130f24;border-color:rgba(139,92,246,0.2);}
+.search-box input{border:none;background:transparent;outline:none;font-family:'Tajawal',sans-serif;font-size:0.88rem;color:var(--text,#1a1a2e);width:100%;}
+body.dark-mode .search-box input{color:#e8f5ee;}
+.search-box input::placeholder{color:#9ca3af;}
+
+.filter-select{background:var(--bg-secondary,#f4f9f6);border:1.5px solid rgba(124,58,237,0.15);border-radius:10px;padding:8px 12px;font-family:'Tajawal',sans-serif;font-size:0.84rem;color:var(--text,#1a1a2e);cursor:pointer;outline:none;}
+body.dark-mode .filter-select{background:#130f24;border-color:rgba(139,92,246,0.2);color:#e8f5ee;}
+
+.toolbar-btns{display:flex;gap:8px;margin-right:auto;}
+.btn-xl{background:rgba(26,122,74,0.1);color:#1a7a4a;border:1.5px solid rgba(26,122,74,0.2);padding:8px 14px;border-radius:10px;font-family:'Tajawal',sans-serif;font-size:0.82rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all 0.2s;}
+.btn-xl:hover{background:rgba(26,122,74,0.15);}
+.btn-xl-sel{background:rgba(124,58,237,0.1);color:var(--adm);border-color:rgba(124,58,237,0.2);}
+.btn-xl-sel:hover{background:rgba(124,58,237,0.15);}
+.btn-xl-exp{background:rgba(245,158,11,0.1);color:#b45309;border-color:rgba(245,158,11,0.2);}
+.btn-xl-exp:hover{background:rgba(245,158,11,0.15);}
+
+/* ══ إجراءات جماعية ══ */
+.bulk-bar{display:none;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);border-radius:12px;padding:10px 16px;margin-bottom:12px;align-items:center;gap:12px;flex-wrap:wrap;}
+.bulk-bar.show{display:flex;}
+.bulk-info{font-size:0.84rem;font-weight:700;color:var(--adm);font-family:'Tajawal',sans-serif;}
+
+/* ══ Skeleton ══ */
+.skeleton{background:linear-gradient(90deg,rgba(124,58,237,0.06) 25%,rgba(124,58,237,0.12) 50%,rgba(124,58,237,0.06) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:6px;height:14px;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ══ الجدول ══ */
+.table-wrap{overflow-x:auto;}
+.dash-table th.sortable{cursor:pointer;user-select:none;}
+.dash-table th.sortable:hover{color:var(--adm);}
+.sort-arrow{font-size:0.6rem;margin-right:3px;opacity:0.5;}
+.sort-arrow.active{opacity:1;color:var(--adm);}
+
+/* انتظار الوقت */
+.wait-badge{display:inline-flex;align-items:center;gap:4px;font-size:0.72rem;font-weight:700;padding:3px 8px;border-radius:20px;}
+.wait-ok {background:rgba(26,122,74,0.1); color:#1a7a4a;}
+.wait-warn{background:rgba(245,158,11,0.1);color:#b45309;}
+.wait-crit{background:rgba(229,62,62,0.1); color:#c53030;}
+
+/* أزرار الإجراءات */
+.action-btns{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;}
+.btn-act{width:32px;height:32px;border-radius:9px;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:0.9rem;transition:all 0.2s;position:relative;}
+.btn-act:hover{transform:scale(1.12);}
+.btn-act[title]:hover::after{content:attr(title);position:absolute;bottom:calc(100% + 6px);right:50%;transform:translateX(50%);background:#1a1a2e;color:#fff;font-size:0.68rem;padding:4px 8px;border-radius:6px;white-space:nowrap;pointer-events:none;font-family:'Tajawal',sans-serif;z-index:10;}
+.btn-view {background:rgba(124,58,237,0.1);color:var(--adm);}
+.btn-ok   {background:rgba(26,122,74,0.1); color:#1a7a4a;}
+.btn-rej  {background:rgba(229,62,62,0.1); color:#c53030;}
+.btn-msg  {background:rgba(43,108,176,0.1);color:#2b6cb0;}
+.btn-note {background:rgba(245,158,11,0.1);color:#b45309;}
+.btn-print{background:rgba(107,114,128,0.1);color:#6b7280;}
+
+/* ══ Pagination ══ */
+.pagination{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:18px;flex-wrap:wrap;}
+.page-btn{width:34px;height:34px;border-radius:9px;border:1.5px solid rgba(124,58,237,0.15);background:transparent;cursor:pointer;font-family:'Cairo',sans-serif;font-size:0.84rem;font-weight:700;color:var(--text,#1a1a2e);transition:all 0.2s;display:flex;align-items:center;justify-content:center;}
+body.dark-mode .page-btn{color:#e8f5ee;}
+.page-btn:hover,.page-btn.active{background:var(--adm);color:#fff;border-color:var(--adm);}
+.page-btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+/* ══ المودلات ══ */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1000;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:#fff;border-radius:20px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.2);animation:modalIn 0.28s ease;overflow:hidden;}
+body.dark-mode .modal-box{background:#0d0a1a;}
+@keyframes modalIn{from{transform:scale(0.94);opacity:0}to{transform:scale(1);opacity:1}}
+
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid rgba(124,58,237,0.08);}
+.modal-title{font-size:1rem;font-weight:700;color:var(--text,#1a1a2e);}
+body.dark-mode .modal-title{color:#e8f5ee;}
+.modal-close{background:none;border:none;font-size:1.2rem;cursor:pointer;color:#9ca3af;padding:4px;border-radius:8px;line-height:1;transition:color 0.2s;}
+.modal-close:hover{color:var(--adm);}
+.modal-body{padding:20px 22px;max-height:70vh;overflow-y:auto;}
+.modal-footer{padding:14px 22px;border-top:1px solid rgba(124,58,237,0.08);display:flex;gap:10px;justify-content:flex-end;}
+
+/* تابات مودل العرض */
+.detail-tabs{display:flex;gap:4px;margin-bottom:18px;flex-wrap:wrap;background:var(--bg-secondary,#f4f9f6);padding:5px;border-radius:12px;}
+body.dark-mode .detail-tabs{background:#130f24;}
+.detail-tab{padding:7px 14px;border-radius:9px;border:none;background:transparent;font-family:'Tajawal',sans-serif;font-size:0.82rem;font-weight:600;color:#6b7280;cursor:pointer;transition:all 0.2s;}
+.detail-tab.active{background:var(--adm);color:#fff;}
+.detail-panel{display:none;}
+.detail-panel.active{display:block;}
+
+/* حقول العرض */
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;}
+.info-item{background:var(--bg-secondary,#f4f9f6);border-radius:10px;padding:10px 13px;}
+body.dark-mode .info-item{background:#130f24;}
+.info-lbl{font-size:0.68rem;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;}
+.info-val{font-size:0.88rem;font-weight:700;color:var(--text,#1a1a2e);}
+body.dark-mode .info-val{color:#e8f5ee;}
+
+/* الوثائق */
+.doc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;}
+.doc-card{border:1px solid rgba(124,58,237,0.1);border-radius:12px;padding:12px;text-align:center;cursor:pointer;transition:all 0.2s;}
+.doc-card:hover{border-color:var(--adm);background:rgba(124,58,237,0.04);}
+.doc-icon{font-size:2rem;margin-bottom:6px;}
+.doc-name{font-size:0.72rem;color:#6b7280;font-family:'Tajawal',sans-serif;}
+
+/* مودل التقدم */
+.progress-wrap{height:8px;background:rgba(124,58,237,0.1);border-radius:8px;overflow:hidden;margin:12px 0;}
+.progress-fill{height:100%;background:linear-gradient(90deg,#7c3aed,#a78bfa);border-radius:8px;transition:width 0.3s;}
+
+/* Toast */
+.toast-container{position:fixed;bottom:24px;left:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.toast{background:#fff;border:1px solid rgba(124,58,237,0.1);border-radius:12px;padding:12px 16px;font-family:'Tajawal',sans-serif;font-size:0.86rem;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.12);display:flex;align-items:center;gap:8px;animation:toastIn 0.3s ease;min-width:240px;max-width:320px;}
+body.dark-mode .toast{background:#0d0a1a;border-color:rgba(139,92,246,0.15);}
+@keyframes toastIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.toast.success{border-right:3px solid #1a7a4a;}
+.toast.error  {border-right:3px solid #e53e3e;}
+.toast.info   {border-right:3px solid var(--adm);}
+
+/* Hover preview */
+.hover-preview{display:none;position:absolute;background:#fff;border:1px solid rgba(124,58,237,0.15);border-radius:12px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:500;width:220px;font-family:'Tajawal',sans-serif;font-size:0.8rem;}
+body.dark-mode .hover-preview{background:#0d0a1a;}
+.name-cell{position:relative;}
+.name-cell:hover .hover-preview{display:block;}
+
+/* آخر تحديث */
+.last-update{font-size:0.74rem;color:#9ca3af;font-family:'Tajawal',sans-serif;display:flex;align-items:center;gap:5px;}
+
+/* الصفحات الصغيرة — بطاقات بدل جدول */
+@media(max-width:768px){
+    .table-wrap table,.table-wrap thead,.table-wrap tbody,.table-wrap th,.table-wrap td,.table-wrap tr{display:block;}
+    .table-wrap thead{display:none;}
+    .table-wrap tr{background:#fff;border:1px solid rgba(124,58,237,0.08);border-radius:14px;margin-bottom:12px;padding:14px;}
+    body.dark-mode .table-wrap tr{background:#0d0a1a;}
+    .table-wrap td{border:none!important;padding:5px 0;display:flex;justify-content:space-between;align-items:center;font-size:0.84rem;}
+    .table-wrap td::before{content:attr(data-label);font-size:0.7rem;color:#9ca3af;font-weight:700;flex-shrink:0;margin-left:10px;}
+    .action-btns{justify-content:flex-start;}
+    .req-stats{grid-template-columns:1fr 1fr;}
+    .toolbar{flex-direction:column;align-items:stretch;}
+    .search-box{max-width:100%;}
+    .toolbar-btns{margin-right:0;}
+}
+@media(max-width:480px){
+    .req-stats{grid-template-columns:1fr;}
+}
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div id="toastContainer" class="toast-container"></div>
+
+<!-- ══════════ الإحصائيات ══════════ -->
+<div class="req-stats fade-in" id="statsGrid">
+    <!-- إجمالي -->
+    <div class="req-stat">
+        <div class="req-stat-head">
+            <div class="req-stat-icon" style="background:rgba(124,58,237,0.1)">📋</div>
+            <div class="req-stat-title">إجمالي الطلبات</div>
+        </div>
+        <div class="req-stat-total" id="s_total">{{ stats.total }}</div>
+        <div class="req-stat-row"><span>معلّقة</span><span class="s-pending">{{ stats.pending }}</span></div>
+        <div class="req-stat-row"><span>مقبولة اليوم</span><span class="s-approved">{{ stats.approved_today }}</span></div>
+        <div class="req-stat-row"><span>مرفوضة اليوم</span><span class="s-rejected">{{ stats.rejected_today }}</span></div>
+    </div>
+    <!-- كافل -->
+    <div class="req-stat">
+        <div class="req-stat-head">
+            <div class="req-stat-icon" style="background:rgba(43,108,176,0.1)">🤝</div>
+            <div class="req-stat-title">كافل</div>
+        </div>
+        <div class="req-stat-total" style="color:#2b6cb0" id="s_sponsor">{{ stats.sponsor.total }}</div>
+        <div class="req-stat-row"><span>معلّقة</span><span class="s-pending">{{ stats.sponsor.pending }}</span></div>
+        <div class="req-stat-row"><span>مقبولة اليوم</span><span class="s-approved">{{ stats.sponsor.approved_today }}</span></div>
+        <div class="req-stat-row"><span>مرفوضة اليوم</span><span class="s-rejected">{{ stats.sponsor.rejected_today }}</span></div>
+    </div>
+    <!-- يتيم -->
+    <div class="req-stat">
+        <div class="req-stat-head">
+            <div class="req-stat-icon" style="background:rgba(26,122,74,0.1)">👦</div>
+            <div class="req-stat-title">يتيم</div>
+        </div>
+        <div class="req-stat-total" style="color:#1a7a4a" id="s_orphan">{{ stats.orphan.total }}</div>
+        <div class="req-stat-row"><span>معلّقة</span><span class="s-pending">{{ stats.orphan.pending }}</span></div>
+        <div class="req-stat-row"><span>مقبولة اليوم</span><span class="s-approved">{{ stats.orphan.approved_today }}</span></div>
+        <div class="req-stat-row"><span>مرفوضة اليوم</span><span class="s-rejected">{{ stats.orphan.rejected_today }}</span></div>
+    </div>
+    <!-- أسرة -->
+    <div class="req-stat">
+        <div class="req-stat-head">
+            <div class="req-stat-icon" style="background:rgba(245,158,11,0.1)">👨‍👩‍👧</div>
+            <div class="req-stat-title">أسرة</div>
+        </div>
+        <div class="req-stat-total" style="color:#b45309" id="s_family">{{ stats.family.total }}</div>
+        <div class="req-stat-row"><span>معلّقة</span><span class="s-pending">{{ stats.family.pending }}</span></div>
+        <div class="req-stat-row"><span>مقبولة اليوم</span><span class="s-approved">{{ stats.family.approved_today }}</span></div>
+        <div class="req-stat-row"><span>مرفوضة اليوم</span><span class="s-rejected">{{ stats.family.rejected_today }}</span></div>
+    </div>
+    <!-- ذوو احتياجات -->
+    <div class="req-stat">
+        <div class="req-stat-head">
+            <div class="req-stat-icon" style="background:rgba(229,62,62,0.1)">♿</div>
+            <div class="req-stat-title">ذوو احتياجات</div>
+        </div>
+        <div class="req-stat-total" style="color:#c53030" id="s_special">{{ stats.special.total }}</div>
+        <div class="req-stat-row"><span>معلّقة</span><span class="s-pending">{{ stats.special.pending }}</span></div>
+        <div class="req-stat-row"><span>مقبولة اليوم</span><span class="s-approved">{{ stats.special.approved_today }}</span></div>
+        <div class="req-stat-row"><span>مرفوضة اليوم</span><span class="s-rejected">{{ stats.special.rejected_today }}</span></div>
+    </div>
+<div class="req-stat">
+    <div class="req-stat-head">
+        <div class="req-stat-icon" style="background:rgba(16,185,129,0.1)">📅</div>
+        <div class="req-stat-title">هذا الأسبوع</div>
+    </div>
+    <div class="req-stat-total" style="color:#059669" id="s_week">{{ stats.this_week }}</div>
+    <div class="req-stat-row"><span>إجمالي الطلبات</span><span style="color:#059669">{{ stats.this_week }}</span></div>
+    <div class="req-stat-row"><span>معدل يومي</span><span style="color:#059669">{{ stats.this_week|floatformat:0 }}</span></div>
+    <div class="req-stat-row"><span>آخر تحديث</span><span style="color:#9ca3af" id="weekLastUpdate">—</span></div>
+</div>
+</div>
+
+<!-- ══════════ شريط الأدوات ══════════ -->
+<div class="dash-card fade-in fade-in-d1" style="margin-bottom:14px;padding:14px 18px">
+    <div class="toolbar">
+        <div class="search-box">
+            <span>🔍</span>
+            <input type="text" id="searchInp" placeholder="بحث بالاسم أو البريد أو الهوية أو الجوال..."
+                   oninput="debounceSearch(this.value)">
+            <button onclick="clearSearch()" style="background:none;border:none;cursor:pointer;color:#9ca3af;font-size:0.8rem" title="مسح">✕</button>
+        </div>
+        <select class="filter-select" id="typeFilter" onchange="applyFilters()">
+            <option value="">كل الأنواع</option>
+            <option value="sponsor">كافل</option>
+            <option value="orphan">يتيم</option>
+            <option value="family">أسرة</option>
+            <option value="special">ذوو احتياجات</option>
+        </select>
+        <select class="filter-select" id="dateFilter" onchange="applyFilters()">
+            <option value="">كل الوقت</option>
+            <option value="today">اليوم</option>
+            <option value="week">هذا الأسبوع</option>
+            <option value="month">هذا الشهر</option>
+        </select>
+        <select class="filter-select" id="sortFilter" onchange="applyFilters()">
+            <option value="-date_joined">الأحدث أولاً</option>
+            <option value="date_joined">الأقدم أولاً</option>
+            <option value="first_name">الاسم أ-ي</option>
+            <option value="user_type">النوع</option>
+        </select>
+        <button class="btn-act btn-view" onclick="clearAllFilters()" title="مسح الفلاتر" style="width:auto;padding:6px 12px;border-radius:10px;font-size:0.78rem;font-family:'Tajawal',sans-serif;font-weight:700;">
+            🔄 مسح
+        </button>
+        <div class="toolbar-btns">
+            <button class="btn-xl" onclick="exportExcel('all')" title="تصدير الكل Excel">
+                📊 Excel الكل
+            </button>
+            <button class="btn-xl btn-xl-sel" id="btnExportSel" onclick="exportExcel('selected')" style="display:none">
+                📊 Excel المحدد
+            </button>
+            <div class="last-update" id="lastUpdate">🕐 --:--</div>
+            <button class="btn-xl" onclick="refreshData()" title="تحديث">🔄</button>
+        </div>
+    </div>
+
+    <!-- إجراءات جماعية -->
+    <div class="bulk-bar" id="bulkBar">
+        <span class="bulk-info" id="bulkInfo">تم تحديد 0 طلب</span>
+        <button class="btn-success" style="padding:6px 14px;font-size:0.8rem" onclick="bulkAction('approve')">✅ موافقة على الكل</button>
+        <button class="btn-danger"  style="padding:6px 14px;font-size:0.8rem" onclick="bulkAction('reject')">❌ رفض الكل</button>
+        <button onclick="clearSelection()" style="background:none;border:none;cursor:pointer;color:#9ca3af;font-size:0.82rem;font-family:'Tajawal',sans-serif">إلغاء التحديد</button>
+    </div>
+</div>
+
+<!-- ══════════ الجدول ══════════ -->
+<div class="dash-card fade-in fade-in-d2">
+    <div class="table-wrap" id="tableWrap">
+        <table class="dash-table" id="mainTable">
+            <thead>
+                <tr>
+                    <th style="width:36px">
+                        <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)" style="width:16px;height:16px;accent-color:var(--adm);cursor:pointer">
+                    </th>
+                    <th class="sortable" onclick="sortBy('first_name')">الاسم <span class="sort-arrow" id="arr_first_name">↕</span></th>
+                    <th>النوع</th>
+                    <th class="sortable" onclick="sortBy('date_joined')">تاريخ الطلب <span class="sort-arrow" id="arr_date_joined">↕</span></th>
+                    <th>وقت الانتظار</th>
+                    <th>البريد / الجوال</th>
+                    <th style="text-align:center">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- يُملأ بـ JS -->
+                {% for i in "12345" %}
+                <tr>
+                    {% for j in "1234567" %}
+                    <td><div class="skeleton" style="width:{% if forloop.counter == 7 %}80{% else %}{{ forloop.counter|add:"40" }}{% endif %}px"></div></td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+    <div style="text-align:center;padding:8px 0;font-size:0.78rem;color:#9ca3af;font-family:'Tajawal',sans-serif" id="pageInfo"></div>
+</div>
+
+<!-- ══════════ إحصائيات الأدمن ══════════ -->
+<div class="dash-card fade-in fade-in-d3" style="margin-top:14px;padding:14px 18px">
+    <div style="font-size:0.78rem;color:#9ca3af;font-family:'Tajawal',sans-serif;display:flex;gap:20px;flex-wrap:wrap">
+        <span>📊 قراراتك اليوم: <strong style="color:var(--adm)" id="myDecisions">0</strong></span>
+        <span>✅ موافقات: <strong style="color:#1a7a4a" id="myApproved">0</strong></span>
+        <span>❌ رفضات: <strong style="color:#c53030" id="myRejected">0</strong></span>
+    </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     المودلات
+══════════════════════════════════════ -->
+
+<!-- مودل العرض التفصيلي -->
+<div class="modal-overlay" id="viewModal">
+    <div class="modal-box" style="max-width:700px">
+        <div class="modal-hdr">
+            <span class="modal-title" id="viewModalTitle">تفاصيل الطلب</span>
+            <div style="display:flex;align-items:center;gap:8px">
+
+                <button class="modal-close" onclick="closeModal('viewModal')">✕</button>
+            </div>
+        </div>
+        <div class="modal-body">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+                <button class="btn-act btn-view" onclick="navigateRequest(-1)" title="السابق" style="width:auto;padding:5px 10px;border-radius:8px;font-size:0.78rem;font-family:'Tajawal',sans-serif">← السابق</button>
+                <span id="navInfo" style="font-size:0.78rem;color:#9ca3af;font-family:'Tajawal',sans-serif"></span>
+                <button class="btn-act btn-view" onclick="navigateRequest(1)"  title="التالي" style="width:auto;padding:5px 10px;border-radius:8px;font-size:0.78rem;font-family:'Tajawal',sans-serif">التالي →</button>
+            </div>
+            <div class="detail-tabs" id="detailTabs"></div>
+            <div id="detailContent"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-danger"  style="padding:8px 18px" onclick="closeModal('viewModal');openRejectModal(currentUserId,currentUserName)">❌ رفض</button>
+            <button class="btn-success" style="padding:8px 18px" onclick="closeModal('viewModal');openApproveModal(currentUserId,currentUserName)">✅ موافقة</button>
+        </div>
+    </div>
+</div>
+
+<!-- مودل الموافقة -->
+<div class="modal-overlay" id="approveModal">
+    <div class="modal-box" style="max-width:400px">
+        <div class="modal-hdr">
+            <span class="modal-title">✅ تأكيد الموافقة</span>
+            <button class="modal-close" onclick="closeModal('approveModal')">✕</button>
+        </div>
+        <div class="modal-body" style="text-align:center;padding:24px">
+            <div style="font-size:3rem;margin-bottom:12px">✅</div>
+            <p style="font-family:'Tajawal',sans-serif;font-size:0.92rem;color:var(--text,#1a1a2e)">
+                هل تريد الموافقة على طلب <strong id="approveName"></strong>؟<br>
+                <small style="color:#9ca3af">سيتم إرسال بريد إلكتروني للمستخدم بالموافقة</small>
+            </p>
+            <input type="hidden" id="approveUserId">
+        </div>
+        <div class="modal-footer">
+            <button class="btn-sec" style="padding:8px 18px;background:var(--bg-secondary,#f4f9f6);border:none;border-radius:50px;font-family:'Tajawal',sans-serif;font-weight:700;cursor:pointer" onclick="closeModal('approveModal')">إلغاء</button>
+            <button class="btn-success" style="padding:8px 20px" onclick="confirmApprove()">✅ نعم، موافق</button>
+        </div>
+    </div>
+</div>
+
+<!-- مودل الرفض -->
+<div class="modal-overlay" id="rejectModal">
+    <div class="modal-box" style="max-width:440px">
+        <div class="modal-hdr">
+            <span class="modal-title">❌ تأكيد الرفض</span>
+            <button class="modal-close" onclick="closeModal('rejectModal')">✕</button>
+        </div>
+        <div class="modal-body">
+            <p style="font-family:'Tajawal',sans-serif;font-size:0.9rem;margin-bottom:14px;color:var(--text,#1a1a2e)">
+                هل تريد رفض طلب <strong id="rejectName"></strong>؟
+            </p>
+            <label style="font-family:'Tajawal',sans-serif;font-size:0.82rem;font-weight:700;color:#6b7280;display:block;margin-bottom:6px">سبب الرفض (إلزامي)</label>
+            <textarea id="rejectReason" rows="3" placeholder="اكتب سبب الرفض..."
+                      style="width:100%;border:1.5px solid rgba(124,58,237,0.2);border-radius:10px;padding:10px 12px;font-family:'Tajawal',sans-serif;font-size:0.88rem;resize:none;outline:none;background:var(--bg-secondary,#f4f9f6);color:var(--text,#1a1a2e)"></textarea>
+            <input type="hidden" id="rejectUserId">
+        </div>
+        <div class="modal-footer">
+            <button class="btn-sec" style="padding:8px 18px;background:var(--bg-secondary,#f4f9f6);border:none;border-radius:50px;font-family:'Tajawal',sans-serif;font-weight:700;cursor:pointer" onclick="closeModal('rejectModal')">إلغاء</button>
+            <button class="btn-danger" style="padding:8px 20px" onclick="confirmReject()">❌ تأكيد الرفض</button>
+        </div>
+    </div>
+</div>
+
+<!-- مودل إرسال رسالة -->
+<div class="modal-overlay" id="msgModal">
+    <div class="modal-box" style="max-width:460px">
+        <div class="modal-hdr">
+            <span class="modal-title">✉️ إرسال رسالة للمستخدم</span>
+            <button class="modal-close" onclick="closeModal('msgModal')">✕</button>
+        </div>
+        <div class="modal-body">
+            <p style="font-family:'Tajawal',sans-serif;font-size:0.86rem;color:#6b7280;margin-bottom:14px">
+                إرسال بريد إلكتروني إلى: <strong id="msgUserName"></strong>
+                <small id="msgUserEmail" style="display:block;color:#9ca3af"></small>
+            </p>
+            <label style="font-family:'Tajawal',sans-serif;font-size:0.82rem;font-weight:700;color:#6b7280;display:block;margin-bottom:6px">عنوان الرسالة</label>
+            <input type="text" id="msgSubject" placeholder="موضوع الرسالة..."
+                   style="width:100%;border:1.5px solid rgba(124,58,237,0.2);border-radius:10px;padding:9px 12px;font-family:'Tajawal',sans-serif;font-size:0.88rem;outline:none;background:var(--bg-secondary,#f4f9f6);color:var(--text,#1a1a2e);margin-bottom:10px">
+            <label style="font-family:'Tajawal',sans-serif;font-size:0.82rem;font-weight:700;color:#6b7280;display:block;margin-bottom:6px">نص الرسالة (إلزامي)</label>
+            <textarea id="msgBody" rows="5" placeholder="اكتب رسالتك هنا..."
+                      style="width:100%;border:1.5px solid rgba(124,58,237,0.2);border-radius:10px;padding:10px 12px;font-family:'Tajawal',sans-serif;font-size:0.88rem;resize:none;outline:none;background:var(--bg-secondary,#f4f9f6);color:var(--text,#1a1a2e)"></textarea>
+            <input type="hidden" id="msgUserId">
+        </div>
+        <div class="modal-footer">
+            <button class="btn-sec" style="padding:8px 18px;background:var(--bg-secondary,#f4f9f6);border:none;border-radius:50px;font-family:'Tajawal',sans-serif;font-weight:700;cursor:pointer" onclick="closeModal('msgModal')">إلغاء</button>
+            <button class="btn-adm" style="padding:8px 20px" onclick="sendMessage()">✉️ إرسال</button>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- مودل تقدم التصدير -->
+<div class="modal-overlay" id="exportModal">
+    <div class="modal-box" style="max-width:380px">
+        <div class="modal-hdr">
+            <span class="modal-title">📊 تصدير Excel</span>
+            <button class="modal-close" onclick="closeModal('exportModal')">✕</button>
+        </div>
+        <div class="modal-body" style="text-align:center;padding:24px">
+            <div style="font-size:2.5rem;margin-bottom:12px">📊</div>
+            <p style="font-family:'Tajawal',sans-serif;font-size:0.88rem;color:#6b7280" id="exportMsg">جار تجهيز الملف...</p>
+            <div class="progress-wrap"><div class="progress-fill" id="exportProgress" style="width:0%"></div></div>
+            <small style="color:#9ca3af;font-family:'Tajawal',sans-serif;font-size:0.74rem" id="exportPct">0%</small>
+        </div>
+    </div>
+</div>
+
+<!-- مودل تصدير مخصص (Word/PDF) -->
+<div class="modal-overlay" id="customExportModal">
+    <div class="modal-box" style="max-width:380px">
+        <div class="modal-hdr">
+            <span class="modal-title">📄 تصدير مخصص</span>
+            <button class="modal-close" onclick="closeModal('customExportModal')">✕</button>
+        </div>
+        <div class="modal-body" style="text-align:center;padding:24px">
+            <p style="font-family:'Tajawal',sans-serif;font-size:0.9rem;color:#6b7280;margin-bottom:20px">اختر نوع التصدير</p>
+            <div style="display:flex;gap:16px;justify-content:center">
+                <button onclick="customExport('word')" style="background:rgba(43,108,176,0.1);color:#2b6cb0;border:2px solid rgba(43,108,176,0.2);border-radius:14px;padding:20px 28px;cursor:pointer;font-family:'Tajawal',sans-serif;font-weight:700;font-size:0.9rem;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:8px">
+                    <span style="font-size:2rem">📝</span> Word
+                </button>
+                <button onclick="customExport('pdf')" style="background:rgba(229,62,62,0.1);color:#c53030;border:2px solid rgba(229,62,62,0.2);border-radius:14px;padding:20px 28px;cursor:pointer;font-family:'Tajawal',sans-serif;font-weight:700;font-size:0.9rem;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:8px">
+                    <span style="font-size:2rem">📋</span> PDF
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- مودل النجاح -->
+<div class="modal-overlay" id="successModal">
+    <div class="modal-box" style="max-width:360px">
+        <div class="modal-body" style="text-align:center;padding:32px">
+            <div style="font-size:3.5rem;margin-bottom:12px" id="successIcon">✅</div>
+            <h5 style="font-weight:700;color:var(--text,#1a1a2e);margin-bottom:8px;font-family:'Tajawal',sans-serif" id="successTitle">تم بنجاح</h5>
+            <p style="color:#6b7280;font-size:0.88rem;font-family:'Tajawal',sans-serif" id="successMsg"></p>
+            <button class="btn-adm" style="margin-top:16px" onclick="closeModal('successModal')">حسناً</button>
+        </div>
+    </div>
+</div>
+<!-- مودل عرض الوثيقة -->
+<div class="modal-overlay" id="docViewModal">
+    <div class="modal-box" style="max-width:800px">
+        <div class="modal-hdr">
+            <span class="modal-title" id="docViewTitle">عرض الوثيقة</span>
+            <button class="modal-close" onclick="closeModal('docViewModal')">✕</button>
+        </div>
+        <div class="modal-body" style="text-align:center;padding:16px">
+            <img id="docViewImg" src="" style="max-width:100%;border-radius:10px;display:none">
+            <iframe id="docViewPdf" src="" style="width:100%;height:500px;border:none;border-radius:10px;display:none"></iframe>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+'use strict';
+
+/* ══ حالة ══ */
+let allData     = [];   // كل البيانات من السيرفر
+let filtered    = [];   // البيانات بعد الفلتر
+let currentPage = 1;
+const PER_PAGE  = 30;
+let sortKey     = '-date_joined';
+let searchTimer = null;
+let selected    = new Set();
+let currentIdx  = 0;    // للتنقل في مودل العرض
+let currentUserId   = null;
+let currentUserName = '';
+let myApproved  = 0, myRejected = 0;
+let autoRefreshTimer = null;
+
+/* ══ تحميل البيانات ══ */
+async function loadData() {
+    try {
+        const r    = await fetch('/admin-panel/requests/data/', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const data = await r.json();
+        allData  = data.users || [];
+        filtered = [...allData];
+        renderTable();
+        updateLastTime();
+    } catch {
+        toast('خطأ في تحميل البيانات', 'error');
+    }
+}
+
+/* ══ فلترة وبحث ══ */
+function debounceSearch(q) {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => applyFilters(), 350);
+}
+
+function applyFilters() {
+    const q    = document.getElementById('searchInp').value.trim().toLowerCase();
+    const type = document.getElementById('typeFilter').value;
+    const date = document.getElementById('dateFilter').value;
+    sortKey    = document.getElementById('sortFilter').value;
+
+    const now   = new Date();
+    const today = now.toDateString();
+
+    filtered = allData.filter(u => {
+        // بحث
+        const match = !q || [u.full_name, u.email, u.id_number, u.phone].some(
+            v => v && v.toLowerCase().includes(q)
+        );
+        // نوع
+        const tMatch = !type || u.user_type === type;
+        // تاريخ
+        let dMatch = true;
+        if (date) {
+            const d = new Date(u.date_joined);
+            if (date === 'today') dMatch = d.toDateString() === today;
+            else if (date === 'week') dMatch = (now - d) < 7 * 86400000;
+            else if (date === 'month') dMatch = d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        }
+        return match && tMatch && dMatch;
+    });
+
+    // ترتيب
+    const asc = !sortKey.startsWith('-');
+    const key = sortKey.replace('-', '');
+    filtered.sort((a, b) => {
+        const va = a[key] || '', vb = b[key] || '';
+        return asc ? va.localeCompare(vb, 'ar') : vb.localeCompare(va, 'ar');
+    });
+
+    currentPage = 1;
+    selected.clear();
+    renderTable();
+    updateBulkBar();
+}
+
+function clearSearch() {
+    document.getElementById('searchInp').value = '';
+    applyFilters();
+}
+
+function clearAllFilters() {
+    document.getElementById('searchInp').value  = '';
+    document.getElementById('typeFilter').value  = '';
+    document.getElementById('dateFilter').value  = '';
+    document.getElementById('sortFilter').value  = '-date_joined';
+    applyFilters();
+}
+
+/* ══ رسم الجدول ══ */
+function renderTable() {
+    const start = (currentPage - 1) * PER_PAGE;
+    const page  = filtered.slice(start, start + PER_PAGE);
+    const tbody = document.getElementById('tableBody');
+
+    if (!page.length) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:#9ca3af;font-family:'Tajawal',sans-serif">لا توجد نتائج</td></tr>`;
+        document.getElementById('pagination').innerHTML = '';
+        document.getElementById('pageInfo').textContent = '';
+        return;
+    }
+
+    tbody.innerHTML = page.map((u, i) => `
+        <tr id="row_${u.id}" style="transition:opacity 0.4s">
+            <td data-label="">
+                <input type="checkbox" ${selected.has(u.id)?'checked':''} onchange="toggleSelect('${u.id}',this)"
+                       style="width:16px;height:16px;accent-color:var(--adm);cursor:pointer">
+            </td>
+            <td data-label="الاسم">
+                <div class="name-cell">
+                    <div style="font-weight:700;color:var(--text,#1a1a2e)">${u.full_name}</div>
+                    ${u.id_number ? `<div style="font-size:0.7rem;color:#9ca3af">هوية: ${u.id_number}</div>` : ''}
+                    <div class="hover-preview">
+                        <strong style="font-family:'Tajawal',sans-serif">${u.full_name}</strong><br>
+                        <span style="color:#9ca3af;font-size:0.74rem">${_typeLabel(u.user_type)}</span><br>
+                        <span style="font-size:0.76rem">${u.email}</span><br>
+                        <span style="font-size:0.76rem">${u.phone_country}${u.phone}</span>
+                    </div>
+                </div>
+            </td>
+            <td data-label="النوع">${_typeBadge(u.user_type)}</td>
+            <td data-label="تاريخ الطلب" style="font-size:0.8rem;color:#6b7280">${_fmtDate(u.date_joined)}</td>
+            <td data-label="الانتظار">${_waitBadge(u.date_joined)}</td>
+            <td data-label="التواصل" style="font-size:0.8rem">
+                <div>${u.email}</div>
+                <div style="color:#9ca3af;direction:ltr">${u.phone_country}${u.phone}</div>
+            </td>
+            <td data-label="الإجراءات">
+                <div class="action-btns" style="display:grid;grid-template-columns:repeat(4,32px);gap:5px;justify-content:center">
+                    <button class="btn-act btn-view" onclick="openView(${start+i})" title="عرض التفاصيل">👁</button>
+                    <button class="btn-act btn-ok"   onclick="openApproveModal('${u.id}','${_esc(u.full_name)}')" title="موافقة">✅</button>
+                    <button class="btn-act btn-rej"  onclick="openRejectModal('${u.id}','${_esc(u.full_name)}')"  title="رفض">❌</button>
+                    <button class="btn-act btn-msg"  onclick="openMsgModal('${u.id}','${_esc(u.full_name)}','${_esc(u.email)}')" title="إرسال رسالة">✉️</button>
+
+                    <button class="btn-act" style="background:rgba(26,122,74,0.1);color:#1a7a4a" onclick="exportSingleExcel('${u.id}')" title="Excel">📊</button>
+                    <button class="btn-act" style="background:rgba(43,108,176,0.1);color:#2b6cb0" onclick="openExportModal('${u.id}')" title="Word/PDF">📄</button>
+                    <button class="btn-act btn-print" onclick="printRequest('${u.id}')" title="طباعة">🖨️</button>
+                </div>
+            </td>
+        </tr>`).join('');
+
+    renderPagination();
+    document.getElementById('pageInfo').textContent =
+        `عرض ${start+1}–${Math.min(start+PER_PAGE, filtered.length)} من ${filtered.length} طلب`;
+    document.getElementById('btnExportSel').style.display = selected.size ? '' : 'none';
+}
+
+/* ══ Pagination ══ */
+function renderPagination() {
+    const total = Math.ceil(filtered.length / PER_PAGE);
+    if (total <= 1) { document.getElementById('pagination').innerHTML=''; return; }
+    let html = `<button class="page-btn" ${currentPage===1?'disabled':''} onclick="goPage(${currentPage-1})">←</button>`;
+    for (let i = 1; i <= total; i++) {
+        if (i===1||i===total||Math.abs(i-currentPage)<=2)
+            html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+        else if (Math.abs(i-currentPage)===3)
+            html += `<span style="color:#9ca3af;font-family:'Cairo',sans-serif">…</span>`;
+    }
+    html += `<button class="page-btn" ${currentPage===total?'disabled':''} onclick="goPage(${currentPage+1})">→</button>`;
+    document.getElementById('pagination').innerHTML = html;
+}
+
+function goPage(p) { currentPage = p; renderTable(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+/* ══ تحديد وإجراءات جماعية ══ */
+function toggleSelect(id, el) {
+    el.checked ? selected.add(id) : selected.delete(id);
+    updateBulkBar();
+    document.getElementById('btnExportSel').style.display = selected.size ? '' : 'none';
+}
+
+function toggleSelectAll(el) {
+    const start = (currentPage-1)*PER_PAGE;
+    filtered.slice(start,start+PER_PAGE).forEach(u => el.checked ? selected.add(u.id) : selected.delete(u.id));
+    renderTable();
+    updateBulkBar();
+}
+
+function clearSelection() {
+    selected.clear();
+    document.getElementById('selectAll').checked = false;
+    renderTable(); updateBulkBar();
+}
+
+function updateBulkBar() {
+    const bar = document.getElementById('bulkBar');
+    bar.classList.toggle('show', selected.size > 0);
+    document.getElementById('bulkInfo').textContent = `تم تحديد ${selected.size} طلب`;
+}
+
+async function bulkAction(action) {
+    if (!selected.size) return;
+    if (!confirm(`هل تريد ${action==='approve'?'الموافقة على':'رفض'} ${selected.size} طلب؟`)) return;
+    for (const id of [...selected]) {
+        await (action==='approve' ? _doApprove(id) : _doReject(id, 'رفض جماعي'));
+    }
+    toast(`تم ${action==='approve'?'الموافقة على':'رفض'} ${selected.size} طلب`, 'success');
+    clearSelection();
+    loadData();
+}
+
+/* ══ مودل العرض ══ */
+function openView(idx) {
+    currentIdx = idx;
+    const u = filtered[(currentPage-1)*PER_PAGE + idx];
+    if (!u) return;
+    currentUserId   = u.id;
+    currentUserName = u.full_name;
+    document.getElementById('viewModalTitle').textContent = `تفاصيل: ${u.full_name}`;
+    document.getElementById('navInfo').textContent = `${(currentPage-1)*PER_PAGE+idx+1} / ${filtered.length}`;
+    _renderDetailTabs(u);
+    openModal('viewModal');
+}
+
+function navigateRequest(dir) {
+    const abs = (currentPage-1)*PER_PAGE + currentIdx + dir;
+    if (abs < 0 || abs >= filtered.length) return;
+    currentIdx = abs % PER_PAGE;
+    if (abs >= currentPage*PER_PAGE) { currentPage++; currentIdx=0; }
+    if (abs < (currentPage-1)*PER_PAGE) { currentPage--; currentIdx=PER_PAGE-1; }
+    openView(currentIdx);
+}
+
+function _renderDetailTabs(u) {
+    const tabs = [{ id:'basic', label:'📋 أساسي' }];
+
+    if (u.user_type === 'sponsor') {
+        // الكافل — بيانات أساسية فقط + السجل
+        tabs.push({id:'log', label:'📜 السجل'});
+
+    } else if (u.user_type === 'orphan') {
+        tabs.push(
+            {id:'orphan',  label:'👦 اليتيم'},
+            {id:'mother',  label:'👩 الأم'},
+            {id:'father',  label:'👨 الأب'},
+            {id:'guardian',label:'🧑 المعيل'},
+            {id:'members', label:'👥 الأفراد'},
+            {id:'docs',    label:'📎 الوثائق'},
+            {id:'log',     label:'📜 السجل'},
+        );
+
+    } else if (u.user_type === 'special') {
+        tabs.push(
+            {id:'special', label:'♿ المريض'},
+            {id:'guardian',label:'🧑 المعيل'},
+            {id:'members', label:'👥 الأفراد'},
+            {id:'docs',    label:'📎 الوثائق'},
+            {id:'log',     label:'📜 السجل'},
+        );
+
+    } else if (u.user_type === 'family') {
+        tabs.push(
+            {id:'family',  label:'👨‍👩‍👧 الأسرة'},
+            {id:'wife',    label:'👩 الزوجة'},
+            {id:'guardian',label:'🧑 المعيل'},
+            {id:'members', label:'👥 الأفراد'},
+            {id:'docs',    label:'📎 الوثائق'},
+            {id:'log',     label:'📜 السجل'},
+        );
+    }
+
+    document.getElementById('detailTabs').innerHTML = tabs.map((t,i)=>
+        `<button class="detail-tab ${i===0?'active':''}" onclick="switchDetailTab('${t.id}',this)">${t.label}</button>`
+    ).join('');
+
+    document.getElementById('detailContent').innerHTML = tabs.map((t,i)=>
+        `<div class="detail-panel ${i===0?'active':''}" id="panel_${t.id}">${_panelContent(t.id,u)}</div>`
+    ).join('');
+}
+
+function switchDetailTab(id, btn) {
+    document.querySelectorAll('.detail-tab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.detail-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel_'+id)?.classList.add('active');
+}
+
+function _panelContent(id, u) {
+    const d = u.detail || {};
+    const _row = (l,v) => `<div class="info-item"><div class="info-lbl">${l}</div><div class="info-val">${v||'—'}</div></div>`;
+
+    if (id==='basic') return `<div class="info-grid">
+        ${_row('الاسم الكامل',u.full_name)}${_row('النوع',_typeLabel(u.user_type))}
+        ${_row('البريد الإلكتروني',u.email)}${_row('الجوال',u.phone_country+u.phone)}
+        ${_row('الواتساب',u.whatsapp?u.whatsapp_country+u.whatsapp:'—')}
+        ${_row('رقم الهوية',u.id_number||'—')}${_row('الجنسية',u.nationality)}
+       ${_row('رقم التسجيل',u.reg_number||'—')}${_row('الجنس',u.gender)}${_row('تاريخ التسجيل',_fmtDate(u.date_joined))}
+        ${u.photo?`<div class="info-item" style="grid-column:span 2"><div class="info-lbl">الصورة</div><img src="${u.photo}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid var(--adm)"></div>`:''}
+    </div>`;
+
+    if (id==='orphan'&&d.orphan) return `<div class="info-grid">
+        ${_row('تاريخ الميلاد',d.orphan.birth_date)}${_row('من فقد',d.orphan.orphan_type)}
+        ${_row('الصحة',d.orphan.health_status)}${_row('التعليم',d.orphan.education_level)}
+        ${_row('المدرسة',d.orphan.school_name)}${_row('المدينة الحالية',d.orphan.current_city)}
+        ${_row('الشارع',d.orphan.current_street)}${_row('السكن',d.orphan.housing_type+' — '+d.orphan.housing_ownership)}
+        <div class="info-item" style="grid-column:span 2"><div class="info-lbl">القصة</div><div class="info-val" style="font-size:0.84rem;white-space:pre-wrap">${d.orphan.story||'—'}</div></div>
+    </div>`;
+
+    if (id==='mother'&&d.mother) return `<div class="info-grid">
+        ${_row('الاسم',d.mother.full_name)}${_row('الهوية',d.mother.id_number)}
+        ${_row('الحالة',d.mother.is_alive?'على قيد الحياة':'متوفية')}${_row('الصحة',d.mother.health_status)}
+        ${_row('التعليم',d.mother.education_level)}${_row('المهنة',d.mother.job)}
+        ${_row('الدخل',d.mother.monthly_income+' ₪')}
+    </div>`;
+
+    if (id==='father'&&d.father) return `<div class="info-grid">
+        ${_row('الاسم',d.father.full_name)}${_row('الهوية',d.father.id_number)}
+        ${_row('الحالة',d.father.is_alive?'على قيد الحياة':'متوفي')}${_row('سبب الوفاة',d.father.death_reason)}
+        ${_row('الصحة',d.father.health_status)}${_row('التعليم',d.father.education_level)}
+        ${_row('المهنة',d.father.job)}${_row('عدد الأبناء',d.father.children_count)}
+    </div>`;
+
+    if (id==='special'&&d.special) return `<div class="info-grid">
+        ${_row('تاريخ الميلاد',d.special.birth_date)}${_row('الصحة',d.special.health_status)}
+        ${_row('التعليم',d.special.education_level)}${_row('المدينة',d.special.current_city)}
+        ${_row('السكن',d.special.housing_type+' — '+d.special.housing_ownership)}
+        <div class="info-item" style="grid-column:span 2"><div class="info-lbl">تفاصيل الحالة</div><div class="info-val" style="font-size:0.84rem">${d.special.case_details||'—'}</div></div>
+    </div>`;
+
+    if (id==='family'&&d.family) return `<div class="info-grid">
+        ${_row('تاريخ الميلاد',d.family.birth_date)}${_row('الحالة الاجتماعية',d.family.marital_status)}
+        ${_row('الصحة',d.family.health_status)}${_row('التعليم',d.family.education_level)}
+        ${_row('المهنة',d.family.job)}${_row('المدينة',d.family.current_city)}
+        ${_row('السكن',d.family.housing_type)}${_row('عدد الأفراد',d.family.members_count)}
+        <div class="info-item" style="grid-column:span 2"><div class="info-lbl">الوضع العام</div><div class="info-val" style="font-size:0.84rem">${d.family.general_status||'—'}</div></div>
+    </div>`;
+
+    if (id==='wife'&&d.wife) return `<div class="info-grid">
+        ${_row('الاسم',d.wife.full_name)}${_row('الهوية',d.wife.id_number)}
+        ${_row('الميلاد',d.wife.birth_date)}${_row('الصحة',d.wife.health_status)}
+        ${_row('التعليم',d.wife.education_level)}
+    </div>`;
+
+    if (id==='guardian'&&d.guardian) return `<div class="info-grid">
+        ${_row('الاسم',d.guardian.full_name)}${_row('الهوية',d.guardian.id_number)}
+        ${_row('الجنس',d.guardian.gender)}${_row('القرابة',d.guardian.relation)}
+        ${_row('المهنة',d.guardian.job)}${_row('الصحة',d.guardian.health_status)}
+        ${_row('الدخل',d.guardian.monthly_income+' ₪')}${_row('المُعالون',d.guardian.dependents)}
+    </div>`;
+
+    if (id==='members'&&d.members?.length) return d.members.map((m,i)=>`
+        <div style="margin-bottom:12px"><strong style="font-size:0.8rem;color:var(--adm)">فرد #${i+1}</strong>
+        <div class="info-grid" style="margin-top:6px">
+            ${_row('الاسم',m.full_name)}${_row('الجنس',m.gender)}
+            ${_row('الميلاد',m.birth_date)}${_row('الصلة',m.relation)}${_row('الصحة',m.health_status)}
+        </div></div>`).join('');
+
+    if (id==='docs'&&d.docs?.length) return `<div class="doc-grid">${d.docs.map(doc=>`
+        <div class="doc-card">
+            <div class="doc-icon" onclick="openDoc('${doc.url}','${doc.type}')" style="cursor:pointer">
+                ${doc.name.endsWith('.pdf')?'📋':'🖼️'}
+            </div>
+            <div class="doc-name">${doc.type}</div>
+            <div style="display:flex;gap:4px;margin-top:6px;justify-content:center">
+                <button onclick="openDoc('${doc.url}','${doc.type}')"
+                        style="background:rgba(124,58,237,0.1);color:var(--adm);border:none;border-radius:7px;padding:4px 8px;font-size:0.72rem;cursor:pointer;font-family:'Tajawal',sans-serif">
+                    👁 عرض
+                </button>
+                <button onclick="downloadDoc('${doc.url}','${_esc(u.full_name)}','${u.id_number||''}','${_esc(doc.type)}')"
+                        style="background:rgba(26,122,74,0.1);color:#1a7a4a;border:none;border-radius:7px;padding:4px 8px;font-size:0.72rem;cursor:pointer;font-family:'Tajawal',sans-serif">
+                    ⬇️ تحميل
+                </button>
+            </div>
+        </div>`).join('')}</div>`;
+
+    if (id==='log'&&d.logs?.length) return d.logs.map(l=>`
+        <div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(124,58,237,0.06)">
+            <div style="font-size:1rem">${l.icon||'📌'}</div>
+            <div><div style="font-size:0.84rem;font-weight:600;color:var(--text,#1a1a2e)">${l.description}</div>
+            <div style="font-size:0.72rem;color:#9ca3af">${l.created_at} — ${l.user||'النظام'}</div></div>
+        </div>`).join('');
+
+    return `<div style="text-align:center;padding:24px;color:#9ca3af;font-family:'Tajawal',sans-serif">لا توجد بيانات</div>`;
+}
+
+/* ══ الموافقة والرفض ══ */
+function openApproveModal(id, name) {
+    document.getElementById('approveUserId').value   = id;
+    document.getElementById('approveName').textContent = name;
+    openModal('approveModal');
+}
+
+async function confirmApprove() {
+    const id = document.getElementById('approveUserId').value;
+    closeModal('approveModal');
+    await _doApprove(id);
+}
+
+async function _doApprove(id) {
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', getCsrf());
+    fd.append('user_id', id);
+    const r    = await fetch('/admin-panel/requests/approve/', {method:'POST',body:fd});
+    const data = await r.json();
+    if (data.status === 'success') {
+        _removeRow(id);
+        myApproved++;
+        _updateMyStats();
+        showSuccessModal('✅','تمت الموافقة','تمت الموافقة على الطلب وإشعار المستخدم');
+        toast(data.message, 'success');
+    } else toast(data.message, 'error');
+}
+
+function openRejectModal(id, name) {
+    document.getElementById('rejectUserId').value    = id;
+    document.getElementById('rejectName').textContent = name;
+    document.getElementById('rejectReason').value    = '';
+    openModal('rejectModal');
+}
+
+async function confirmReject() {
+    const id     = document.getElementById('rejectUserId').value;
+    const reason = document.getElementById('rejectReason').value.trim();
+    if (!reason) { toast('يرجى كتابة سبب الرفض', 'error'); return; }
+    closeModal('rejectModal');
+    await _doReject(id, reason);
+}
+
+async function _doReject(id, reason) {
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', getCsrf());
+    fd.append('user_id', id);
+    fd.append('reason',  reason);
+    const r    = await fetch('/admin-panel/requests/reject/', {method:'POST',body:fd});
+    const data = await r.json();
+    if (data.status === 'success') {
+        _removeRow(id);
+        myRejected++;
+        _updateMyStats();
+        showSuccessModal('❌','تم الرفض','تم رفض الطلب وإشعار المستخدم');
+        toast(data.message, 'success');
+    } else toast(data.message, 'error');
+}
+
+function _removeRow(id) {
+    const row = document.getElementById('row_'+id);
+    if (row) { row.style.opacity='0'; setTimeout(()=>{ row.remove(); loadData(); },400); }
+    selected.delete(id);
+    updateBulkBar();
+}
+
+/* ══ رسالة للمستخدم ══ */
+function openMsgModal(id, name, email) {
+    document.getElementById('msgUserId').value      = id;
+    document.getElementById('msgUserName').textContent = name;
+    document.getElementById('msgUserEmail').textContent = email;
+    document.getElementById('msgSubject').value     = '';
+    document.getElementById('msgBody').value        = '';
+    openModal('msgModal');
+}
+
+async function sendMessage() {
+    const body = document.getElementById('msgBody').value.trim();
+    if (!body) { toast('يرجى كتابة نص الرسالة', 'error'); return; }
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', getCsrf());
+    fd.append('user_id', document.getElementById('msgUserId').value);
+    fd.append('subject', document.getElementById('msgSubject').value.trim() || 'رسالة من الإدارة');
+    fd.append('message', body);
+    const r    = await fetch('/admin-panel/requests/send-message/', {method:'POST',body:fd});
+    const data = await r.json();
+
+    closeModal('msgModal');
+    if (data.status === 'success') {
+        showSuccessModal('✅', 'تم إرسال الرسالة', 'تم إرسال الرسالة بنجاح إلى المستخدم عبر البريد الإلكتروني');
+    } else {
+        toast(data.message, 'error');
+    }
+}
+
+
+
+/* ══ التصدير ══ */
+function exportExcel(type) {
+    const ids = type==='selected' ? [...selected].join(',') : filtered.map(u=>u.id).join(',');
+    if (!ids) { toast('لا توجد بيانات للتصدير', 'error'); return; }
+    openModal('exportModal');
+    _animateProgress(() => {
+        closeModal('exportModal');
+        window.location.href = `/admin-panel/requests/export/?ids=${ids}&type=${type}`;
+    });
+}
+
+function exportSingleExcel(id) {
+    id = id || currentUserId;
+    if (!id) return;
+    openModal('exportModal');
+    _animateProgress(() => {
+        closeModal('exportModal');
+        window.location.href = `/admin-panel/requests/export/?ids=${id}&type=single`;
+    });
+}
+
+function openExportModal(id) {
+    currentUserId = id || currentUserId;
+    openModal('customExportModal');
+}
+
+async function customExport(format) {
+    closeModal('customExportModal');
+
+    if (format === 'word') {
+        window.location.href = `/admin-panel/requests/export-word/?id=${currentUserId}`;
+        return;
+    }
+
+    // PDF
+    openModal('exportModal');
+    const steps = [
+        'جار تجميع بيانات المستخدم...',
+        'جار معالجة الوثائق والصور...',
+        'جار توليد ملف PDF...',
+        'جار ضغط وحفظ الملف...',
+        'اكتمل! جار التحميل...',
+    ];
+    let p = 0;
+    const fill = document.getElementById('exportProgress');
+    const pct  = document.getElementById('exportPct');
+    const msg  = document.getElementById('exportMsg');
+
+    // animate steps
+    let step = 0;
+    const stepTimer = setInterval(() => {
+        if (step < steps.length) {
+            msg.textContent  = steps[step];
+            p = (step + 1) * 18;
+            fill.style.width = p + '%';
+            pct.textContent  = p + '%';
+            step++;
+        }
+    }, 600);
+
+    try {
+        const resp = await fetch(
+            `/admin-panel/requests/export-pdf/?id=${currentUserId}`,
+            { headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+        );
+        const blob = await resp.blob();
+
+        clearInterval(stepTimer);
+        fill.style.width = '100%';
+        pct.textContent  = '100%';
+        msg.textContent  = '✅ اكتمل التصدير!';
+
+        // تحميل الملف
+        const url  = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href  = url;
+        const name = resp.headers.get('Content-Disposition')
+            ?.match(/filename\*?=(?:UTF-8'')?(.+)/)?.[1]
+            ?.replace(/"/g, '') || 'export.pdf';
+        link.download = decodeURIComponent(name);
+        link.click();
+        URL.revokeObjectURL(url);
+
+        setTimeout(() => closeModal('exportModal'), 1200);
+
+    } catch (e) {
+        clearInterval(stepTimer);
+        closeModal('exportModal');
+        toast('فشل تصدير PDF: ' + e.message, 'error');
+    }
+}
+function _animateProgress(cb) {
+    let p = 0;
+    const fill = document.getElementById('exportProgress');
+    const pct  = document.getElementById('exportPct');
+    const msg  = document.getElementById('exportMsg');
+    const t = setInterval(() => {
+        p += Math.random()*15;
+        if (p >= 100) { p=100; clearInterval(t); setTimeout(cb,300); }
+        fill.style.width = p+'%';
+        pct.textContent  = Math.round(p)+'%';
+        if (p>30) msg.textContent='جار كتابة البيانات...';
+        if (p>70) msg.textContent='جار حفظ الملف...';
+    }, 120);
+}
+
+/* ══ طباعة ══ */
+function printRequest(id) {
+    if (!id) { toast('لم يتم تحديد المستخدم', 'error'); return; }
+    window.open(`/admin-panel/requests/print/?id=${id}`, '_blank');
+}
+
+/* ══ تحديث تلقائي ══ */
+function refreshData() { loadData(); toast('تم التحديث', 'info'); }
+
+function startAutoRefresh() {
+    autoRefreshTimer = setInterval(() => {
+        fetch('/admin-panel/requests/count/', {headers:{'X-Requested-With':'XMLHttpRequest'}})
+            .then(r=>r.json()).then(d=>{
+                if (d.count > allData.length) {
+                    toast(`${d.count - allData.length} طلب جديد — اضغط تحديث`, 'info');
+                }
+            }).catch(()=>{});
+    }, 60000);
+}
+
+/* ══ مساعدات ══ */
+function openModal(id)  { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+function showSuccessModal(icon, title, msg) {
+    document.getElementById('successIcon').textContent = icon;
+    document.getElementById('successTitle').textContent = title;
+    document.getElementById('successMsg').textContent   = msg;
+    openModal('successModal');
+    setTimeout(() => closeModal('successModal'), 2800);
+}
+
+function toast(msg, type='info') {
+    const c = document.getElementById('toastContainer');
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    const icons = {success:'✅',error:'⚠️',info:'ℹ️'};
+    el.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span style="font-family:'Tajawal',sans-serif;color:var(--text,#1a1a2e)">${msg}</span>`;
+    c.appendChild(el);
+    setTimeout(() => { el.style.opacity='0'; el.style.transition='opacity 0.3s'; setTimeout(()=>el.remove(),300); }, 3500);
+}
+
+function updateLastTime() {
+    document.getElementById('lastUpdate').innerHTML =
+        `🕐 ${new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}`;
+}
+
+function _updateMyStats() {
+    document.getElementById('myDecisions').textContent = myApproved + myRejected;
+    document.getElementById('myApproved').textContent  = myApproved;
+    document.getElementById('myRejected').textContent  = myRejected;
+}
+
+function sortBy(key) {
+    sortKey = sortKey===key ? '-'+key : key;
+    document.getElementById('sortFilter').value = sortKey;
+    applyFilters();
+    document.querySelectorAll('.sort-arrow').forEach(a=>a.classList.remove('active'));
+    document.getElementById('arr_'+key)?.classList.add('active');
+}
+
+function _typeBadge(t) {
+    const m={sponsor:'badge-blue 🤝 كافل',orphan:'badge-green 👦 يتيم',family:'badge-orange 👨‍👩‍👧 أسرة',special:'badge-red ♿ ذوو احتياجات'};
+    const v=(m[t]||'badge-purple '+t).split(' ');
+    return `<span class="badge ${v[0]}">${v.slice(1).join(' ')}</span>`;
+}
+
+function _typeLabel(t) {
+    return {sponsor:'كافل',orphan:'يتيم',family:'أسرة',special:'ذوو احتياجات'}[t]||t;
+}
+
+function _fmtDate(d) {
+    if (!d) return '—';
+    return new Date(d).toLocaleString('ar-EG',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+function _waitBadge(d) {
+    const h = (Date.now()-new Date(d))/(3600000);
+    if (h<24)  return `<span class="wait-badge wait-ok">🟢 ${Math.round(h)} ساعة</span>`;
+    if (h<72)  return `<span class="wait-badge wait-warn">🟡 ${Math.round(h/24)} يوم</span>`;
+    return `<span class="wait-badge wait-crit">🔴 ${Math.round(h/24)} يوم</span>`;
+}
+
+function _esc(s) { return (s||'').replace(/'/g,"\\'"); }
+
+/* إغلاق المودل بالضغط خارجه */
+document.querySelectorAll('.modal-overlay').forEach(m => {
+    m.addEventListener('click', e => { if(e.target===m) m.classList.remove('show'); });
+});
+
+/* تشغيل */
+document.addEventListener('DOMContentLoaded', () => {
+    loadData();
+    startAutoRefresh();
+});
+function openDoc(url, name) {
+    const ext  = url.split('.').pop().toLowerCase();
+    const img  = document.getElementById('docViewImg');
+    const pdf  = document.getElementById('docViewPdf');
+    document.getElementById('docViewTitle').textContent = name;
+
+    if (ext === 'pdf') {
+        img.style.display = 'none';
+        pdf.style.display = 'block';
+        pdf.src = url;
+    } else {
+        pdf.style.display = 'none';
+        img.style.display = 'block';
+        img.src = url;
+    }
+    openModal('docViewModal');
+}
+function downloadDoc(url, fullName, idNumber, docType) {
+    const ext      = url.split('.').pop().toLowerCase();
+    const safeName = fullName.replace(/\s+/g, '_');
+    const safeType = docType.replace(/\s+/g, '_');
+    const fname    = `${safeName}-${idNumber}-${safeType}.${ext}`;
+
+    const link = document.createElement('a');
+    link.href     = url;
+    link.download = fname;
+    link.target   = '_blank';
+    link.click();
+}
+</script>
+{% endblock %}

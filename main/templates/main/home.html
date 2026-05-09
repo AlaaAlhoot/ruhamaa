@@ -1,0 +1,1199 @@
+{% extends 'main/base.html' %}
+{% load static %}
+{% block title %}الرئيسية{% endblock %}
+
+{% block extra_css %}
+<style>
+
+/* ================================================
+   KEYFRAMES
+================================================ */
+@keyframes gradientShift {
+    0%,100% { background-position: 0% 50%;   }
+    50%      { background-position: 100% 50%; }
+}
+@keyframes floatLogo {
+    0%,100% { transform: translateY(0) rotate(0deg);   }
+    50%      { transform: translateY(-14px) rotate(2deg); }
+}
+@keyframes floatTitle {
+    0%,100% { transform: translateY(0);    }
+    50%      { transform: translateY(-8px); }
+}
+@keyframes loaderPulse {
+    0%,100% { transform: scale(1);   opacity: 1;   }
+    50%      { transform: scale(1.1); opacity: 0.7; }
+}
+@keyframes spin       { to { transform: rotate(360deg); } }
+@keyframes aboutGlow  {
+    0%,100% { transform: scale(1);    opacity: 1;   }
+    50%      { transform: scale(1.15); opacity: 0.6; }
+}
+@keyframes shake {
+    0%,100% { transform: translateX(0);  }
+    20%      { transform: translateX(-7px); }
+    40%      { transform: translateX(7px);  }
+    60%      { transform: translateX(-4px); }
+    80%      { transform: translateX(4px);  }
+}
+@keyframes fadeInOverlay  { from { opacity:0; } to { opacity:1; } }
+@keyframes fadeOutOverlay { to   { opacity:0; } }
+@keyframes popIn {
+    from { transform: scale(0.5); opacity:0; }
+    to   { transform: scale(1);   opacity:1; }
+}
+@keyframes scaleCheck { from { transform:scale(0); } to { transform:scale(1); } }
+@keyframes drawCheck  { to   { stroke-dashoffset:0; } }
+@keyframes timerBar   { from { width:100%; } to { width:0%; } }
+
+/* ================================================
+   PAGE LOADER
+================================================ */
+#pageLoader {
+    position: fixed; inset: 0;
+    background: #060e09;
+    z-index: 99999;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: opacity 0.6s ease, visibility 0.6s ease;
+}
+#pageLoader.hidden { opacity:0; visibility:hidden; }
+.loader-logo {
+    width:80px; height:80px; object-fit:contain;
+    animation: loaderPulse 1.2s ease-in-out infinite;
+    margin-bottom:24px;
+}
+.loader-ring {
+    width:56px; height:56px;
+    border: 3px solid rgba(46,204,113,0.15);
+    border-top-color: #2ecc71;
+    border-radius:50%;
+    animation: spin 0.9s linear infinite;
+    margin-bottom:20px;
+}
+.loader-text {
+    font-family:'Tajawal',sans-serif;
+    color:#4a7a5e; font-size:0.85rem; letter-spacing:2px;
+}
+
+/* ================================================
+   SUCCESS MODAL
+================================================ */
+.success-modal-overlay {
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.5);
+    z-index:9999;
+    display:flex; align-items:center; justify-content:center;
+    animation: fadeInOverlay 0.3s ease;
+}
+.success-modal-overlay.fade-out { animation: fadeOutOverlay 0.4s ease forwards; }
+.success-modal-box {
+    background:var(--bg-card,#fff);
+    border-radius:24px; padding:48px 40px;
+    text-align:center; min-width:300px;
+    box-shadow:0 24px 64px rgba(0,0,0,0.2);
+    animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
+}
+body.dark-mode .success-modal-box { background:#111e16; }
+.success-check-circle {
+    width:80px; height:80px; border-radius:50%;
+    background:linear-gradient(135deg,#0f5232,#2ecc71);
+    display:flex; align-items:center; justify-content:center;
+    margin:0 auto 20px;
+    animation: scaleCheck 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.2s both;
+    box-shadow:0 8px 24px rgba(26,122,74,0.35);
+}
+.success-check-svg {
+    width:40px; height:40px;
+    stroke:#fff; stroke-width:3; fill:none;
+    stroke-dasharray:60; stroke-dashoffset:60;
+    animation: drawCheck 0.5s ease 0.5s forwards;
+}
+.success-modal-title {
+    font-family:'Amiri',serif; font-size:1.5rem;
+    color:#1a7a4a; margin-bottom:8px;
+}
+body.dark-mode .success-modal-title { color:#4ade80; }
+.success-modal-text {
+    font-family:'Tajawal',sans-serif;
+    color:var(--text-muted,#6b7280); font-size:0.95rem;
+}
+.success-modal-timer {
+    width:100%; height:3px;
+    background:rgba(26,122,74,0.1);
+    border-radius:3px; margin-top:24px; overflow:hidden;
+}
+.success-modal-timer-bar {
+    height:100%;
+    background:linear-gradient(90deg,#1a7a4a,#2ecc71);
+    border-radius:3px;
+    animation: timerBar 3s linear forwards;
+}
+
+/* ================================================
+   REVEAL
+================================================ */
+.reveal {
+    opacity:0; transform:translateY(40px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.visible { opacity:1; transform:translateY(0); }
+.reveal-delay-1 { transition-delay:0.1s; }
+.reveal-delay-2 { transition-delay:0.2s; }
+.reveal-delay-3 { transition-delay:0.3s; }
+.reveal-delay-4 { transition-delay:0.4s; }
+
+/* ================================================
+   HERO
+================================================ */
+.hero-section {
+    position:relative; overflow:hidden;
+    min-height:92vh; display:flex; align-items:center;
+    background:linear-gradient(150deg,#e8f5e9 0%,#f0faf4 40%,#e8f4fd 100%);
+}
+body.dark-mode .hero-section {
+    background:linear-gradient(150deg,#060e09 0%,#0a160e 40%,#080d18 100%);
+}
+.hero-canvas {
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    pointer-events:none; z-index:0;
+}
+.hero-content { position:relative; z-index:1; text-align:center; }
+.hero-logo {
+    width:140px; height:140px; object-fit:contain;
+    filter:drop-shadow(0 8px 24px rgba(26,122,74,0.30));
+    animation: floatLogo 4s ease-in-out infinite;
+    margin-bottom:20px;
+}
+.hero-title {
+    font-family:'Noto Nastaliq Urdu',serif;
+    font-size:5.5rem; font-weight:700;
+    background:linear-gradient(135deg,#0a3d20,#1a7a4a,#2ecc71,#86efac);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text; background-size:200% 200%;
+    animation: gradientShift 4s ease infinite, floatTitle 5s ease-in-out infinite;
+    letter-spacing:8px; line-height:1.6; margin-bottom:10px;
+    filter:drop-shadow(0 4px 24px rgba(26,122,74,0.25));
+}
+body.dark-mode .hero-title {
+    background:linear-gradient(135deg,#4ade80,#2ecc71,#86efac,#fff);
+    -webkit-background-clip:text; background-clip:text;
+    background-size:200% 200%;
+}
+.hero-tagline {
+    font-family:'Tajawal',sans-serif; font-size:1.15rem;
+    color:var(--text-muted,#6b7280);
+    max-width:560px; margin:0 auto 32px;
+    line-height:1.9;
+}
+body.dark-mode .hero-tagline { color:#7aaa8e; }
+.hero-btns { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+
+.btn-hero-primary {
+    background:linear-gradient(135deg,#0f5232,#2ecc71);
+    color:#fff; border:none;
+    padding:14px 38px; border-radius:50px;
+    font-family:'Tajawal',sans-serif; font-weight:700; font-size:1rem;
+    box-shadow:0 6px 24px rgba(26,122,74,0.35);
+    transition:all 0.3s; text-decoration:none;
+    display:inline-flex; align-items:center; gap:8px;
+}
+.btn-hero-primary:hover {
+    transform:translateY(-4px);
+    box-shadow:0 12px 32px rgba(26,122,74,0.45); color:#fff;
+}
+.btn-hero-secondary {
+    background:rgba(255,255,255,0.8); color:#1a7a4a;
+    border:2px solid #1a7a4a;
+    padding:14px 38px; border-radius:50px;
+    font-family:'Tajawal',sans-serif; font-weight:700; font-size:1rem;
+    transition:all 0.3s; text-decoration:none;
+    display:inline-flex; align-items:center; gap:8px;
+    backdrop-filter:blur(10px);
+}
+body.dark-mode .btn-hero-secondary {
+    background:rgba(17,30,22,0.8); color:#4ade80; border-color:#2ecc71;
+}
+.btn-hero-secondary:hover { background:#1a7a4a; color:#fff; transform:translateY(-4px); }
+
+/* ================================================
+   SIDE DOTS
+================================================ */
+.side-dots {
+    position:fixed; right:20px; top:50%;
+    transform:translateY(-50%);
+    display:flex; flex-direction:column; gap:14px; z-index:999;
+}
+.side-dot {
+    width:10px; height:10px; border-radius:50%;
+    background:transparent; border:2px solid rgba(26,122,74,0.4);
+    cursor:pointer;
+    transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    position:relative;
+}
+.side-dot:hover, .side-dot.active {
+    background:#1a7a4a; border-color:#1a7a4a;
+    transform:scale(1.5); box-shadow:0 0 12px rgba(26,122,74,0.5);
+}
+.side-dot::after {
+    content:attr(data-label);
+    position:absolute; right:18px; top:50%; transform:translateY(-50%);
+    background:var(--bg-card,#fff); color:var(--text,#1a1a2e);
+    border:1px solid rgba(26,122,74,0.2);
+    padding:4px 10px; border-radius:8px;
+    font-size:0.75rem; white-space:nowrap;
+    opacity:0; pointer-events:none; transition:opacity 0.2s;
+    font-family:'Tajawal',sans-serif;
+    box-shadow:0 4px 12px rgba(0,0,0,0.1);
+}
+body.dark-mode .side-dot::after { background:#111e16; color:#e8f5ee; }
+.side-dot:hover::after { opacity:1; }
+
+/* ================================================
+   SECTION COMMON
+================================================ */
+.section-header { text-align:center; margin-bottom:48px; }
+.section-eyebrow {
+    font-family:'Tajawal',sans-serif; font-size:0.78rem; font-weight:700;
+    color:#1a7a4a; letter-spacing:3px; text-transform:uppercase; margin-bottom:8px;
+}
+.section-title {
+    font-family:'Amiri',serif; font-size:2.4rem; font-weight:700;
+    color:var(--text,#1a1a2e); margin-bottom:10px; line-height:1.3;
+}
+body.dark-mode .section-title { color:#e8f5ee; }
+.section-title span { color:#1a7a4a; }
+body.dark-mode .section-title span { color:#4ade80; }
+.section-desc {
+    font-family:'Tajawal',sans-serif; color:var(--text-muted,#6b7280);
+    font-size:1rem; max-width:500px; margin:0 auto;
+}
+.section-divider {
+    width:60px; height:3px;
+    background:linear-gradient(90deg,#1a7a4a,#2ecc71);
+    border-radius:3px; margin:14px auto 0;
+}
+
+/* ================================================
+   ABOUT SECTION
+================================================ */
+.about-section {
+    padding:90px 0; background:var(--bg,#fff);
+    position:relative; overflow:hidden;
+}
+body.dark-mode .about-section { background:#080f0b; }
+.about-section::before, .about-section::after {
+    content:''; position:absolute; border-radius:50%;
+    pointer-events:none; animation:aboutGlow 6s ease-in-out infinite;
+}
+.about-section::before {
+    top:-100px; left:-100px; width:500px; height:500px;
+    background:radial-gradient(circle,rgba(26,122,74,0.06) 0%,transparent 70%);
+}
+.about-section::after {
+    bottom:-80px; right:-80px; width:400px; height:400px;
+    background:radial-gradient(circle,rgba(46,204,113,0.04) 0%,transparent 70%);
+    animation-direction:reverse;
+}
+
+.about-card {
+    background:linear-gradient(135deg,
+        rgba(26,122,74,0.03) 0%, rgba(46,204,113,0.05) 50%, rgba(26,122,74,0.03) 100%);
+    border:1px solid rgba(26,122,74,0.12);
+    border-radius:28px; padding:48px;
+    position:relative; overflow:hidden;
+    transition:box-shadow 0.4s ease, border-color 0.4s ease;
+}
+.about-card:hover {
+    box-shadow:0 20px 60px rgba(26,122,74,0.1);
+    border-color:rgba(26,122,74,0.2);
+}
+body.dark-mode .about-card {
+    background:linear-gradient(135deg,
+        rgba(26,122,74,0.08) 0%, rgba(46,204,113,0.05) 50%, rgba(26,122,74,0.08) 100%);
+    border-color:rgba(46,204,113,0.12);
+}
+body.dark-mode .about-card:hover {
+    border-color:rgba(46,204,113,0.22);
+    box-shadow:0 20px 60px rgba(46,204,113,0.06);
+}
+.about-quote-deco {
+    position:absolute; top:-20px; left:24px;
+    font-size:14rem; color:rgba(26,122,74,0.04);
+    font-family:'Amiri',serif; line-height:1;
+    pointer-events:none; user-select:none;
+}
+body.dark-mode .about-quote-deco { color:rgba(46,204,113,0.04); }
+
+.about-icon-wrap {
+    width:68px; height:68px;
+    background:linear-gradient(135deg,#0f5232,#2ecc71);
+    border-radius:18px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.9rem; flex-shrink:0;
+    box-shadow:0 8px 24px rgba(26,122,74,0.3);
+    transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+}
+.about-icon-wrap:hover {
+    transform:rotate(-8deg) scale(1.1);
+    box-shadow:0 12px 32px rgba(26,122,74,0.4);
+}
+.about-title {
+    font-family:'Amiri',serif; font-size:1.9rem; font-weight:700;
+    color:var(--text,#1a1a2e); margin-bottom:4px; line-height:1.4;
+}
+body.dark-mode .about-title { color:#e8f5ee; }
+.about-title span { color:#1a7a4a; }
+body.dark-mode .about-title span { color:#4ade80; }
+
+.about-text {
+    font-family:'Tajawal',sans-serif; color:var(--text-muted,#6b7280);
+    font-size:1rem; line-height:2; margin-bottom:28px; text-align:justify;
+}
+body.dark-mode .about-text { color:#7aaa8e; }
+
+/* Tags */
+.about-features { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:32px; }
+.about-feature-tag {
+    display:inline-flex; align-items:center; gap:6px;
+    background:rgba(26,122,74,0.06);
+    border:1.5px solid rgba(26,122,74,0.15);
+    color:#1a7a4a; padding:8px 16px; border-radius:30px;
+    font-family:'Tajawal',sans-serif; font-size:0.85rem; font-weight:600;
+    transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    cursor:default;
+}
+.about-feature-tag:hover {
+    background:#1a7a4a; color:#fff; border-color:#1a7a4a;
+    transform:translateY(-3px) scale(1.04);
+    box-shadow:0 6px 16px rgba(26,122,74,0.25);
+}
+body.dark-mode .about-feature-tag {
+    background:rgba(46,204,113,0.06);
+    border-color:rgba(46,204,113,0.15); color:#4ade80;
+}
+body.dark-mode .about-feature-tag:hover {
+    background:#2ecc71; color:#060e09; border-color:#2ecc71;
+}
+
+.btn-about {
+    background:linear-gradient(135deg,#0f5232,#1a7a4a,#2ecc71);
+    background-size:200% 200%;
+    color:#fff; border:none; padding:13px 32px; border-radius:50px;
+    font-family:'Tajawal',sans-serif; font-weight:700; font-size:0.95rem;
+    box-shadow:0 6px 20px rgba(26,122,74,0.3);
+    transition:all 0.3s ease; text-decoration:none;
+    display:inline-flex; align-items:center; gap:10px;
+    animation:gradientShift 4s ease infinite;
+}
+.btn-about:hover {
+    transform:translateY(-3px);
+    box-shadow:0 12px 30px rgba(26,122,74,0.45); color:#fff;
+}
+.btn-about-arrow {
+    display:inline-block; transition:transform 0.3s ease;
+}
+.btn-about:hover .btn-about-arrow { transform:translateX(-5px); }
+
+/* About Stat Pills */
+.about-visual { position:relative; }
+.about-stat-pill {
+    background:var(--bg-card,#fff);
+    border:1px solid rgba(26,122,74,0.1);
+    border-radius:18px; padding:18px 22px;
+    display:flex; align-items:center; gap:14px;
+    box-shadow:0 4px 16px rgba(26,122,74,0.07);
+    margin-bottom:14px;
+    transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    position:relative; overflow:hidden;
+}
+.about-stat-pill::after {
+    content:''; position:absolute;
+    right:0; top:0; bottom:0; width:3px;
+    background:linear-gradient(180deg,#1a7a4a,#2ecc71);
+    border-radius:0 18px 18px 0;
+    transform:scaleY(0); transition:transform 0.3s ease;
+}
+.about-stat-pill:hover::after { transform:scaleY(1); }
+.about-stat-pill:hover {
+    transform:translateX(-8px);
+    box-shadow:0 8px 28px rgba(26,122,74,0.13);
+    border-color:rgba(26,122,74,0.2);
+}
+body.dark-mode .about-stat-pill {
+    background:#111e16; border-color:rgba(46,204,113,0.1);
+}
+body.dark-mode .about-stat-pill:hover {
+    border-color:rgba(46,204,113,0.2);
+    box-shadow:0 8px 28px rgba(0,0,0,0.3);
+}
+.about-stat-icon {
+    font-size:2rem; flex-shrink:0;
+    transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+.about-stat-pill:hover .about-stat-icon { transform:scale(1.2) rotate(-5deg); }
+.about-stat-num {
+    font-family:'Cairo',sans-serif; font-size:1.6rem; font-weight:900;
+    color:#1a7a4a; line-height:1; margin-bottom:2px;
+}
+body.dark-mode .about-stat-num { color:#4ade80; }
+.about-stat-lbl {
+    font-family:'Tajawal',sans-serif;
+    color:var(--text-muted,#6b7280); font-size:0.82rem;
+}
+body.dark-mode .about-stat-lbl { color:#7aaa8e; }
+
+/* ================================================
+   STATS
+================================================ */
+.stats-section {
+    padding:90px 0; background:var(--bg-secondary,#f4f9f6);
+    position:relative; overflow:hidden;
+}
+body.dark-mode .stats-section { background:#0a160e; }
+.stats-section::before {
+    content:''; position:absolute;
+    top:-60px; right:-60px; width:300px; height:300px;
+    background:radial-gradient(circle,rgba(26,122,74,0.08) 0%,transparent 70%);
+    border-radius:50%;
+}
+.stat-card {
+    background:var(--bg-card,#fff);
+    border:1px solid rgba(26,122,74,0.12);
+    border-radius:20px; padding:28px 20px; text-align:center;
+    transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow:0 2px 12px rgba(26,122,74,0.07);
+    position:relative; overflow:hidden; cursor:default;
+}
+body.dark-mode .stat-card { background:#111e16; border-color:rgba(46,204,113,0.12); }
+.stat-card::after {
+    content:''; position:absolute;
+    bottom:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg,#1a7a4a,#2ecc71);
+    transform:scaleX(0); transition:transform 0.35s; transform-origin:right;
+}
+.stat-card:hover {
+    transform:translateY(-8px) scale(1.02);
+    box-shadow:0 16px 40px rgba(26,122,74,0.15);
+    border-color:rgba(46,204,113,0.3);
+}
+.stat-card:hover::after { transform:scaleX(1); transform-origin:left; }
+.stat-icon {
+    font-size:2.4rem; margin-bottom:12px; display:block;
+    transition:filter 0.3s, transform 0.3s;
+}
+.stat-card:hover .stat-icon { transform:scale(1.1); }
+.stat-number {
+    font-family:'Cairo',sans-serif; font-size:2.4rem; font-weight:900;
+    color:#1a7a4a; line-height:1; margin-bottom:6px;
+}
+body.dark-mode .stat-number { color:#4ade80; }
+.stat-label {
+    font-family:'Tajawal',sans-serif;
+    color:var(--text-muted,#6b7280); font-size:0.85rem;
+}
+body.dark-mode .stat-label { color:#7aaa8e; }
+
+/* ================================================
+   STORIES
+================================================ */
+.stories-section { padding:90px 0; background:var(--bg,#fff); }
+body.dark-mode .stories-section { background:#080f0b; }
+.story-card {
+    background:var(--bg-card,#fff);
+    border:1px solid rgba(26,122,74,0.12) !important;
+    border-radius:20px !important; overflow:hidden;
+    transition:all 0.35s;
+    box-shadow:0 4px 16px rgba(26,122,74,0.07);
+    height:100%; display:flex; flex-direction:column;
+}
+body.dark-mode .story-card {
+    background:#111e16; border-color:rgba(46,204,113,0.12) !important;
+}
+.story-card:hover { transform:translateY(-8px); box-shadow:0 20px 48px rgba(26,122,74,0.15); }
+.story-img-wrap {
+    position:relative; height:200px; overflow:hidden;
+    background:linear-gradient(135deg,#e8f5e9,#f0faf4);
+}
+body.dark-mode .story-img-wrap { background:linear-gradient(135deg,#0d1a12,#111e16); }
+.story-img-wrap img {
+    width:100%; height:100%; object-fit:cover;
+    transition:transform 0.4s ease;
+}
+.story-card:hover .story-img-wrap img { transform:scale(1.05); }
+.story-img-placeholder {
+    width:100%; height:100%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:4rem; opacity:0.4;
+}
+.story-card .card-body {
+    padding:24px; flex:1; display:flex; flex-direction:column;
+}
+.story-card .card-title {
+    font-family:'Amiri',serif; font-size:1.2rem; color:#1a7a4a; margin-bottom:8px;
+}
+body.dark-mode .story-card .card-title { color:#4ade80; }
+.story-card .card-text {
+    font-family:'Tajawal',sans-serif;
+    color:var(--text-muted,#6b7280); font-size:0.9rem; line-height:1.8; flex:1;
+}
+body.dark-mode .story-card .card-text { color:#7aaa8e; }
+.story-badge {
+    display:inline-block; padding:4px 12px; border-radius:20px;
+    font-family:'Tajawal',sans-serif; font-size:0.78rem; font-weight:700; margin-bottom:12px;
+}
+.story-meta {
+    display:flex; align-items:center; gap:8px; margin-top:12px;
+    font-family:'Tajawal',sans-serif; font-size:0.8rem;
+    color:var(--text-muted,#6b7280);
+}
+body.dark-mode .story-meta { color:#4a7a5e; }
+.btn-sponsor-story {
+    display:inline-flex; align-items:center; gap:6px;
+    background:linear-gradient(135deg,#0f5232,#2ecc71);
+    color:#fff; border:none; padding:9px 20px; border-radius:30px;
+    font-family:'Tajawal',sans-serif; font-size:0.85rem; font-weight:700;
+    text-decoration:none; transition:all 0.3s;
+    margin-top:16px; align-self:flex-start;
+    box-shadow:0 4px 12px rgba(26,122,74,0.25);
+}
+.btn-sponsor-story:hover {
+    transform:translateY(-2px); box-shadow:0 8px 20px rgba(26,122,74,0.35); color:#fff;
+}
+.stories-timer {
+    text-align:center; margin-top:20px;
+    font-family:'Tajawal',sans-serif; font-size:0.8rem;
+    color:var(--text-muted,#9ca3af);
+}
+body.dark-mode .stories-timer { color:#4a7a5e; }
+
+/* ================================================
+   CONTACT
+================================================ */
+.contact-section {
+    padding:90px 0;
+    background:linear-gradient(160deg,var(--bg-secondary,#f4f9f6) 0%,var(--bg,#fff) 100%);
+}
+body.dark-mode .contact-section {
+    background:linear-gradient(160deg,#0a160e 0%,#080f0b 100%);
+}
+.contact-card {
+    background:var(--bg-card,#fff);
+    border:1px solid rgba(26,122,74,0.12);
+    border-radius:24px; padding:44px;
+    box-shadow:0 16px 48px rgba(26,122,74,0.10);
+}
+body.dark-mode .contact-card { background:#111e16; border-color:rgba(46,204,113,0.12); }
+.form-label {
+    font-family:'Tajawal',sans-serif; font-size:0.85rem; font-weight:600;
+    color:var(--text,#1a1a2e); margin-bottom:6px;
+}
+body.dark-mode .form-label { color:#e8f5ee; }
+.form-control, .form-select {
+    background:var(--bg-secondary,#f4f9f6);
+    border:1.5px solid rgba(26,122,74,0.18);
+    color:var(--text,#1a1a2e); border-radius:12px;
+    padding:11px 16px; font-family:'Tajawal',sans-serif;
+    font-size:0.95rem; transition:all 0.25s; width:100%;
+}
+body.dark-mode .form-control, body.dark-mode .form-select {
+    background:#0d1a12; border-color:rgba(46,204,113,0.15); color:#e8f5ee;
+}
+.form-control:focus, .form-select:focus {
+    border-color:#1a7a4a; box-shadow:0 0 0 3px rgba(26,122,74,0.15);
+    background:var(--bg-card,#fff); color:var(--text,#1a1a2e); outline:none;
+}
+body.dark-mode .form-control:focus, body.dark-mode .form-select:focus {
+    background:#111e16; color:#e8f5ee;
+}
+.form-control::placeholder { color:#9ca3af; }
+body.dark-mode .form-control::placeholder { color:#4a7a5e; }
+.form-control.is-invalid {
+    border-color:#e53e3e !important; box-shadow:0 0 0 3px rgba(229,62,62,0.12) !important;
+}
+.field-error {
+    font-family:'Tajawal',sans-serif; font-size:0.78rem;
+    color:#e53e3e; margin-top:4px; display:none;
+}
+.field-error.show { display:block; }
+.btn-contact {
+    background:linear-gradient(135deg,#0f5232,#2ecc71);
+    color:#fff; border:none; padding:14px 48px; border-radius:50px;
+    font-family:'Tajawal',sans-serif; font-weight:700; font-size:1rem;
+    box-shadow:0 6px 20px rgba(26,122,74,0.30);
+    transition:all 0.3s; cursor:pointer;
+    display:inline-flex; align-items:center; gap:8px;
+}
+.btn-contact:hover { transform:translateY(-3px); box-shadow:0 12px 28px rgba(26,122,74,0.40); }
+.btn-contact:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+.shake { animation: shake 0.4s ease; }
+
+/* ================================================
+   RESPONSIVE
+================================================ */
+@media (max-width:768px) {
+    .hero-title    { font-size:3rem; }
+    .hero-logo     { width:100px; height:100px; }
+    .side-dots     { display:none; }
+    .contact-card  { padding:24px 16px; }
+    .stat-number   { font-size:1.8rem; }
+    .section-title { font-size:1.8rem; }
+    .about-card    { padding:28px 20px; }
+    .about-quote-deco { display:none; }
+}
+
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Loader -->
+<div id="pageLoader">
+    <img src="{% static 'images/logo.png' %}" class="loader-logo" alt="رُحَمَاء">
+    <div class="loader-ring"></div>
+    <div class="loader-text">جار التحميل...</div>
+</div>
+
+<!-- Side Dots -->
+<div class="side-dots" id="sideDots">
+    <div class="side-dot active" data-section="hero"    data-label="الرئيسية"></div>
+    <div class="side-dot"        data-section="about"   data-label="من نحن"></div>
+    <div class="side-dot"        data-section="stats"   data-label="الإحصائيات"></div>
+    <div class="side-dot"        data-section="stories" data-label="القصص"></div>
+    <div class="side-dot"        data-section="contact" data-label="تواصل معنا"></div>
+</div>
+
+<!-- ==================== Hero ==================== -->
+<section class="hero-section" id="hero">
+    <canvas class="hero-canvas" id="dotsCanvas"></canvas>
+    <div class="container hero-content">
+        <img src="{% static 'images/logo.png' %}" class="hero-logo" alt="رُحَمَاء">
+        <h1 class="hero-title">رُحَمَاء</h1>
+        <p class="hero-tagline">
+            معاً نبني مستقبلاً أفضل للأيتام والأسر المحتاجة<br>وذوي الاحتياجات الخاصة في غزة
+        </p>
+        <div class="hero-btns">
+            <a href="{% url 'main:register' %}" class="btn-hero-primary">
+                <span>✨</span> انضم إلينا
+            </a>
+            <a href="#contact" class="btn-hero-secondary">
+                <span>💬</span> تواصل معنا
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== من نحن ==================== -->
+<section class="about-section" id="about">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-7 reveal">
+                <div class="about-card">
+                    <span class="about-quote-deco">"</span>
+                    <div class="d-flex align-items-center gap-3 mb-4">
+                        <div class="about-icon-wrap">🕊️</div>
+                        <div>
+                            <div class="section-eyebrow" style="margin-bottom:4px">تعرّف علينا</div>
+                            <h2 class="about-title mb-0">منصة <span>رُحَمَاء</span></h2>
+                        </div>
+                    </div>
+                    <p class="about-text">
+                        <strong style="color:#1a7a4a">رُحَمَاء</strong> هي منصة إنسانية رقمية تابعة لجمعية نسائم فلسطين الخيرية،
+                        تُعنى بتوثيق أحوال الأيتام والأسر المحتاجة وذوي الاحتياجات الخاصة في قطاع غزة،
+                        وربطهم بالكفلاء الكرام لبناء مستقبل آمن ومستدام.
+                        نؤمن بأن كل طفل يستحق الرعاية، وكل أسرة تستحق الكرامة.
+                    </p>
+                    <div class="about-features">
+                        <span class="about-feature-tag">👦 رعاية الأيتام</span>
+                        <span class="about-feature-tag">👨‍👩‍👧 دعم الأسر</span>
+                        <span class="about-feature-tag">♿ ذوو الاحتياجات</span>
+                        <span class="about-feature-tag">🤝 الكفالة الإنسانية</span>
+                        <span class="about-feature-tag">🇵🇸 غزة</span>
+                    </div>
+                    <a href="https://www.nasaeem-palestine.com/" target="_blank" rel="noopener noreferrer" class="btn-about">
+                        <span>🌐</span> اقرأ عنّا
+                        <span class="btn-about-arrow">←</span>
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-5 reveal reveal-delay-2">
+                <div class="about-visual">
+                    <div class="about-stat-pill">
+                        <span class="about-stat-icon">👦</span>
+                        <div>
+                            <div class="about-stat-num">{{ stats.total_orphans|default:"+" }}</div>
+                            <div class="about-stat-lbl">يتيم مسجّل في المنصة</div>
+                        </div>
+                    </div>
+                    <div class="about-stat-pill">
+                        <span class="about-stat-icon">🤝</span>
+                        <div>
+                            <div class="about-stat-num">{{ stats.sponsors|default:"+" }}</div>
+                            <div class="about-stat-lbl">كفيل إنساني</div>
+                        </div>
+                    </div>
+                    <div class="about-stat-pill">
+                        <span class="about-stat-icon">👨‍👩‍👧</span>
+                        <div>
+                            <div class="about-stat-num">{{ stats.families|default:"+" }}</div>
+                            <div class="about-stat-lbl">أسرة مستفيدة</div>
+                        </div>
+                    </div>
+                    <div class="about-stat-pill">
+                        <span class="about-stat-icon">♿</span>
+                        <div>
+                            <div class="about-stat-num">{{ stats.special_needs|default:"+" }}</div>
+                            <div class="about-stat-lbl">من ذوي الاحتياجات الخاصة</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== إحصائيات ==================== -->
+<section class="stats-section" id="stats">
+    <div class="container">
+        <div class="section-header reveal">
+            <div class="section-eyebrow">بالأرقام</div>
+            <h2 class="section-title">إحصائياتنا <span>الحقيقية</span></h2>
+            <div class="section-divider"></div>
+            <p class="section-desc mt-3">أرقام تعكس حجم عملنا الإنساني في خدمة المجتمع الفلسطيني</p>
+        </div>
+        <div class="row g-3">
+            {% for icon, target, label, delay in stats_list %}
+            <div class="col-6 col-md-3 reveal reveal-delay-{{ delay }}">
+                <div class="stat-card">
+                    <span class="stat-icon">{{ icon }}</span>
+                    <div class="stat-number counter" data-target="{{ target }}">0</div>
+                    <div class="stat-label">{{ label }}</div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-6 col-md-3 reveal reveal-delay-1">
+                <div class="stat-card">
+                    <span class="stat-icon">👨‍👧</span>
+                    <div class="stat-number counter" data-target="{{ stats.total_orphans }}">0</div>
+                    <div class="stat-label">إجمالي الأيتام</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 reveal reveal-delay-2">
+                <div class="stat-card">
+                    <span class="stat-icon">♿</span>
+                    <div class="stat-number counter" data-target="{{ stats.special_needs }}">0</div>
+                    <div class="stat-label">ذوو احتياجات خاصة</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 reveal reveal-delay-3">
+                <div class="stat-card">
+                    <span class="stat-icon">👨‍👩‍👧</span>
+                    <div class="stat-number counter" data-target="{{ stats.families }}">0</div>
+                    <div class="stat-label">الأسر المسجلة</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 reveal reveal-delay-4">
+                <div class="stat-card">
+                    <span class="stat-icon">🤝</span>
+                    <div class="stat-number counter" data-target="{{ stats.sponsors }}">0</div>
+                    <div class="stat-label">الكفلاء</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- ==================== القصص ==================== -->
+{% if stories.orphan or stories.family or stories.special %}
+<section class="stories-section" id="stories">
+    <div class="container">
+        <div class="section-header reveal">
+            <div class="section-eyebrow">قصص إنسانية</div>
+            <h2 class="section-title">أبرز <span>القصص</span></h2>
+            <div class="section-divider"></div>
+            <p class="section-desc mt-3">قصص حقيقية لأناس يحتاجون يدًا حانية — كن سببًا في تغيير حياتهم</p>
+        </div>
+        <div class="row g-4">
+            {% if stories.orphan %}
+            <div class="col-md-4 reveal reveal-delay-1">
+                <div class="story-card card border-0">
+                    <div class="story-img-wrap">
+                        {% if stories.orphan.photo %}
+                        <img src="{{ stories.orphan.photo.url }}" alt="قصة يتيم">
+                        {% else %}
+                        <div class="story-img-placeholder">👦</div>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <span class="story-badge" style="background:rgba(26,122,74,0.1);color:#1a7a4a">👦 يتيم</span>
+                        <h5 class="card-title">{{ stories.orphan.first_name }}</h5>
+                        <p class="card-text">{{ stories.orphan.story|default:""|truncatewords:25 }}</p>
+                        <div class="story-meta">
+                            <span>📍 {{ stories.orphan.current_city|default:"غزة" }}</span>
+                        </div>
+                        <a href="{% url 'main:register' %}" class="btn-sponsor-story">
+                            <span>💚</span> اكفل معنا
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% if stories.family %}
+            <div class="col-md-4 reveal reveal-delay-2">
+                <div class="story-card card border-0">
+                    <div class="story-img-wrap">
+                        {% if stories.family.photo %}
+                        <img src="{{ stories.family.photo.url }}" alt="قصة أسرة">
+                        {% else %}
+                        <div class="story-img-placeholder">👨‍👩‍👧</div>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <span class="story-badge" style="background:rgba(212,175,55,0.15);color:#b7791f">👨‍👩‍👧 أسرة</span>
+                        <h5 class="card-title">{{ stories.family.first_name }}</h5>
+                        <p class="card-text">{{ stories.family.general_status|default:""|truncatewords:25 }}</p>
+                        <div class="story-meta">
+                            <span>📍 {{ stories.family.current_city|default:"غزة" }}</span>
+                            {% if stories.family.family_members_count %}
+                            <span>• {{ stories.family.family_members_count }} أفراد</span>
+                            {% endif %}
+                        </div>
+                        <a href="{% url 'main:register' %}" class="btn-sponsor-story">
+                            <span>💚</span> اكفل معنا
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% if stories.special %}
+            <div class="col-md-4 reveal reveal-delay-3">
+                <div class="story-card card border-0">
+                    <div class="story-img-wrap">
+                        {% if stories.special.photo %}
+                        <img src="{{ stories.special.photo.url }}" alt="قصة ذوي احتياجات">
+                        {% else %}
+                        <div class="story-img-placeholder">♿</div>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <span class="story-badge" style="background:rgba(59,130,246,0.1);color:#2b6cb0">♿ ذوو احتياجات</span>
+                        <h5 class="card-title">{{ stories.special.first_name }}</h5>
+                        <p class="card-text">{{ stories.special.case_details|default:""|truncatewords:25 }}</p>
+                        <div class="story-meta">
+                            <span>📍 {{ stories.special.current_city|default:"غزة" }}</span>
+                        </div>
+                        <a href="{% url 'main:register' %}" class="btn-sponsor-story">
+                            <span>💚</span> اكفل معنا
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        <div class="stories-timer reveal">🔄 تتجدد القصص كل 24 ساعة لمنح الفرصة للجميع</div>
+    </div>
+</section>
+{% endif %}
+
+<!-- ==================== تواصل معنا ==================== -->
+<section class="contact-section" id="contact">
+    <div class="container">
+        <div class="section-header reveal">
+            <div class="section-eyebrow">نحن هنا</div>
+            <h2 class="section-title">تواصل <span>معنا</span></h2>
+            <div class="section-divider"></div>
+            <p class="section-desc mt-3">نحن هنا لمساعدتك في أي استفسار أو تبرع</p>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-lg-8 col-md-10">
+                <div class="contact-card reveal">
+                    <div id="contactAlert" style="display:none;border-radius:12px;padding:14px 18px;font-family:'Tajawal',sans-serif;font-size:0.9rem;margin-bottom:16px"></div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">الاسم الكامل</label>
+                            <input type="text" id="contactName" class="form-control"
+                                   placeholder="أدخل اسمك الكامل"
+                                   oninput="clearContactErr('contactName','errName')">
+                            <div class="field-error" id="errName"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">البريد الإلكتروني</label>
+                            <input type="email" id="contactEmail" class="form-control"
+                                   placeholder="example@email.com"
+                                   oninput="clearContactErr('contactEmail','errEmail')">
+                            <div class="field-error" id="errEmail"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">رقم الجوال</label>
+                            <div id="contactPhoneContainer" class="pp-wrap"></div>
+                            <input type="hidden" id="contactDial" value="+970">
+                            <input type="hidden" id="contactCode" value="PS">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">عنوان الرسالة</label>
+                            <input type="text" id="contactSubject" class="form-control"
+                                   placeholder="موضوع رسالتك" maxlength="200"
+                                   oninput="clearContactErr('contactSubject','errSubject')">
+                            <div class="field-error" id="errSubject"></div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">الرسالة</label>
+                            <textarea id="contactMessage" class="form-control" rows="4"
+                                      placeholder="اكتب رسالتك هنا..." maxlength="2000"
+                                      oninput="clearContactErr('contactMessage','errMessage')"></textarea>
+                            <div style="text-align:left;font-size:0.75rem;color:var(--text-muted);margin-top:3px;font-family:'Tajawal',sans-serif">
+                                <span id="msgCount">0</span>/2000
+                            </div>
+                            <div class="field-error" id="errMessage"></div>
+                        </div>
+                        <div class="col-12 text-center mt-2">
+                            <button id="contactBtn" class="btn-contact" onclick="submitContact()">
+                                <span>✉️</span> إرسال الرسالة
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+// ==================== Page Loader ====================
+window.addEventListener('load', () => {
+    const loader = document.getElementById('pageLoader');
+    if (!loader) return;
+    setTimeout(() => {
+        loader.classList.add('hidden');
+        setTimeout(() => loader.remove(), 700);
+    }, 600);
+});
+
+// ==================== Scroll Reveal ====================
+(function() {
+    const obs = new IntersectionObserver(entries => {
+        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+})();
+
+// ==================== Canvas ====================
+(function() {
+    const canvas = document.getElementById('dotsCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let dots = [], mouse = { x:null, y:null };
+    const dark = () => document.body.classList.contains('dark-mode');
+
+    function resize() {
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        dots = [];
+        const n = Math.floor(canvas.width * canvas.height / 7000);
+        for (let i = 0; i < n; i++) {
+            dots.push({ x:Math.random()*canvas.width, y:Math.random()*canvas.height,
+                r:Math.random()*2.5+0.8, dx:(Math.random()-0.5)*0.6,
+                dy:(Math.random()-0.5)*0.6, op:Math.random()*0.4+0.15 });
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const rgb = dark() ? '74,222,128' : '26,122,74';
+        dots.forEach(d => {
+            d.x += d.dx; d.y += d.dy;
+            if (d.x < 0 || d.x > canvas.width)  d.dx *= -1;
+            if (d.y < 0 || d.y > canvas.height)  d.dy *= -1;
+            let scale = 1;
+            if (mouse.x !== null) {
+                const dist = Math.hypot(d.x-mouse.x, d.y-mouse.y);
+                if (dist < 120) { scale = 1 + (120-dist)/60; d.op = Math.min(0.9, d.op+0.06); }
+                else            { d.op = Math.max(0.15, d.op-0.008); }
+            }
+            ctx.beginPath();
+            ctx.arc(d.x, d.y, d.r*scale, 0, Math.PI*2);
+            ctx.fillStyle = `rgba(${rgb},${d.op})`;
+            ctx.fill();
+        });
+        for (let i = 0; i < dots.length; i++) {
+            for (let j = i+1; j < dots.length; j++) {
+                const dist = Math.hypot(dots[i].x-dots[j].x, dots[i].y-dots[j].y);
+                if (dist < 110) {
+                    ctx.beginPath();
+                    ctx.moveTo(dots[i].x, dots[i].y);
+                    ctx.lineTo(dots[j].x, dots[j].y);
+                    ctx.strokeStyle = `rgba(${rgb},${0.1*(1-dist/110)})`;
+                    ctx.lineWidth = 0.6; ctx.stroke();
+                }
+            }
+        }
+        requestAnimationFrame(draw);
+    }
+
+    const hero = document.getElementById('hero');
+    if (hero) {
+        hero.addEventListener('mousemove', e => { const r = canvas.getBoundingClientRect(); mouse.x = e.clientX-r.left; mouse.y = e.clientY-r.top; });
+        hero.addEventListener('mouseleave', () => { mouse.x = null; mouse.y = null; });
+    }
+    window.addEventListener('resize', resize);
+    resize(); draw();
+})();
+
+// ==================== Side Dots ====================
+(function() {
+    const dots = document.querySelectorAll('.side-dot');
+    const sections = ['hero','about','stats','stories','contact'];
+    dots.forEach(dot => {
+        dot.addEventListener('click', () => {
+            document.getElementById(dot.dataset.section)?.scrollIntoView({ behavior:'smooth' });
+        });
+    });
+    const obs = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+            if (e.isIntersecting)
+                dots.forEach(d => d.classList.toggle('active', d.dataset.section === e.target.id));
+        });
+    }, { threshold: 0.4 });
+    sections.forEach(id => { const el = document.getElementById(id); if (el) obs.observe(el); });
+})();
+
+// ==================== Counter ====================
+(function() {
+    const section = document.querySelector('.stats-section');
+    if (!section) return;
+    const obs = new IntersectionObserver(entries => {
+        if (!entries[0].isIntersecting) return;
+        document.querySelectorAll('.counter').forEach(el => {
+            const target = parseInt(el.dataset.target) || 0;
+            const step = target / (1500/16);
+            let cur = 0;
+            const t = setInterval(() => {
+                cur += step;
+                if (cur >= target) { el.textContent = target.toLocaleString('ar'); clearInterval(t); }
+                else { el.textContent = Math.floor(cur).toLocaleString('ar'); }
+            }, 16);
+        });
+        obs.disconnect();
+    }, { threshold: 0.3 });
+    obs.observe(section);
+})();
+
+// ==================== Message Counter ====================
+document.getElementById('contactMessage')?.addEventListener('input', function() {
+    document.getElementById('msgCount').textContent = this.value.length;
+});
+
+// ==================== Success Modal ====================
+function showSuccessModal(message) {
+    const overlay = document.createElement('div');
+    overlay.className = 'success-modal-overlay';
+    overlay.innerHTML = `
+        <div class="success-modal-box">
+            <div class="success-check-circle">
+                <svg class="success-check-svg" viewBox="0 0 52 52">
+                    <polyline points="14,27 22,35 38,17"/>
+                </svg>
+            </div>
+            <div class="success-modal-title">تم بنجاح! 🎉</div>
+            <div class="success-modal-text">${message}</div>
+            <div class="success-modal-timer"><div class="success-modal-timer-bar"></div></div>
+        </div>`;
+    document.body.appendChild(overlay);
+    const close = () => { overlay.classList.add('fade-out'); setTimeout(() => overlay.remove(), 400); };
+    setTimeout(close, 3000);
+    overlay.addEventListener('click', close);
+}
+
+// ==================== Contact Form ====================
+function submitContact() {
+    const name    = document.getElementById('contactName').value.trim();
+    const email   = document.getElementById('contactEmail').value.trim();
+    const subject = document.getElementById('contactSubject').value.trim();
+    const message = document.getElementById('contactMessage').value.trim();
+    const phone   = PhonePicker.getFullNumber('contactDial', 'contactPhoneInput');
+    const phoneVal= document.getElementById('contactPhoneInput')?.value?.replace(/\D/g,'') || '';
+
+    clearAllContactErrors();
+    let valid = true;
+
+    if (!name || name.length < 3)   { showContactErr('contactName','errName', !name ? 'الاسم مطلوب' : 'الاسم قصير جداً'); valid=false; }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showContactErr('contactEmail','errEmail', !email ? 'البريد مطلوب' : 'البريد غير صالح'); valid=false; }
+    if (!phoneVal || phoneVal.length < 7) {
+        const el = document.getElementById('errContactPhone');
+        if (el) { el.textContent = 'رقم الجوال مطلوب أو غير صالح'; el.classList.add('show'); }
+        document.getElementById('contactPhoneInput')?.classList.add('is-invalid');
+        valid = false;
+    }
+    if (!subject || subject.length < 3) { showContactErr('contactSubject','errSubject', !subject ? 'عنوان الرسالة مطلوب' : 'العنوان قصير جداً'); valid=false; }
+    if (!message || message.length < 10) { showContactErr('contactMessage','errMessage', !message ? 'الرسالة مطلوبة' : 'الرسالة قصيرة جداً'); valid=false; }
+
+    if (!valid) return;
+
+    const btn = document.getElementById('contactBtn');
+    btn.disabled = true; btn.innerHTML = '⏳ جار الإرسال...';
+
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', getCsrf());
+    fd.append('name', name); fd.append('email', email);
+    fd.append('phone', phone); fd.append('subject', subject); fd.append('message', message);
+
+    fetch('/contact/', { method:'POST', body:fd })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showSuccessModal(data.message || 'تم إرسال رسالتك بنجاح ✅');
+                ['contactName','contactEmail','contactSubject','contactMessage'].forEach(id => {
+                    const el = document.getElementById(id); if (el) el.value = '';
+                });
+                const pi = document.getElementById('contactPhoneInput'); if (pi) pi.value = '';
+                document.getElementById('msgCount').textContent = '0';
+            } else {
+                const alertEl = document.getElementById('contactAlert');
+                alertEl.style.cssText = 'display:flex;align-items:center;gap:8px;background:rgba(229,62,62,0.1);color:#c53030;border-radius:12px;padding:14px 18px;';
+                alertEl.innerHTML = '⚠️ ' + (data.message || 'حدث خطأ، يرجى المحاولة مجدداً');
+                setTimeout(() => { alertEl.style.display='none'; }, 5000);
+            }
+            btn.disabled = false; btn.innerHTML = '<span>✉️</span> إرسال الرسالة';
+        })
+        .catch(() => { btn.disabled=false; btn.innerHTML='<span>✉️</span> إرسال الرسالة'; });
+}
+
+// ==================== Helpers ====================
+function showContactErr(fieldId, errId, msg) {
+    const input = document.getElementById(fieldId);
+    const err   = document.getElementById(errId);
+    if (input) { input.classList.add('is-invalid'); shake(fieldId); }
+    if (err)   { err.textContent = msg; err.classList.add('show'); }
+}
+function clearContactErr(fieldId, errId) {
+    document.getElementById(fieldId)?.classList.remove('is-invalid');
+    const err = document.getElementById(errId);
+    if (err) { err.textContent=''; err.classList.remove('show'); }
+}
+function clearAllContactErrors() {
+    ['contactName','contactEmail','contactSubject','contactMessage'].forEach(id =>
+        document.getElementById(id)?.classList.remove('is-invalid'));
+    ['errName','errEmail','errContactPhone','errSubject','errMessage'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.textContent=''; el.classList.remove('show'); }
+    });
+    document.getElementById('contactPhoneInput')?.classList.remove('is-invalid','is-valid');
+}
+function shake(id) {
+    const el = document.getElementById(id); if (!el) return;
+    el.classList.remove('shake'); void el.offsetWidth;
+    el.classList.add('shake');
+    el.addEventListener('animationend', () => el.classList.remove('shake'), { once:true });
+}
+function getCsrf() {
+    return document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='))?.split('=')[1] || '';
+}
+
+</script>
+{% endblock %}

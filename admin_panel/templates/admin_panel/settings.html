@@ -1,0 +1,1513 @@
+{% extends 'admin_panel/base.html' %}
+{% load custom_filters %}
+{% load static %}
+{% block title %}الإعدادات{% endblock %}
+{% block page_title %}⚙️ الإعدادات{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ══ تابات ══ */
+.st-tabs{display:flex;gap:4px;background:var(--bg-secondary,#f4f9f6);padding:4px;border-radius:14px;margin-bottom:20px;flex-wrap:wrap;}
+body.dark-mode .st-tabs{background:#130f24;}
+.st-tab{padding:8px 13px;border-radius:10px;border:none;font-family:'Tajawal',sans-serif;font-size:0.82rem;font-weight:700;cursor:pointer;color:#6b7280;background:transparent;transition:all 0.2s;white-space:nowrap;}
+.st-tab.active{background:var(--adm);color:#fff;}
+.st-section{display:none;}
+.st-section.active{display:block;}
+
+/* ══ كارد ══ */
+.st-card{background:#fff;border:1px solid rgba(124,58,237,0.08);border-radius:14px;padding:18px 20px;margin-bottom:16px;}
+body.dark-mode .st-card{background:#0d0a1a;}
+.st-card-title{font-family:'Tajawal',sans-serif;font-size:0.9rem;font-weight:700;color:var(--text,#1a1a2e);margin-bottom:14px;}
+body.dark-mode .st-card-title{color:#e8f5ee;}
+
+/* ══ حقول ══ */
+.f-label{font-family:'Tajawal',sans-serif;font-size:0.78rem;font-weight:700;color:#6b7280;display:block;margin-bottom:5px;}
+.f-input{width:100%;border:1.5px solid rgba(124,58,237,0.18);border-radius:9px;padding:9px 12px;font-family:'Tajawal',sans-serif;font-size:0.86rem;outline:none;background:#fff;color:#1a1a2e;transition:border 0.2s;}
+body.dark-mode .f-input{background:#130f24;color:#e8f5ee;}
+.f-input:focus{border-color:var(--adm);}
+.f-input.error{border-color:#c53030;}
+.f-input.ok{border-color:#1a7a4a;}
+.f-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.f-group{margin-bottom:12px;position:relative;}
+.f-full{grid-column:1/-1;}
+.f-msg{font-size:0.72rem;margin-top:3px;font-family:'Tajawal',sans-serif;}
+.f-msg.error{color:#c53030;}
+.f-msg.ok{color:#1a7a4a;}
+.f-eye{position:absolute;left:10px;top:36px;cursor:pointer;color:#9ca3af;font-size:0.9rem;border:none;background:none;padding:2px;}
+
+/* ══ أزرار ══ */
+.st-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 17px;border-radius:10px;border:none;font-family:'Tajawal',sans-serif;font-size:0.84rem;font-weight:700;cursor:pointer;transition:all 0.2s;}
+.st-btn-p{background:var(--adm);color:#fff;}
+.st-btn-p:hover{opacity:0.9;}
+.st-btn-g{background:rgba(26,122,74,0.1);color:#1a7a4a;border:1.5px solid rgba(26,122,74,0.2);}
+.st-btn-r{background:rgba(229,62,62,0.1);color:#c53030;border:1.5px solid rgba(229,62,62,0.2);}
+.st-btn-o{background:rgba(245,158,11,0.1);color:#b45309;border:1.5px solid rgba(245,158,11,0.2);}
+.st-btn-s{background:var(--bg-secondary,#f4f9f6);color:#6b7280;border:1.5px solid transparent;}
+
+/* ══ الملف الشخصي ══ */
+.profile-photo-wrap{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap;}
+.profile-photo{width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid rgba(124,58,237,0.2);flex-shrink:0;}
+.profile-photo-placeholder{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--adm),#a78bfa);display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:#fff;flex-shrink:0;}
+.profile-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.profile-stat{background:var(--bg-secondary,#f4f9f6);border-radius:10px;padding:10px;text-align:center;}
+body.dark-mode .profile-stat{background:#130f24;}
+.profile-stat-val{font-size:1.2rem;font-weight:900;font-family:'Cairo',sans-serif;color:var(--adm);}
+.profile-stat-lbl{font-size:0.66rem;color:#9ca3af;margin-top:2px;}
+
+/* مقياس القوة */
+.pass-bar{height:5px;border-radius:4px;background:#eee;overflow:hidden;margin-top:6px;}
+.pass-fill{height:100%;border-radius:4px;transition:all 0.3s;width:0%;}
+.pass-label{font-size:0.7rem;margin-top:3px;font-family:'Tajawal',sans-serif;color:#9ca3af;}
+.pass-match{font-size:0.72rem;margin-top:4px;font-family:'Tajawal',sans-serif;}
+
+/* ══ جدول الأدمن ══ */
+.adm-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.adm-table{width:100%;border-collapse:collapse;font-size:0.82rem;min-width:620px;}
+.adm-table th{background:var(--bg-secondary,#f4f9f6);padding:10px 12px;font-family:'Tajawal',sans-serif;font-size:0.75rem;font-weight:700;color:#6b7280;text-align:right;border-bottom:2px solid rgba(124,58,237,0.08);}
+body.dark-mode .adm-table th{background:#130f24;}
+.adm-table td{padding:10px 12px;border-bottom:1px solid rgba(124,58,237,0.05);font-family:'Tajawal',sans-serif;color:var(--text,#1a1a2e);vertical-align:middle;}
+body.dark-mode .adm-table td{color:#e8f5ee;}
+.adm-table tr:hover td{background:rgba(124,58,237,0.02);}
+.st-toggle{width:38px;height:20px;border-radius:10px;border:none;cursor:pointer;position:relative;transition:background 0.25s;flex-shrink:0;}
+.st-toggle::after{content:'';position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;top:3px;right:3px;transition:transform 0.25s;box-shadow:0 1px 3px rgba(0,0,0,0.2);}
+.st-toggle.on{background:#1a7a4a;}
+.st-toggle.on::after{transform:translateX(-18px);}
+.st-toggle.off{background:#d1d5db;}
+
+/* ══ أسعار الصرف ══ */
+.rate-item{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:var(--bg-secondary,#f4f9f6);border-radius:10px;margin-bottom:8px;}
+body.dark-mode .rate-item{background:#130f24;}
+.rate-val{font-family:'Cairo',sans-serif;font-size:0.9rem;font-weight:900;color:var(--adm);}
+
+/* أوقات العمل */
+.time-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.time-sel{border:1.5px solid rgba(124,58,237,0.18);border-radius:8px;padding:7px 10px;font-family:'Tajawal',sans-serif;font-size:0.83rem;outline:none;background:#fff;color:#1a1a2e;cursor:pointer;}
+body.dark-mode .time-sel{background:#130f24;color:#e8f5ee;}
+.days-check{display:flex;flex-wrap:wrap;gap:8px;}
+.day-chip{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;border:1.5px solid rgba(124,58,237,0.2);font-family:'Tajawal',sans-serif;font-size:0.78rem;cursor:pointer;transition:all 0.2s;user-select:none;}
+.day-chip input{display:none;}
+.day-chip.checked{background:var(--adm);color:#fff;border-color:var(--adm);}
+
+/* ══ قاعدة البيانات ══ */
+.db-item{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;border-bottom:1px solid rgba(124,58,237,0.05);cursor:pointer;transition:background 0.15s;}
+.db-item:hover{background:rgba(124,58,237,0.03);}
+.db-item:last-child{border-bottom:none;}
+
+/* شريط التقدم */
+.progress-wrap{height:8px;background:#eee;border-radius:4px;overflow:hidden;margin-top:10px;}
+body.dark-mode .progress-wrap{background:#1a0f3a;}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--adm),#a78bfa);border-radius:4px;width:0%;transition:width 0.3s ease;}
+
+/* ══ الصيانة ══ */
+.big-toggle{width:56px;height:28px;border-radius:14px;border:none;cursor:pointer;position:relative;transition:background 0.25s;flex-shrink:0;}
+.big-toggle::after{content:'';position:absolute;width:20px;height:20px;background:#fff;border-radius:50%;top:4px;right:4px;transition:transform 0.25s;box-shadow:0 2px 4px rgba(0,0,0,0.2);}
+.big-toggle.on{background:#c53030;}
+.big-toggle.on::after{transform:translateX(-28px);}
+.big-toggle.off{background:#d1d5db;}
+
+/* ══ المودلات ══ */
+.m-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1000;align-items:center;justify-content:center;padding:14px;}
+.m-overlay.show{display:flex;}
+.m-box{background:#fff;border-radius:18px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.18);animation:mIn 0.25s ease;overflow:hidden;display:flex;flex-direction:column;max-height:92vh;}
+body.dark-mode .m-box{background:#0d0a1a;}
+@keyframes mIn{from{transform:scale(0.95);opacity:0}to{transform:scale(1);opacity:1}}
+.m-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(124,58,237,0.08);flex-shrink:0;}
+.m-title{font-size:0.92rem;font-weight:700;color:var(--text,#1a1a2e);}
+body.dark-mode .m-title{color:#e8f5ee;}
+.m-close{background:none;border:none;font-size:1.1rem;cursor:pointer;color:#9ca3af;padding:4px;}
+.m-close:hover{color:var(--adm);}
+.m-body{padding:16px 18px;overflow-y:auto;flex:1;}
+.m-footer{padding:10px 18px;border-top:1px solid rgba(124,58,237,0.08);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0;}
+
+/* ══ Toast ══ */
+.toast-wrap{position:fixed;bottom:16px;left:16px;z-index:9999;display:flex;flex-direction:column;gap:6px;}
+.st-toast{background:#fff;border:1px solid rgba(124,58,237,0.1);border-radius:10px;padding:10px 14px;font-family:'Tajawal',sans-serif;font-size:0.82rem;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,0.1);display:flex;align-items:center;gap:7px;animation:tIn 0.28s ease;max-width:280px;}
+body.dark-mode .st-toast{background:#0d0a1a;}
+@keyframes tIn{from{transform:translateY(14px);opacity:0}to{transform:translateY(0);opacity:1}}
+.st-toast.success{border-right:3px solid #1a7a4a;}
+.st-toast.error{border-right:3px solid #e53e3e;}
+.st-toast.info{border-right:3px solid var(--adm);}
+
+/* ══ Responsive ══ */
+@media(max-width:768px){
+    .f-grid{grid-template-columns:1fr;}
+    .f-full{grid-column:1;}
+    .profile-photo-wrap{flex-direction:column;text-align:center;}
+    .profile-stats{grid-template-columns:1fr 1fr 1fr;}
+    .st-tabs{gap:3px;}
+    .st-tab{padding:7px 9px;font-size:0.76rem;}
+    .m-box{max-height:90vh;}
+    .time-row{flex-direction:column;align-items:flex-start;}
+}
+@media(max-width:480px){
+    .st-tab{padding:6px 7px;font-size:0.7rem;}
+    .st-card{padding:14px;}
+    .profile-stats{grid-template-columns:1fr 1fr;}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="toastWrap" class="toast-wrap"></div>
+
+<!-- ══ تابات ══ -->
+<div class="st-tabs fade-in">
+    <button class="st-tab active" onclick="switchTab('profile',this)">👤 الملف الشخصي</button>
+    <button class="st-tab" onclick="switchTab('admins',this)">👥 الأدمن</button>
+    <button class="st-tab" onclick="switchTab('site',this)">🌐 معلومات الموقع</button>
+    <button class="st-tab" onclick="switchTab('maintenance',this)">🚧 الصيانة</button>
+    <button class="st-tab" onclick="switchTab('rates',this)">💱 أسعار الصرف</button>
+    <button class="st-tab" onclick="switchTab('database',this)">🗄️ قاعدة البيانات</button>
+    <button class="st-tab" onclick="switchTab('backup',this)">💾 النسخ الاحتياطية</button>
+    <button class="st-tab" onclick="switchTab('email',this)">📧 البريد</button>
+    <button class="st-tab" onclick="switchTab('security',this)">🔒 الأمان</button>
+    <button class="st-tab" onclick="switchTab('sysinfo',this)">📊 النظام</button>
+</div>
+
+<!-- ══════════════ الملف الشخصي ══════════════ -->
+<div class="st-section active" id="sec_profile">
+    <div class="st-card">
+        <div class="st-card-title">👤 بياناتي الشخصية</div>
+        <div class="profile-photo-wrap">
+{% if user.profile_image %}
+<img src="{{ user.profile_image.url }}" class="profile-photo" id="profilePhotoPreview" alt="صورة الملف الشخصي">
+            {% else %}
+            <div class="profile-photo-placeholder" id="profilePhotoPreview">{{ user.first_name|first|default:"أ" }}</div>
+            {% endif %}
+            <div style="flex:1;min-width:160px">
+                <div style="font-family:'Tajawal',sans-serif;font-size:1rem;font-weight:900;color:var(--text,#1a1a2e)" id="profileNameDisplay">{{ user.get_full_name|default:user.username }}</div>
+                <div style="font-size:0.76rem;color:#9ca3af;margin-bottom:8px">{{ user.email }}</div>
+                <label style="cursor:pointer">
+                    <span class="st-btn st-btn-s" style="font-size:0.76rem;padding:5px 11px;display:inline-flex">📷 تغيير الصورة</span>
+                    <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="previewPhoto(this)">
+                </label>
+            </div>
+            <div class="profile-stats">
+                <div class="profile-stat"><div class="profile-stat-val">{{ log_count }}</div><div class="profile-stat-lbl">إجراء</div></div>
+                <div class="profile-stat"><div class="profile-stat-val">{{ user.last_login|date:"d/m"|default:"—" }}</div><div class="profile-stat-lbl">آخر دخول</div></div>
+                <div class="profile-stat"><div class="profile-stat-val">{{ user.date_joined|date:"Y" }}</div><div class="profile-stat-lbl">سنة التسجيل</div></div>
+            </div>
+        </div>
+        <div class="f-grid">
+            <div class="f-group"><label class="f-label">الاسم الأول *</label><input type="text" class="f-input" id="pf_first_name" value="{{ user.first_name }}"></div>
+            <div class="f-group"><label class="f-label">اسم الأب</label><input type="text" class="f-input" id="pf_father_name" value="{{ user.father_name|default:'' }}"></div>
+            <div class="f-group"><label class="f-label">اسم الجد</label><input type="text" class="f-input" id="pf_grand_name" value="{{ user.grand_name|default:'' }}"></div>
+            <div class="f-group"><label class="f-label">اسم العائلة</label><input type="text" class="f-input" id="pf_family_name" value="{{ user.family_name|default:'' }}"></div>
+            <div class="f-group"><label class="f-label">البريد الإلكتروني</label><input type="email" class="f-input" id="pf_email" value="{{ user.email }}"></div>
+            <div class="f-group"><label class="f-label">اسم المستخدم</label><input type="text" class="f-input" value="{{ user.username }}" disabled style="opacity:0.6;cursor:not-allowed"></div>
+            <div class="f-group"><label class="f-label">رقم الجوال</label><input type="text" class="f-input" id="pf_phone" value="{{ user.phone|default:'' }}"></div>
+            <div class="f-group"><label class="f-label">رقم الواتساب</label><input type="text" class="f-input" id="pf_whatsapp" value="{{ user.whatsapp|default:'' }}"></div>
+        </div>
+        <button class="st-btn st-btn-p" onclick="saveProfile()">💾 حفظ البيانات</button>
+    </div>
+
+    <!-- كلمة المرور -->
+    <div class="st-card">
+        <div class="st-card-title">🔐 تغيير كلمة المرور</div>
+        <div class="f-grid">
+            <div class="f-group f-full" style="position:relative">
+                <label class="f-label">كلمة المرور الحالية *</label>
+                <input type="password" class="f-input" id="oldPass" placeholder="كلمة المرور الحالية">
+                <button class="f-eye" onclick="toggleEye('oldPass',this)">👁</button>
+            </div>
+            <div class="f-group" style="position:relative">
+                <label class="f-label">كلمة المرور الجديدة *</label>
+                <input type="password" class="f-input" id="newPass" placeholder="8 أحرف على الأقل" oninput="checkPassStrength(this.value);checkPassMatch()">
+                <button class="f-eye" onclick="toggleEye('newPass',this)">👁</button>
+                <div class="pass-bar"><div class="pass-fill" id="passFill"></div></div>
+                <div class="pass-label" id="passLabel"></div>
+            </div>
+            <div class="f-group" style="position:relative">
+                <label class="f-label">تأكيد كلمة المرور *</label>
+                <input type="password" class="f-input" id="newPass2" placeholder="أعد كتابة كلمة المرور" oninput="checkPassMatch()">
+                <button class="f-eye" onclick="toggleEye('newPass2',this)">👁</button>
+                <div class="pass-match" id="passMatch"></div>
+            </div>
+        </div>
+        <button class="st-btn st-btn-p" onclick="changePassword()">🔐 تغيير كلمة المرور</button>
+    </div>
+</div>
+
+<!-- ══════════════ الأدمن ══════════════ -->
+<div class="st-section" id="sec_admins">
+    <div class="st-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+            <div class="st-card-title" style="margin-bottom:0">👥 الأدمن الموجودون</div>
+            <button class="st-btn st-btn-p" onclick="openModal('createAdminModal')">➕ إنشاء أدمن جديد</button>
+        </div>
+  <div id="adminsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
+    {% for adm in admins %}
+    <div class="st-card" id="admRow_{{ adm.pk }}" style="padding:16px;border-right:4px solid {% if adm.is_active %}#1a7a4a{% else %}#c53030{% endif %}">
+        <!-- رأس الكارد -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--adm),#a78bfa);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1rem;flex-shrink:0">
+                {{ adm.first_name|first|default:"أ" }}
+            </div>
+            <div style="flex:1;min-width:0">
+                <div style="font-weight:700;font-size:0.9rem;color:var(--text,#1a1a2e);font-family:'Tajawal',sans-serif">{{ adm.get_full_name|default:adm.username }}</div>
+                <div style="font-size:0.72rem;color:#9ca3af">@{{ adm.username }}</div>
+            </div>
+            {% if adm.is_superuser %}
+            <span style="background:rgba(124,58,237,0.1);color:var(--adm);padding:2px 8px;border-radius:8px;font-size:0.65rem;font-weight:700;flex-shrink:0">سوبر</span>
+            {% endif %}
+        </div>
+        <!-- التفاصيل -->
+        <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:12px;font-family:'Tajawal',sans-serif;font-size:0.8rem">
+            <div style="display:flex;gap:8px"><span style="color:#9ca3af;flex-shrink:0">📧</span><span style="color:var(--text,#1a1a2e)">{{ adm.email }}</span></div>
+            {% if adm.phone %}<div style="display:flex;gap:8px"><span style="color:#9ca3af;flex-shrink:0">📞</span><span style="color:var(--text,#1a1a2e)">{{ adm.phone }}</span></div>{% endif %}
+            <div style="display:flex;gap:8px"><span style="color:#9ca3af;flex-shrink:0">🕐</span><span style="color:#9ca3af">{{ adm.last_login|date:"Y/m/d H:i"|default:"لم يدخل بعد" }}</span></div>
+            <div style="display:flex;gap:8px"><span style="color:#9ca3af;flex-shrink:0">📅</span><span style="color:#9ca3af">مُنشأ: {{ adm.date_joined|date:"Y/m/d" }}</span></div>
+        </div>
+<!-- الصلاحيات -->
+<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px" id="perms_{{ adm.pk }}">
+    {% if adm.can_manage_beneficiaries %}
+    <span data-perm="beneficiaries" style="background:rgba(34,197,94,0.1);color:#16a34a;padding:2px 7px;border-radius:7px;font-size:0.65rem;font-weight:700">مستفيدون</span>
+    {% endif %}
+    {% if adm.can_manage_sponsors %}
+    <span data-perm="sponsors" style="background:rgba(59,130,246,0.1);color:#2563eb;padding:2px 7px;border-radius:7px;font-size:0.65rem;font-weight:700">كفلاء</span>
+    {% endif %}
+    {% if adm.can_manage_payments %}
+    <span data-perm="payments" style="background:rgba(26,122,74,0.1);color:#1a7a4a;padding:2px 7px;border-radius:7px;font-size:0.65rem;font-weight:700">دفعات</span>
+    {% endif %}
+    {% if adm.can_manage_aids %}
+    <span data-perm="aids" style="background:rgba(245,158,11,0.1);color:#b45309;padding:2px 7px;border-radius:7px;font-size:0.65rem;font-weight:700">مساعدات</span>
+    {% endif %}
+    {% if adm.can_view_logs %}
+    <span data-perm="logs" style="background:rgba(107,114,128,0.1);color:#4b5563;padding:2px 7px;border-radius:7px;font-size:0.65rem;font-weight:700">سجلات</span>
+    {% endif %}
+    {% if adm.can_access_settings %}
+    <span data-perm="settings" id="settingsBadge_{{ adm.pk }}" style="background:rgba(124,58,237,0.1);color:var(--adm);padding:2px 7px;border-radius:7px;font-size:0.65rem;font-weight:700">إعدادات</span>
+    {% endif %}
+</div>
+        <!-- الأزرار -->
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <!-- نشط -->
+            <button class="st-toggle {% if adm.is_active %}on{% else %}off{% endif %}"
+                    id="admToggle_{{ adm.pk }}"
+                    onclick="toggleAdmin('{{ adm.pk }}')"
+                    {% if adm == request.user or adm.is_superuser %}disabled{% endif %}
+                    title="{% if adm.is_active %}تعطيل{% else %}تفعيل{% endif %}"></button>
+            <!-- إعدادات -->
+            <button class="st-toggle {% if adm.can_access_settings %}on{% else %}off{% endif %}"
+                    id="settingsToggle_{{ adm.pk }}"
+                    onclick="toggleAdminSettings('{{ adm.pk }}')"
+                    title="الوصول للإعدادات"
+                    {% if adm.is_superuser %}style="display:none"{% endif %}></button>
+            <span style="font-size:0.68rem;color:#9ca3af;margin-left:auto">نشط / إعدادات</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+            <button class="st-btn st-btn-o" style="flex:1;justify-content:center;font-size:0.78rem;padding:6px"
+                    onclick="openEditAdmin('{{ adm.pk }}','{{ adm.first_name }}','{{ adm.father_name|default:"" }}','{{ adm.grand_name|default:"" }}','{{ adm.family_name|default:"" }}','{{ adm.email }}','{{ adm.phone|default:"" }}','{{ adm.whatsapp|default:"" }}','{% if adm.is_superuser %}1{% else %}0{% endif %}','{% if adm.can_manage_beneficiaries %}beneficiaries{% endif %},{% if adm.can_manage_sponsors %}sponsors{% endif %},{% if adm.can_manage_payments %}payments{% endif %},{% if adm.can_manage_aids %}aids{% endif %},{% if adm.can_view_logs %}logs{% endif %},{% if adm.can_access_settings %}settings{% endif %}')">
+                ✏️ تعديل
+            </button>
+            {% if adm != request.user and not adm.is_superuser %}
+            <button class="st-btn st-btn-r" style="padding:6px 11px;font-size:0.78rem"
+                    onclick="confirmDeleteAdmin('{{ adm.pk }}','{{ adm.get_full_name|default:adm.username }}')">🗑️</button>
+            {% endif %}
+<button class="st-btn st-btn-p" style="padding:4px 9px;font-size:0.74rem"
+        onclick="viewAdmin(
+            '{{ adm.get_full_name|default:adm.username }}',
+            '@{{ adm.username }}',
+            '{{ adm.email }}',
+            '{{ adm.phone|default:"—" }}',
+            '{{ adm.whatsapp|default:"—" }}',
+            '{{ adm.last_login|date:"Y/m/d H:i"|default:"لم يدخل بعد" }}',
+            '{{ adm.date_joined|date:"Y/m/d" }}',
+            '{% if adm.is_active %}نشط ✅{% else %}معطّل 🔴{% endif %}',
+            '{% if adm.is_superuser %}سوبر يوزر{% else %}أدمن{% endif %}',
+            '{% if adm.can_manage_beneficiaries %}beneficiaries{% endif %},{% if adm.can_manage_sponsors %}sponsors{% endif %},{% if adm.can_manage_payments %}payments{% endif %},{% if adm.can_manage_aids %}aids{% endif %},{% if adm.can_view_logs %}logs{% endif %},{% if adm.can_access_settings %}settings{% endif %}'
+        )">👁</button>
+        </div>
+
+    </div>
+    {% endfor %}
+</div>
+    </div>
+</div>
+
+<!-- ══════════════ معلومات الموقع ══════════════ -->
+<div class="st-section" id="sec_site">
+    <div class="st-card">
+        <div class="st-card-title">🌐 معلومات الجمعية</div>
+        <div class="f-grid">
+            <div class="f-group f-full"><label class="f-label">اسم الجمعية</label><input type="text" class="f-input" id="site_name" value="{{ sys_s.site_name }}"></div>
+            <div class="f-group f-full"><label class="f-label">العنوان</label><input type="text" class="f-input" id="site_address" value="{{ sys_s.site_address }}"></div>
+            <div class="f-group"><label class="f-label">البريد الإلكتروني</label><input type="email" class="f-input" id="site_email" value="{{ sys_s.site_email }}"></div>
+            <div class="f-group"><label class="f-label">رقم الجوال</label><input type="text" class="f-input" id="site_phone" value="{{ sys_s.site_phone }}"></div>
+            <div class="f-group"><label class="f-label">رقم الواتساب</label><input type="text" class="f-input" id="site_whatsapp" value="{{ sys_s.site_whatsapp }}"></div>
+        </div>
+
+        <!-- أوقات العمل -->
+        <div style="margin-top:4px;margin-bottom:14px">
+            <label class="f-label">أيام العمل</label>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+                <select class="time-sel" id="work_days_type" onchange="toggleDaysMode(this.value)">
+                    <option value="week" {% if sys_s.work_days_type == 'week' %}selected{% endif %}>طوال الأسبوع</option>
+                    <option value="range" {% if sys_s.work_days_type == 'range' %}selected{% endif %}>من يوم إلى يوم</option>
+                    <option value="custom" {% if sys_s.work_days_type == 'custom' %}selected{% endif %}>أيام محددة</option>
+                </select>
+                <!-- نطاق -->
+                <div id="days_range_wrap" style="display:flex;gap:6px;align-items:center;{% if sys_s.work_days_type != 'range' %}display:none{% endif %}">
+                    <span style="font-family:'Tajawal',sans-serif;font-size:0.82rem;color:#6b7280">من</span>
+                    <select class="time-sel" id="work_days_from">
+                        {% for d in days_list %}<option value="{{ d }}" {% if sys_s.work_days_from == d %}selected{% endif %}>{{ d }}</option>{% endfor %}
+                    </select>
+                    <span style="font-family:'Tajawal',sans-serif;font-size:0.82rem;color:#6b7280">إلى</span>
+                    <select class="time-sel" id="work_days_to">
+                        {% for d in days_list %}<option value="{{ d }}" {% if sys_s.work_days_to == d %}selected{% endif %}>{{ d }}</option>{% endfor %}
+                    </select>
+                </div>
+                <!-- أيام محددة -->
+                <div id="days_custom_wrap" class="days-check" style="{% if sys_s.work_days_type != 'custom' %}display:none{% endif %}">
+                    {% for d in days_list %}
+                    <label class="day-chip {% if d in sys_s.work_days_custom %}checked{% endif %}" onclick="toggleDay(this,'{{ d }}')">
+                        <input type="checkbox" value="{{ d }}" {% if d in sys_s.work_days_custom %}checked{% endif %}> {{ d }}
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <label class="f-label">وقت العمل</label>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <span style="font-family:'Tajawal',sans-serif;font-size:0.82rem;color:#6b7280">من</span>
+                <select class="time-sel" id="work_time_from_h">{% for h in "1,2,3,4,5,6,7,8,9,10,11,12"|split:"," %}<option value="{{ h }}" {% if sys_s.work_time_from_h == h %}selected{% endif %}>{{ h }}</option>{% endfor %}</select>
+                <span style="color:#9ca3af">:</span>
+                <select class="time-sel" id="work_time_from_m">
+                    <option value="00" {% if sys_s.work_time_from_m == "00" %}selected{% endif %}>00</option>
+                    <option value="15" {% if sys_s.work_time_from_m == "15" %}selected{% endif %}>15</option>
+                    <option value="30" {% if sys_s.work_time_from_m == "30" %}selected{% endif %}>30</option>
+                    <option value="45" {% if sys_s.work_time_from_m == "45" %}selected{% endif %}>45</option>
+                </select>
+                <select class="time-sel" id="work_time_from_p">
+                    <option value="صباحاً" {% if sys_s.work_time_from_p == "صباحاً" %}selected{% endif %}>صباحاً</option>
+                    <option value="مساءً"  {% if sys_s.work_time_from_p == "مساءً"  %}selected{% endif %}>مساءً</option>
+                </select>
+                <span style="font-family:'Tajawal',sans-serif;font-size:0.82rem;color:#6b7280">إلى</span>
+                <select class="time-sel" id="work_time_to_h">{% for h in "1,2,3,4,5,6,7,8,9,10,11,12"|split:"," %}<option value="{{ h }}" {% if sys_s.work_time_to_h == h %}selected{% endif %}>{{ h }}</option>{% endfor %}</select>
+                <span style="color:#9ca3af">:</span>
+                <select class="time-sel" id="work_time_to_m">
+                    <option value="00" {% if sys_s.work_time_to_m == "00" %}selected{% endif %}>00</option>
+                    <option value="15" {% if sys_s.work_time_to_m == "15" %}selected{% endif %}>15</option>
+                    <option value="30" {% if sys_s.work_time_to_m == "30" %}selected{% endif %}>30</option>
+                    <option value="45" {% if sys_s.work_time_to_m == "45" %}selected{% endif %}>45</option>
+                </select>
+                <select class="time-sel" id="work_time_to_p">
+                    <option value="صباحاً" {% if sys_s.work_time_to_p == "صباحاً" %}selected{% endif %}>صباحاً</option>
+                    <option value="مساءً"  {% if sys_s.work_time_to_p == "مساءً"  %}selected{% endif %}>مساءً</option>
+                </select>
+            </div>
+        </div>
+        <button class="st-btn st-btn-p" onclick="saveSiteInfo()">💾 حفظ معلومات الموقع</button>
+    </div>
+</div>
+
+<!-- ══════════════ الصيانة ══════════════ -->
+<div class="st-section" id="sec_maintenance">
+    <div class="st-card">
+        <div class="st-card-title">🚧 وضع الصيانة</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px;background:rgba(229,62,62,0.04);border:1px solid rgba(229,62,62,0.12);border-radius:12px">
+            <div>
+                <div style="font-family:'Tajawal',sans-serif;font-size:0.9rem;font-weight:700;color:var(--text,#1a1a2e)">وضع الصيانة</div>
+                <div style="font-size:0.76rem;color:#9ca3af;font-family:'Tajawal',sans-serif;margin-top:3px">يُحوَّل كل المستخدمين (ما عدا الأدمن) لصفحة الصيانة</div>
+            </div>
+            <button class="big-toggle {% if sys_s.maintenance_mode %}on{% else %}off{% endif %}" id="maintenanceToggle" onclick="toggleMaintenance()"></button>
+        </div>
+        <div id="maintenanceStatus" style="margin-top:10px;font-family:'Tajawal',sans-serif;font-size:0.84rem;font-weight:700;color:{% if sys_s.maintenance_mode %}#c53030{% else %}#1a7a4a{% endif %}">
+            الحالة: {% if sys_s.maintenance_mode %}🔴 الموقع تحت الصيانة{% else %}🟢 الموقع يعمل بشكل طبيعي{% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════ أسعار الصرف ══════════════ -->
+<div class="st-section" id="sec_rates">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="st-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+                <div class="st-card-title" style="margin-bottom:0">💱 أسعار الصرف</div>
+                <div style="display:flex;gap:6px;align-items:center">
+                    <span style="font-size:0.7rem;color:#9ca3af;font-family:'Tajawal',sans-serif" id="ratesUpdatedAt">—</span>
+                    <button class="st-btn st-btn-g" style="padding:5px 10px;font-size:0.75rem" onclick="loadRates()">🔄 تحديث</button>
+                </div>
+            </div>
+            <div id="ratesList"><div style="text-align:center;padding:20px;color:#9ca3af;font-family:'Tajawal',sans-serif">⏳ جار التحميل...</div></div>
+        </div>
+        <div class="st-card">
+            <div class="st-card-title">🧮 حاسبة العملات</div>
+            <div class="f-group"><label class="f-label">المبلغ</label><input type="number" class="f-input" id="calcAmount" placeholder="0.00" oninput="calcCurrency()"></div>
+            <div class="f-group">
+                <label class="f-label">من عملة</label>
+                <select class="f-input" id="calcFrom" onchange="calcCurrency()">
+                    <option value="ILS">🇮🇱 شيقل</option>
+                    <option value="USD">🇺🇸 دولار</option>
+                    <option value="EUR">🇪🇺 يورو</option>
+                    <option value="JOD">🇯🇴 دينار أردني</option>
+                    <option value="SAR">🇸🇦 ريال سعودي</option>
+                    <option value="EGP">🇪🇬 جنيه مصري</option>
+                </select>
+            </div>
+            <div id="calcResults" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════ قاعدة البيانات ══════════════ -->
+<div class="st-section" id="sec_database">
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+        <div class="st-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+                <div class="st-card-title" style="margin-bottom:0">🗄️ جداول قاعدة البيانات</div>
+                <button class="st-btn st-btn-g" style="padding:5px 10px;font-size:0.75rem" onclick="loadDbStats()">🔄</button>
+            </div>
+            <div id="dbTablesList"><div style="text-align:center;padding:20px;color:#9ca3af">⏳</div></div>
+        </div>
+        <div>
+            <div class="st-card" style="margin-bottom:12px">
+                <div class="st-card-title">⚡ الأداء</div>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                    <button class="st-btn st-btn-g" style="width:100%;justify-content:center" onclick="clearCache()">🧹 مسح الكاش</button>
+                    <button class="st-btn st-btn-o" style="width:100%;justify-content:center" onclick="optimizeDb()">⚡ تحسين قاعدة البيانات</button>
+                </div>
+                <div class="progress-wrap" id="dbProgressWrap" style="display:none">
+                    <div class="progress-bar" id="dbProgressBar"></div>
+                </div>
+                <div id="dbActionMsg" style="font-size:0.76rem;color:#9ca3af;font-family:'Tajawal',sans-serif;margin-top:6px;text-align:center;min-height:18px"></div>
+            </div>
+            <div class="st-card">
+                <div class="st-card-title">🗄️ معلومات</div>
+                <div style="display:flex;flex-direction:column;gap:7px;font-family:'Tajawal',sans-serif;font-size:0.82rem">
+                    {% for label,val in forloop.parentloop|default_if_none:'' %}{% empty %}
+                    <div style="display:flex;justify-content:space-between"><span style="color:#9ca3af">المحرك</span><span style="font-weight:700">{{ db_engine }}</span></div>
+                    <div style="display:flex;justify-content:space-between"><span style="color:#9ca3af">Django</span><span style="font-weight:700">{{ django_ver }}</span></div>
+                    <div style="display:flex;justify-content:space-between"><span style="color:#9ca3af">Python</span><span style="font-weight:700">{{ py_ver }}</span></div>
+                    {% endfor %}
+                    <div style="display:flex;justify-content:space-between"><span style="color:#9ca3af">المحرك</span><span style="font-weight:700">{{ db_engine }}</span></div>
+                    <div style="display:flex;justify-content:space-between"><span style="color:#9ca3af">Django</span><span style="font-weight:700">{{ django_ver }}</span></div>
+                    <div style="display:flex;justify-content:space-between"><span style="color:#9ca3af">Python</span><span style="font-weight:700">{{ py_ver }}</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════ النسخ الاحتياطية ══════════════ -->
+<div class="st-section" id="sec_backup">
+    <div class="st-card">
+        <div class="st-card-title">💾 تصدير نسخة احتياطية</div>
+        <p style="font-family:'Tajawal',sans-serif;font-size:0.84rem;color:#6b7280;margin-bottom:16px">يشمل التصدير جميع نماذج البيانات في النظام.</p>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+            <button onclick="startBackup('json')" style="background:rgba(43,108,176,0.08);color:#2b6cb0;border:2px solid rgba(43,108,176,0.2);border-radius:12px;padding:20px;cursor:pointer;font-family:'Tajawal',sans-serif;font-weight:700;font-size:0.88rem;display:flex;flex-direction:column;align-items:center;gap:8px"><span style="font-size:2rem">📄</span>JSON</button>
+            <button onclick="startBackup('excel')" style="background:rgba(26,122,74,0.08);color:#1a7a4a;border:2px solid rgba(26,122,74,0.2);border-radius:12px;padding:20px;cursor:pointer;font-family:'Tajawal',sans-serif;font-weight:700;font-size:0.88rem;display:flex;flex-direction:column;align-items:center;gap:8px"><span style="font-size:2rem">📊</span>Excel</button>
+            <button onclick="startBackup('sql')" style="background:rgba(245,158,11,0.08);color:#b45309;border:2px solid rgba(245,158,11,0.2);border-radius:12px;padding:20px;cursor:pointer;font-family:'Tajawal',sans-serif;font-weight:700;font-size:0.88rem;display:flex;flex-direction:column;align-items:center;gap:8px"><span style="font-size:2rem">🗃️</span>SQL</button>
+        </div>
+        <div class="progress-wrap" id="backupProgress" style="display:none;margin-top:14px"><div class="progress-bar" id="backupBar"></div></div>
+        <div id="backupMsg" style="text-align:center;font-family:'Tajawal',sans-serif;font-size:0.82rem;color:#9ca3af;margin-top:8px;min-height:20px"></div>
+    </div>
+</div>
+
+<!-- ══════════════ البريد ══════════════ -->
+<div class="st-section" id="sec_email">
+    <div class="st-card">
+        <div class="st-card-title">📧 إعدادات البريد الحالية</div>
+        <p style="font-family:'Tajawal',sans-serif;font-size:0.82rem;color:#6b7280;margin-bottom:12px">هذه الإعدادات محددة في ملف <code>settings.py</code> الخاص بالمشروع.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+            {% for label,val in email_config.items %}
+            <div style="background:var(--bg-secondary,#f4f9f6);border-radius:9px;padding:10px 13px">
+                <div style="font-size:0.68rem;color:#9ca3af;font-weight:700;margin-bottom:3px">{{ label }}</div>
+                <div style="font-size:0.84rem;font-weight:700;color:var(--text,#1a1a2e);direction:ltr;text-align:right">{{ val }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <button class="st-btn st-btn-g" onclick="openModal('testEmailModal')">✉️ إرسال بريد تجريبي</button>
+            <div style="display:flex;align-items:center;gap:8px;margin-right:auto">
+                <span style="font-family:'Tajawal',sans-serif;font-size:0.84rem;font-weight:700;color:var(--text,#1a1a2e)">الإشعارات التلقائية</span>
+                <button class="st-toggle {% if sys_s.notifications_enabled %}on{% else %}off{% endif %}" id="notifToggle" onclick="toggleNotifications()"></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════ الأمان ══════════════ -->
+<div class="st-section" id="sec_security">
+    <div class="st-card">
+        <div class="st-card-title">🔒 إعدادات الأمان</div>
+        <div class="f-grid">
+            <div class="f-group">
+                <label class="f-label">الحد الأقصى لمحاولات الدخول الفاشلة</label>
+                <input type="number" class="f-input" id="max_login_attempts" value="{{ sys_s.max_login_attempts }}" min="1" max="20">
+                <div class="f-msg info" style="color:#9ca3af">بعدها يُحظر الـ IP تلقائياً</div>
+            </div>
+            <div class="f-group">
+                <label class="f-label">مدة انتهاء الجلسة (بالدقائق)</label>
+                <input type="number" class="f-input" id="session_timeout" value="{{ sys_s.session_timeout }}" min="5">
+                <div class="f-msg info" style="color:#9ca3af">يحتاج إضافة SESSION_COOKIE_AGE في settings.py</div>
+            </div>
+        </div>
+        <button class="st-btn st-btn-p" onclick="saveSecuritySettings()">💾 حفظ إعدادات الأمان</button>
+    </div>
+    <div class="st-card">
+        <div class="st-card-title">🚫 قائمة IP المحظورة</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+            <input type="text" class="f-input" id="newBlockedIp" placeholder="192.168.1.1" style="flex:1;min-width:160px">
+            <button class="st-btn st-btn-r" onclick="addBlockedIp()">حظر IP</button>
+        </div>
+        <div id="blockedIpsList">
+            {% for ip in sys_s.blocked_ips %}
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 11px;background:var(--bg-secondary,#f4f9f6);border-radius:8px;margin-bottom:6px" id="ip_{{ ip }}">
+                <span style="font-family:monospace;font-size:0.84rem">{{ ip }}</span>
+                <button class="st-btn st-btn-r" style="padding:3px 9px;font-size:0.72rem" onclick="removeBlockedIp('{{ ip }}')">حذف</button>
+            </div>
+            {% empty %}
+            <div id="noIpsMsg" style="color:#9ca3af;font-family:'Tajawal',sans-serif;font-size:0.82rem;text-align:center;padding:14px">لا توجد IPs محظورة</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════ معلومات النظام ══════════════ -->
+<div class="st-section" id="sec_sysinfo">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="st-card">
+            <div class="st-card-title">📊 معلومات النظام</div>
+            <div id="sysInfoContent" style="color:#9ca3af;font-family:'Tajawal',sans-serif;text-align:center;padding:14px">⏳ جار التحميل...</div>
+        </div>
+        <div class="st-card">
+            <div class="st-card-title">📜 آخر الإجراءات</div>
+            <div id="sysLastLogs" style="color:#9ca3af;font-family:'Tajawal',sans-serif;text-align:center;padding:14px">⏳ جار التحميل...</div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════ المودلات ══════════════ -->
+
+<!-- مودل إنشاء أدمن -->
+<div class="m-overlay" id="createAdminModal">
+    <div class="m-box" style="max-width:560px">
+        <div class="m-hdr"><span class="m-title">➕ إنشاء أدمن جديد</span><button class="m-close" onclick="closeModal('createAdminModal')">✕</button></div>
+        <div class="m-body">
+            <div class="f-grid">
+                <div class="f-group"><label class="f-label">الاسم الأول *</label><input type="text" class="f-input" id="na_first_name" placeholder="الاسم الأول"></div>
+                <div class="f-group"><label class="f-label">اسم الأب</label><input type="text" class="f-input" id="na_father_name" placeholder="اسم الأب"></div>
+                <div class="f-group"><label class="f-label">اسم الجد</label><input type="text" class="f-input" id="na_grand_name" placeholder="اسم الجد"></div>
+                <div class="f-group"><label class="f-label">اسم العائلة</label><input type="text" class="f-input" id="na_family_name" placeholder="اسم العائلة"></div>
+                <div class="f-group f-full">
+                    <label class="f-label">اسم المستخدم * <span style="font-size:0.68rem;color:#9ca3af">(إنجليزي/أرقام، 4 أحرف على الأقل)</span></label>
+                    <input type="text" class="f-input" id="na_username" placeholder="username" oninput="checkUsername(this.value)">
+                    <div class="f-msg" id="na_username_msg"></div>
+                </div>
+                <div class="f-group">
+                    <label class="f-label">البريد الإلكتروني *</label>
+                    <input type="email" class="f-input" id="na_email" placeholder="example@mail.com" oninput="checkEmailAvailable(this.value,'na_email_msg')">
+                    <div class="f-msg" id="na_email_msg"></div>
+                </div>
+                <div class="f-group"><label class="f-label">رقم الجوال</label><input type="text" class="f-input" id="na_phone" placeholder="05XXXXXXXX"></div>
+                <div class="f-group" style="position:relative">
+                    <label class="f-label">كلمة المرور *</label>
+                    <input type="password" class="f-input" id="na_password" placeholder="8 أحرف على الأقل" oninput="checkPassStrengthEl('na_password','na_pass_fill','na_pass_label');checkPassMatchEl('na_password','na_password2','na_pass_match')">
+                    <button class="f-eye" onclick="toggleEye('na_password',this)">👁</button>
+                    <div class="pass-bar"><div class="pass-fill" id="na_pass_fill"></div></div>
+                    <div class="pass-label" id="na_pass_label"></div>
+                </div>
+                <div class="f-group" style="position:relative">
+                    <label class="f-label">تأكيد كلمة المرور *</label>
+                    <input type="password" class="f-input" id="na_password2" placeholder="تأكيد" oninput="checkPassMatchEl('na_password','na_password2','na_pass_match')">
+                    <button class="f-eye" onclick="toggleEye('na_password2',this)">👁</button>
+                    <div class="pass-match" id="na_pass_match"></div>
+                </div>
+            </div>
+            <!-- الصلاحيات -->
+            <div style="background:rgba(124,58,237,0.05);border-radius:10px;padding:12px;margin-top:6px">
+                <div style="font-family:'Tajawal',sans-serif;font-size:0.8rem;font-weight:700;color:var(--adm);margin-bottom:10px">🔑 الصلاحيات</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                    {% for key,label in perms_list %}
+                    <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-family:'Tajawal',sans-serif;font-size:0.82rem;color:var(--text,#1a1a2e)">
+                        <input type="checkbox" id="na_perm_{{ key }}" style="width:15px;height:15px;cursor:pointer"> {{ label }}
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="m-footer">
+            <button class="st-btn st-btn-s" onclick="closeModal('createAdminModal')">إلغاء</button>
+            <button class="st-btn st-btn-p" onclick="createAdmin()">➕ إنشاء</button>
+        </div>
+    </div>
+</div>
+
+<!-- مودل تعديل أدمن -->
+<div class="m-overlay" id="editAdminModal">
+    <div class="m-box" style="max-width:480px">
+        <div class="m-hdr"><span class="m-title">✏️ تعديل بيانات الأدمن</span><button class="m-close" onclick="closeModal('editAdminModal')">✕</button></div>
+        <div class="m-body">
+            <input type="hidden" id="ea_id">
+            <div class="f-grid">
+                <div class="f-group"><label class="f-label">الاسم الأول</label><input type="text" class="f-input" id="ea_first_name"></div>
+                <div class="f-group"><label class="f-label">اسم الأب</label><input type="text" class="f-input" id="ea_father_name"></div>
+                <div class="f-group"><label class="f-label">اسم الجد</label><input type="text" class="f-input" id="ea_grand_name"></div>
+                <div class="f-group"><label class="f-label">اسم العائلة</label><input type="text" class="f-input" id="ea_family_name"></div>
+                <div class="f-group">
+                    <label class="f-label">البريد الإلكتروني</label>
+                    <input type="email" class="f-input" id="ea_email" oninput="checkEmailAvailable(this.value,'ea_email_msg',document.getElementById('ea_id').value)">
+                    <div class="f-msg" id="ea_email_msg"></div>
+                </div>
+                <div class="f-group"><label class="f-label">رقم الجوال</label><input type="text" class="f-input" id="ea_phone"></div>
+            </div>
+        <div class="f-group"><label class="f-label">رقم الواتساب</label><input type="text" class="f-input" id="ea_whatsapp" placeholder="05XXXXXXXX"></div>
+<div class="f-group f-full" style="position:relative">
+    <label class="f-label">كلمة مرور جديدة <span style="font-size:0.68rem;color:#9ca3af">(اتركها فارغة إذا لا تريد التغيير)</span></label>
+    <input type="password" class="f-input" id="ea_password" placeholder="8 أحرف على الأقل">
+    <button class="f-eye" onclick="toggleEye('ea_password',this)">👁</button>
+</div>
+<div class="f-group f-full" style="position:relative" id="ea_pass2_wrap">
+    <label class="f-label">تأكيد كلمة المرور</label>
+    <input type="password" class="f-input" id="ea_password2" placeholder="تأكيد">
+    <button class="f-eye" onclick="toggleEye('ea_password2',this)">👁</button>
+    <div class="pass-match" id="ea_pass_match"></div>
+</div>
+            <!-- أضف داخل m-body بعد حقل الجوال -->
+<div style="background:rgba(124,58,237,0.05);border-radius:10px;padding:12px;margin-top:6px">
+    <div style="font-family:'Tajawal',sans-serif;font-size:0.8rem;font-weight:700;color:var(--adm);margin-bottom:10px">🔑 الصلاحيات</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        {% for key,label in perms_list %}
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-family:'Tajawal',sans-serif;font-size:0.82rem;color:var(--text,#1a1a2e)">
+            <input type="checkbox" id="ea_perm_{{ key }}" style="width:15px;height:15px;cursor:pointer"> {{ label }}
+        </label>
+        {% endfor %}
+    </div>
+</div>
+        </div>
+        <div class="m-footer">
+            <button class="st-btn st-btn-s" onclick="closeModal('editAdminModal')">إلغاء</button>
+            <button class="st-btn st-btn-p" onclick="saveEditAdmin()">💾 حفظ التعديلات</button>
+        </div>
+    </div>
+</div>
+<div class="m-overlay" id="viewAdminModal">
+    <div class="m-box" style="max-width:440px">
+        <div class="m-hdr">
+            <span class="m-title">👤 تفاصيل الأدمن</span>
+            <button class="m-close" onclick="closeModal('viewAdminModal')">✕</button>
+        </div>
+        <div class="m-body"><div id="viewAdminContent"></div></div>
+    </div>
+</div>
+<!-- مودل تفاصيل جدول DB -->
+<div class="m-overlay" id="dbDetailModal">
+    <div class="m-box" style="max-width:440px">
+        <div class="m-hdr"><span class="m-title" id="dbDetailTitle">تفاصيل الجدول</span><button class="m-close" onclick="closeModal('dbDetailModal')">✕</button></div>
+        <div class="m-body"><div id="dbDetailContent"></div></div>
+    </div>
+</div>
+
+<!-- مودل بريد تجريبي -->
+<div class="m-overlay" id="testEmailModal">
+    <div class="m-box" style="max-width:380px">
+        <div class="m-hdr"><span class="m-title">✉️ إرسال بريد تجريبي</span><button class="m-close" onclick="closeModal('testEmailModal')">✕</button></div>
+        <div class="m-body">
+            <div class="f-group">
+                <label class="f-label">البريد الإلكتروني الهدف</label>
+                <input type="email" class="f-input" id="testEmailAddr" placeholder="example@mail.com">
+            </div>
+            <div style="font-family:'Tajawal',sans-serif;font-size:0.8rem;color:#6b7280;margin-top:6px">سيُرسَل بريد تجريبي من المنصة للتأكد من صحة إعدادات البريد.</div>
+        </div>
+        <div class="m-footer">
+            <button class="st-btn st-btn-s" onclick="closeModal('testEmailModal')">إلغاء</button>
+            <button class="st-btn st-btn-g" onclick="sendTestEmail()">📤 إرسال</button>
+        </div>
+    </div>
+</div>
+<div class="m-overlay" id="deleteAdminModal">
+    <div class="m-box" style="max-width:360px">
+        <div class="m-hdr"><span class="m-title">🗑️ حذف الأدمن</span><button class="m-close" onclick="closeModal('deleteAdminModal')">✕</button></div>
+        <div class="m-body" style="text-align:center;padding:20px">
+            <div style="font-size:2.8rem;margin-bottom:12px">⚠️</div>
+            <p style="font-family:'Tajawal',sans-serif;font-size:0.9rem;color:var(--text,#1a1a2e)">
+                هل تريد حذف الأدمن<br><strong id="deleteAdminName"></strong><br>
+                <small style="color:#c53030">لا يمكن التراجع</small>
+            </p>
+        </div>
+        <div class="m-footer">
+            <button class="st-btn st-btn-s" onclick="closeModal('deleteAdminModal')">إلغاء</button>
+            <button class="st-btn st-btn-r" onclick="execDeleteAdmin()">🗑️ حذف نهائياً</button>
+        </div>
+        <input type="hidden" id="deleteAdminId">
+    </div>
+</div>
+<!-- مودل نجاح -->
+<div class="m-overlay" id="successModal">
+    <div class="m-box" style="max-width:300px">
+        <div class="m-body" style="text-align:center;padding:24px">
+            <div style="font-size:2.8rem;margin-bottom:10px" id="successIcon">✅</div>
+            <h5 style="font-weight:700;color:var(--text,#1a1a2e);margin-bottom:6px;font-family:'Tajawal',sans-serif" id="successTitle">تم</h5>
+            <p style="color:#6b7280;font-size:0.84rem;font-family:'Tajawal',sans-serif" id="successMsg"></p>
+            <button class="st-btn st-btn-p" style="margin-top:12px;width:100%;justify-content:center" onclick="closeModal('successModal')">حسناً</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+'use strict';
+const CSRF = document.cookie.split(';').find(c=>c.trim().startsWith('csrftoken='))?.split('=')[1]||'';
+let currentRates = {};
+let ratesTimer   = null;
+let checkTimers  = {};
+
+/* ══ تابات ══ */
+function switchTab(id, btn) {
+    document.querySelectorAll('.st-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.st-section').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('sec_' + id)?.classList.add('active');
+    if (id === 'rates')    { loadRates(); startRatesTimer(); }
+    if (id === 'database') loadDbStats();
+    if (id === 'sysinfo')  loadSysInfo();
+}
+
+/* ══ الملف الشخصي ══ */
+function previewPhoto(input) {
+    if (!input.files[0]) return;
+    const prev = document.getElementById('profilePhotoPreview');
+    const url  = URL.createObjectURL(input.files[0]);
+    if (prev.tagName === 'IMG') {
+        prev.src = url;
+    } else {
+        const img = document.createElement('img');
+        img.src = url; img.className = 'profile-photo'; img.id = 'profilePhotoPreview';
+        prev.replaceWith(img);
+    }
+}
+
+async function saveProfile() {
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    ['first_name','father_name','grand_name','family_name','email','phone','whatsapp'].forEach(f => {
+        const el = document.getElementById('pf_' + f);
+        if (el) fd.append(f, el.value.trim());
+    });
+    const photo = document.getElementById('photoInput')?.files[0];
+    if (photo) fd.append('photo', photo);
+
+    try {
+        const r = await fetch('/admin-panel/settings/profile/', { method: 'POST', body: fd });
+        const data = await r.json();
+        if (data.status === 'success') {
+            showSuccess('✅', 'تم الحفظ', data.message);
+            if (data.full_name)
+                document.getElementById('profileNameDisplay').textContent = data.full_name;
+            if (data.photo_url) {
+                let prev = document.getElementById('profilePhotoPreview');
+                if (prev.tagName !== 'IMG') {
+                    const img = document.createElement('img');
+                    img.className = 'profile-photo';
+                    img.id = 'profilePhotoPreview';
+                    prev.replaceWith(img);
+                    prev = img;
+                }
+                prev.src = data.photo_url;
+            }
+        } else {
+            showSuccess('⚠️', 'خطأ', data.message);
+        }
+    } catch (err) {
+        console.error(err);
+        showSuccess('❌', 'خطأ في الاتصال', err.message);
+    }
+}
+
+/* مقياس القوة */
+function checkPassStrength(val) {
+    checkPassStrengthEl('newPass','passFill','passLabel');
+}
+function checkPassStrengthEl(inputId, fillId, labelId) {
+    const val   = document.getElementById(inputId)?.value || '';
+    const fill  = document.getElementById(fillId);
+    const label = document.getElementById(labelId);
+    if (!fill) return;
+    if (!val) { fill.style.width='0%'; if(label) label.textContent=''; return; }
+    let score = 0;
+    if (val.length >= 8)           score++;
+    if (val.length >= 12)          score++;
+    if (/[A-Z]/.test(val))         score++;
+    if (/[0-9]/.test(val))         score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+    const lv = [{w:'20%',c:'#e53e3e',t:'ضعيفة جداً'},{w:'40%',c:'#e53e3e',t:'ضعيفة'},{w:'60%',c:'#b45309',t:'متوسطة'},{w:'80%',c:'#1a7a4a',t:'جيدة'},{w:'100%',c:'#1a7a4a',t:'ممتازة'}][Math.min(score,4)];
+    fill.style.width = lv.w; fill.style.background = lv.c;
+    if (label) { label.textContent = lv.t; label.style.color = lv.c; }
+}
+
+function checkPassMatch() {
+    checkPassMatchEl('newPass','newPass2','passMatch');
+}
+function checkPassMatchEl(p1Id, p2Id, matchId) {
+    const v1 = document.getElementById(p1Id)?.value || '';
+    const v2 = document.getElementById(p2Id)?.value || '';
+    const el = document.getElementById(matchId);
+    if (!el || !v2) { if(el) el.textContent=''; return; }
+    el.textContent = v1 === v2 ? '✅ كلمتا المرور متطابقتان' : '❌ كلمتا المرور غير متطابقتين';
+    el.style.color = v1 === v2 ? '#1a7a4a' : '#c53030';
+}
+
+async function changePassword() {
+    const old1 = document.getElementById('oldPass').value;
+    const new1 = document.getElementById('newPass').value;
+    const new2 = document.getElementById('newPass2').value;
+    if (!old1) { showSuccess('⚠️','تنبيه','كلمة المرور الحالية مطلوبة'); return; }
+    if (new1 !== new2) { showSuccess('⚠️','خطأ','كلمتا المرور غير متطابقتان'); return; }
+    if (new1.length < 8) { showSuccess('⚠️','خطأ','كلمة المرور يجب أن تكون 8 أحرف على الأقل'); return; }
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken',CSRF);
+    fd.append('old_password',old1); fd.append('new_password',new1); fd.append('new_password2',new2);
+    const r    = await fetch('/admin-panel/settings/password/',{method:'POST',body:fd});
+    const data = await r.json();
+    showSuccess(data.status==='success'?'🔐':'⚠️', data.status==='success'?'تم التغيير':'خطأ', data.message);
+    if (data.status==='success') ['oldPass','newPass','newPass2'].forEach(id=>document.getElementById(id).value='');
+}
+
+function toggleEye(inputId, btn) {
+    const inp = document.getElementById(inputId);
+    if (!inp) return;
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+}
+
+/* ══ تحقق اسم المستخدم ══ */
+async function checkUsername(val) {
+    const el = document.getElementById('na_username_msg');
+    if (!el) return;
+    if (!val) { el.textContent=''; return; }
+    clearTimeout(checkTimers['username']);
+    checkTimers['username'] = setTimeout(async () => {
+        if (!/^[a-zA-Z0-9_@.+-]{4,}$/.test(val)) {
+            el.textContent='4 أحرف على الأقل — إنجليزي/أرقام فقط، لا مسافات';
+            el.className='f-msg error'; return;
+        }
+        if (/[\u0600-\u06FF\s]/.test(val)) {
+            el.textContent='لا يُسمح بالعربية أو المسافات';
+            el.className='f-msg error'; return;
+        }
+        const r    = await fetch(`/admin-panel/settings/check-username/?username=${encodeURIComponent(val)}`);
+        const data = await r.json();
+        el.textContent = data.message || (data.available?'متاح ✅':'مستخدم مسبقاً');
+        el.className   = 'f-msg ' + (data.available?'ok':'error');
+    }, 500);
+}
+
+async function checkEmailAvailable(val, msgId, excludeId='') {
+    const el = document.getElementById(msgId);
+    if (!el || !val) { if(el) el.textContent=''; return; }
+    clearTimeout(checkTimers[msgId]);
+    checkTimers[msgId] = setTimeout(async () => {
+        const r    = await fetch(`/admin-panel/settings/check-email/?email=${encodeURIComponent(val)}&exclude_id=${excludeId}`);
+        const data = await r.json();
+        el.textContent = data.message || (data.available?'متاح ✅':'مستخدم مسبقاً');
+        el.className   = 'f-msg ' + (data.available?'ok':'error');
+    }, 500);
+}
+
+/* ══ الأدمن ══ */
+function openEditAdmin(id, fn, fa, gr, fm, em, ph, wa, isSuperuser, perms) {
+    // ── تعبئة الحقول ──
+    document.getElementById('ea_id').value          = id;
+    document.getElementById('ea_first_name').value  = fn  || '';
+    document.getElementById('ea_father_name').value = fa  || '';
+    document.getElementById('ea_grand_name').value  = gr  || '';
+    document.getElementById('ea_family_name').value = fm  || '';
+    document.getElementById('ea_email').value       = em  || '';
+    document.getElementById('ea_phone').value       = ph  || '';
+    document.getElementById('ea_whatsapp').value    = wa  || '';
+    document.getElementById('ea_password').value    = '';
+    document.getElementById('ea_password2').value   = '';
+    document.getElementById('ea_pass_match').textContent = '';
+    document.getElementById('ea_email_msg').textContent  = '';
+
+    // ── كلمة المرور — مخفية للسوبر يوزر ──
+    const isSu = isSuperuser === '1' || isSuperuser === 1 || isSuperuser === true;
+    const passEl  = document.getElementById('ea_password')?.closest('.f-group');
+    const pass2El = document.getElementById('ea_pass2_wrap');
+    if (passEl)  passEl.style.display  = isSu ? 'none' : '';
+    if (pass2El) pass2El.style.display = isSu ? 'none' : '';
+
+    // ── الصلاحيات ──
+    const card        = document.getElementById('admRow_' + id);
+    const settingsBtn = document.getElementById('settingsToggle_' + id);
+    const permsList   = perms ? perms.split(',').filter(Boolean) : [];
+
+    // صلاحيات عادية — قراءة من data-perm في الكارد أولاً ثم fallback للـ string
+    ['beneficiaries', 'sponsors', 'payments', 'aids', 'logs'].forEach(p => {
+        const el = document.getElementById('ea_perm_' + p);
+        if (!el) return;
+        const badgeInCard = card?.querySelector(`[data-perm="${p}"]`);
+        el.checked = badgeInCard ? true : permsList.includes(p);
+    });
+
+    // صلاحية الإعدادات — مخفية للسوبر يوزر
+    const settingsPerm     = document.getElementById('ea_perm_settings');
+    const settingsPermWrap = settingsPerm?.closest('label');
+    if (isSu) {
+        if (settingsPermWrap) settingsPermWrap.style.display = 'none';
+        if (settingsPerm)     settingsPerm.checked           = false;
+    } else {
+        if (settingsPermWrap) settingsPermWrap.style.display = '';
+        if (settingsPerm && settingsBtn) {
+            settingsPerm.checked = settingsBtn.classList.contains('on');
+        }
+    }
+
+    openModal('editAdminModal');
+}
+async function saveEditAdmin() {
+
+    const id = document.getElementById('ea_id').value;
+
+    const fd = new FormData();
+
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('admin_id', id);
+
+    ['first_name','father_name','grand_name','family_name','email','phone']
+    .forEach(f => {
+        fd.append(f, document.getElementById('ea_' + f)?.value.trim() || '');
+    });
+
+    ['beneficiaries','sponsors','payments','aids','logs','settings']
+    .forEach(p => {
+        const el = document.getElementById('ea_perm_' + p);
+        fd.append('perm_' + p, el?.checked ? '1' : '0');
+    });
+    fd.append('whatsapp', document.getElementById('ea_whatsapp').value.trim());
+    const pass = document.getElementById('ea_password').value.trim();
+    if (pass) fd.append('new_password', pass);
+    const r = await fetch('/admin-panel/settings/admin/update/', {
+        method: 'POST',
+        body: fd
+    });
+
+    const data = await r.json();
+
+    closeModal('editAdminModal');
+
+    if (data.status === 'success') {
+
+        showSuccess('✅', 'تم التعديل', data.message);
+
+        const row = document.getElementById('admRow_' + id);
+
+        if (row && data.name) {
+            row.querySelector('div[style*="font-weight:700"]').textContent = data.name;
+        }
+
+    } else {
+        showSuccess('⚠️', 'خطأ', data.message);
+    }
+}
+
+async function createAdmin() {
+    const pass = document.getElementById('na_password')?.value || '';
+    const pass2= document.getElementById('na_password2')?.value || '';
+    if (pass !== pass2) { showSuccess('⚠️','خطأ','كلمتا المرور غير متطابقتان'); return; }
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken',CSRF);
+    ['first_name','father_name','grand_name','family_name','username','email','phone'].forEach(f => {
+        fd.append(f, document.getElementById('na_'+f)?.value.trim()||'');
+    });
+    fd.append('password',pass);
+    ['beneficiaries','sponsors','payments','aids','logs','settings'].forEach(p => {
+        const el = document.getElementById('na_perm_'+p);
+        if (el?.checked) fd.append('perm_'+p,'1');
+    });
+    const r    = await fetch('/admin-panel/settings/admin/create/',{method:'POST',body:fd});
+    const data = await r.json();
+    if (data.status==='success') {
+        closeModal('createAdminModal');
+        showSuccess('✅','تم الإنشاء',data.message);
+        setTimeout(()=>location.reload(),1800);
+    } else showSuccess('⚠️','خطأ',data.message);
+}
+
+async function toggleAdmin(id) {
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken',CSRF); fd.append('admin_id',id);
+    const r    = await fetch('/admin-panel/settings/admin/toggle/',{method:'POST',body:fd});
+    const data = await r.json();
+    if (data.status==='success') {
+        const btn = document.getElementById('admToggle_'+id);
+        if (btn) { btn.classList.toggle('on',data.is_active); btn.classList.toggle('off',!data.is_active); }
+        showSuccess(data.is_active?'✅':'🔴',data.is_active?'تم التفعيل':'تم التعطيل',data.message);
+    } else showSuccess('⚠️','خطأ',data.message);
+}
+
+async function toggleAdminSettings(id) {
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('admin_id', id);
+    const r    = await fetch('/admin-panel/settings/admin/toggle-settings/', {method:'POST', body:fd});
+    const data = await r.json();
+    if (data.status === 'success') {
+        const btn   = document.getElementById('settingsToggle_' + id);
+        const perms = document.getElementById('perms_' + id);
+        if (btn) { btn.classList.toggle('on', data.can_access); btn.classList.toggle('off', !data.can_access); }
+
+        // تحديث الشارة
+        let badge = document.getElementById('settingsBadge_' + id);
+        if (data.can_access) {
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.id        = 'settingsBadge_' + id;
+                badge.setAttribute('data-perm','settings');
+                badge.style.cssText = 'background:rgba(124,58,237,0.1);color:var(--adm);padding:2px 7px;border-radius:7px;font-size:0.65rem;font-weight:700';
+                badge.textContent = 'إعدادات';
+                perms?.appendChild(badge);
+            }
+        } else {
+            badge?.remove();
+        }
+
+        showSuccess(
+            data.can_access ? '✅' : '🔴',
+            data.can_access ? 'تم التفعيل' : 'تم الإغلاق',
+            data.can_access ? 'تم منح صلاحية الوصول للإعدادات' : 'تم سحب صلاحية الوصول للإعدادات'
+        );
+    } else showSuccess('⚠️','خطأ', data.message);
+}
+function viewAdmin(name, username, email, phone, whatsapp, lastLogin, dateJoined, status, role, perms) {
+    const PERM_LABELS = {
+        beneficiaries: {label:'مستفيدون', color:'#16a34a', bg:'rgba(34,197,94,0.1)'},
+        sponsors:      {label:'كفلاء',    color:'#2563eb', bg:'rgba(59,130,246,0.1)'},
+        payments:      {label:'دفعات',    color:'#1a7a4a', bg:'rgba(26,122,74,0.1)'},
+        aids:          {label:'مساعدات',  color:'#b45309', bg:'rgba(245,158,11,0.1)'},
+        logs:          {label:'سجلات',    color:'#4b5563', bg:'rgba(107,114,128,0.1)'},
+        settings:      {label:'إعدادات',  color:'var(--adm)', bg:'rgba(124,58,237,0.1)'},
+    };
+
+    const permsList = perms ? perms.split(',').filter(Boolean) : [];
+
+    const rows = [
+        {icon:'📧', label:'البريد الإلكتروني', val:email},
+        {icon:'📞', label:'رقم الجوال',        val:phone},
+        {icon:'💬', label:'رقم الواتساب',      val:whatsapp},
+        {icon:'🕐', label:'آخر دخول',          val:lastLogin},
+        {icon:'📅', label:'تاريخ الإنشاء',     val:dateJoined},
+        {icon:'🔵', label:'حالة الحساب',       val:status},
+        {icon:'🏷️', label:'الدور',             val:role},
+    ];
+
+    document.getElementById('viewAdminContent').innerHTML = `
+        <!-- رأس -->
+        <div style="text-align:center;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid rgba(124,58,237,0.08)">
+            <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--adm),#a78bfa);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.5rem;margin:0 auto 10px">
+                ${(name||'أ')[0]}
+            </div>
+            <div style="font-weight:900;font-size:1rem;color:var(--text,#1a1a2e);font-family:'Tajawal',sans-serif">${name}</div>
+            <div style="font-size:0.76rem;color:#9ca3af;margin-top:2px">${username}</div>
+        </div>
+
+        <!-- التفاصيل -->
+        <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px">
+            ${rows.map(r => `
+            <div style="display:flex;align-items:center;gap:10px;background:var(--bg-secondary,#f4f9f6);border-radius:8px;padding:9px 12px">
+                <span style="font-size:1rem;flex-shrink:0">${r.icon}</span>
+                <div style="flex:1;min-width:0">
+                    <div style="font-size:0.65rem;color:#9ca3af;font-family:'Tajawal',sans-serif;margin-bottom:1px">${r.label}</div>
+                    <div style="font-size:0.84rem;font-weight:700;color:var(--text,#1a1a2e);font-family:'Tajawal',sans-serif">${r.val||'—'}</div>
+                </div>
+            </div>`).join('')}
+        </div>
+
+        <!-- الصلاحيات -->
+        <div>
+            <div style="font-size:0.76rem;font-weight:700;color:#9ca3af;font-family:'Tajawal',sans-serif;margin-bottom:8px">🔑 الصلاحيات</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+                ${permsList.length
+                    ? permsList.map(p => {
+                        const info = PERM_LABELS[p] || {label:p, color:'#6b7280', bg:'rgba(107,114,128,0.1)'};
+                        return `<span style="background:${info.bg};color:${info.color};padding:4px 11px;border-radius:8px;font-size:0.76rem;font-weight:700;font-family:'Tajawal',sans-serif">${info.label}</span>`;
+                      }).join('')
+                    : '<span style="color:#9ca3af;font-family:\'Tajawal\',sans-serif;font-size:0.82rem">لا توجد صلاحيات محددة</span>'
+                }
+            </div>
+        </div>`;
+
+    openModal('viewAdminModal');
+}
+/* ══ معلومات الموقع ══ */
+function toggleDaysMode(val) {
+    document.getElementById('days_range_wrap').style.display  = val==='range'  ? 'flex' : 'none';
+    document.getElementById('days_custom_wrap').style.display = val==='custom' ? 'flex' : 'none';
+}
+
+function toggleDay(label, day) {
+    label.classList.toggle('checked');
+    const inp = label.querySelector('input');
+    if (inp) inp.checked = label.classList.contains('checked');
+}
+
+function _getCustomDays() {
+    return Array.from(document.querySelectorAll('#days_custom_wrap .day-chip.checked'))
+        .map(el => el.querySelector('input')?.value || '').filter(Boolean).join(',');
+}
+
+async function saveSiteInfo() {
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken',CSRF);
+    ['site_name','site_address','site_email','site_phone','site_whatsapp'].forEach(f => {
+        fd.append(f, document.getElementById(f)?.value.trim()||'');
+    });
+    const dType = document.getElementById('work_days_type')?.value || 'week';
+    fd.append('work_days_type', dType);
+    fd.append('work_days_from', document.getElementById('work_days_from')?.value||'السبت');
+    fd.append('work_days_to',   document.getElementById('work_days_to')?.value||'الخميس');
+    fd.append('work_days_custom', _getCustomDays());
+    ['from_h','from_m','from_p','to_h','to_m','to_p'].forEach(f => {
+        fd.append('work_time_'+f, document.getElementById('work_time_'+f)?.value||'');
+    });
+    const r    = await fetch('/admin-panel/settings/site/',{method:'POST',body:fd});
+    const data = await r.json();
+    showSuccess(data.status==='success'?'✅':'⚠️', data.status==='success'?'تم الحفظ':'خطأ', data.message);
+}
+
+/* ══ الصيانة ══ */
+async function toggleMaintenance() {
+    const fd = new FormData(); fd.append('csrfmiddlewaretoken',CSRF);
+    const r    = await fetch('/admin-panel/settings/maintenance/',{method:'POST',body:fd});
+    const data = await r.json();
+    if (data.status==='success') {
+        const btn  = document.getElementById('maintenanceToggle');
+        const stat = document.getElementById('maintenanceStatus');
+        btn.classList.toggle('on',data.maintenance); btn.classList.toggle('off',!data.maintenance);
+        stat.textContent = data.maintenance ? '🔴 الحالة: الموقع تحت الصيانة' : '🟢 الحالة: الموقع يعمل بشكل طبيعي';
+        stat.style.color = data.maintenance ? '#c53030' : '#1a7a4a';
+        showSuccess(data.maintenance?'🚧':'🟢','وضع الصيانة',data.message);
+    }
+}
+
+/* ══ أسعار الصرف ══ */
+async function loadRates() {
+    const r    = await fetch('/admin-panel/settings/rates/',{headers:{'X-Requested-With':'XMLHttpRequest'}});
+    const data = await r.json();
+    if (data.status !== 'success') return;
+    currentRates = data.rates;
+    document.getElementById('ratesUpdatedAt').textContent = 'آخر تحديث: ' + (data.rates.updated_at||'—');
+    const CURRENCIES = [
+        {code:'USD',flag:'🇺🇸',name:'دولار أمريكي',key:'USD_TO_ILS'},
+        {code:'EUR',flag:'🇪🇺',name:'يورو أوروبي', key:'EUR_TO_ILS'},
+        {code:'JOD',flag:'🇯🇴',name:'دينار أردني', key:'JOD_TO_ILS'},
+        {code:'SAR',flag:'🇸🇦',name:'ريال سعودي',  key:'SAR_TO_ILS'},
+        {code:'EGP',flag:'🇪🇬',name:'جنيه مصري',  key:'EGP_TO_ILS'},
+    ];
+    document.getElementById('ratesList').innerHTML = CURRENCIES.map(c => `
+        <div class="rate-item">
+            <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:1.2rem">${c.flag}</span>
+                <div><div style="font-family:'Tajawal',sans-serif;font-size:0.84rem;font-weight:700;color:var(--text,#1a1a2e)">1 ${c.code}</div>
+                <div style="font-size:0.7rem;color:#9ca3af">${c.name}</div></div>
+            </div>
+            <div style="text-align:left">
+                <div class="rate-val">${data.rates[c.key]||'—'} ₪</div>
+                <div style="font-size:0.68rem;color:#9ca3af">شيقل</div>
+            </div>
+        </div>`).join('');
+    calcCurrency();
+}
+
+function calcCurrency() {
+    const amount = parseFloat(document.getElementById('calcAmount')?.value)||0;
+    const from   = document.getElementById('calcFrom')?.value||'ILS';
+    const el     = document.getElementById('calcResults');
+    if (!el||!amount) { el.innerHTML=''; return; }
+    let inILS = amount;
+    if (from !== 'ILS') inILS = amount * (currentRates[from+'_TO_ILS']||1);
+    const targets = [
+        {code:'ILS',flag:'🇮🇱',name:'شيقل',    rate:1},
+        {code:'USD',flag:'🇺🇸',name:'دولار',    rate:currentRates.ILS_TO_USD||0},
+        {code:'EUR',flag:'🇪🇺',name:'يورو',     rate:currentRates.ILS_TO_EUR||0},
+        {code:'JOD',flag:'🇯🇴',name:'دينار أردني',rate:currentRates.ILS_TO_JOD||0},
+        {code:'SAR',flag:'🇸🇦',name:'ريال سعودي',rate:currentRates.ILS_TO_SAR||0},
+        {code:'EGP',flag:'🇪🇬',name:'جنيه مصري',rate:currentRates.ILS_TO_EGP||0},
+    ].filter(t => t.code !== from);
+    el.innerHTML = targets.map(t => `
+        <div style="background:var(--bg-secondary,#f4f9f6);border-radius:9px;padding:9px 11px">
+            <div style="font-size:0.7rem;color:#9ca3af">${t.flag} ${t.name}</div>
+            <div style="font-size:0.94rem;font-weight:900;font-family:'Cairo',sans-serif;color:var(--adm)">${(inILS*t.rate).toFixed(3)}</div>
+        </div>`).join('');
+}
+
+function startRatesTimer() {
+    if (ratesTimer) clearInterval(ratesTimer);
+    ratesTimer = setInterval(loadRates, 60000);
+}
+
+/* ══ قاعدة البيانات ══ */
+async function loadDbStats() {
+    document.getElementById('dbTablesList').innerHTML='<div style="text-align:center;padding:20px;color:#9ca3af">⏳</div>';
+    const r    = await fetch('/admin-panel/settings/db-stats/',{headers:{'X-Requested-With':'XMLHttpRequest'}});
+    const data = await r.json();
+    if (data.status!=='success') { document.getElementById('dbTablesList').innerHTML=`<p style="color:#c53030;text-align:center">${data.message}</p>`; return; }
+    document.getElementById('dbTablesList').innerHTML=`
+        <div style="border:1px solid rgba(124,58,237,0.06);border-radius:10px;overflow:hidden;max-height:380px;overflow-y:auto">
+        ${data.tables.map(t=>`
+        <div class="db-item" onclick="openDbDetail('${t.name}',${t.count},'${t.size}')">
+            <span style="font-family:'Tajawal',sans-serif;font-size:0.82rem;font-weight:600;color:var(--text,#1a1a2e)">${t.name}</span>
+            <div style="display:flex;gap:10px;align-items:center">
+                <span style="font-family:'Cairo',sans-serif;font-size:0.82rem;font-weight:700;color:var(--adm)">${t.count.toLocaleString('ar')}</span>
+                <span style="font-size:0.7rem;color:#9ca3af">${t.size}</span>
+                <span style="font-size:0.7rem;color:var(--adm)">←</span>
+            </div>
+        </div>`).join('')}
+        </div>`;
+}
+
+function openDbDetail(name,count,size) {
+    document.getElementById('dbDetailTitle').textContent = `🗃️ ${name}`;
+    document.getElementById('dbDetailContent').innerHTML=`
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div style="background:var(--bg-secondary,#f4f9f6);border-radius:9px;padding:14px;text-align:center">
+                <div style="font-size:1.6rem;font-weight:900;font-family:'Cairo',sans-serif;color:var(--adm)">${count.toLocaleString('ar')}</div>
+                <div style="font-size:0.72rem;color:#9ca3af;font-family:'Tajawal',sans-serif">عدد السجلات</div>
+            </div>
+            <div style="background:var(--bg-secondary,#f4f9f6);border-radius:9px;padding:14px;text-align:center">
+                <div style="font-size:1.6rem;font-weight:900;font-family:'Cairo',sans-serif;color:#1a7a4a">${size}</div>
+                <div style="font-size:0.72rem;color:#9ca3af;font-family:'Tajawal',sans-serif">الحجم</div>
+            </div>
+        </div>
+        <div style="margin-top:12px;padding:11px;background:rgba(124,58,237,0.04);border-radius:9px;font-family:'Tajawal',sans-serif;font-size:0.82rem;color:#6b7280">
+            اسم الجدول: <strong style="direction:ltr;display:inline-block">${name}</strong>
+        </div>`;
+    openModal('dbDetailModal');
+}
+
+async function clearCache() {
+    _showProgress();
+    const fd=new FormData(); fd.append('csrfmiddlewaretoken',CSRF);
+    const r    = await fetch('/admin-panel/settings/clear-cache/',{method:'POST',body:fd});
+    const data = await r.json();
+    _finishProgress(data.status==='success');
+    showSuccess(data.status==='success'?'🧹':'⚠️',data.status==='success'?'تم المسح':'خطأ',data.message);
+}
+
+async function optimizeDb() {
+    _showProgress();
+    const fd=new FormData(); fd.append('csrfmiddlewaretoken',CSRF);
+    const r    = await fetch('/admin-panel/settings/optimize-db/',{method:'POST',body:fd});
+    const data = await r.json();
+    _finishProgress(data.status==='success');
+    showSuccess(data.status==='success'?'⚡':'⚠️',data.status==='success'?'تم التحسين':'خطأ',data.message);
+}
+
+function _showProgress() {
+    const wrap = document.getElementById('dbProgressWrap');
+    const bar  = document.getElementById('dbProgressBar');
+    if(wrap) wrap.style.display='';
+    if(bar)  bar.style.width='0%';
+    let p=0;
+    const t = setInterval(()=>{ p=Math.min(p+8,90); if(bar) bar.style.width=p+'%'; },150);
+    window._dbTimer = t;
+}
+function _finishProgress(ok) {
+    clearInterval(window._dbTimer);
+    const bar = document.getElementById('dbProgressBar');
+    if(bar){ bar.style.width='100%'; bar.style.background=ok?'#1a7a4a':'#c53030'; }
+    setTimeout(()=>{ if(bar){bar.style.width='0%';bar.style.background='';} const w=document.getElementById('dbProgressWrap'); if(w) w.style.display='none'; },2500);
+}
+
+/* ══ النسخ الاحتياطية ══ */
+function startBackup(fmt) {
+    const prog = document.getElementById('backupProgress');
+    const bar  = document.getElementById('backupBar');
+    const msg  = document.getElementById('backupMsg');
+    if(prog) prog.style.display='';
+    if(bar)  bar.style.width='0%';
+    if(msg)  msg.textContent=`⏳ جار تحضير ملف ${fmt.toUpperCase()}...`;
+    let p=0;
+    const t = setInterval(()=>{ p=Math.min(p+6,88); if(bar) bar.style.width=p+'%'; },180);
+    window.location.href = `/admin-panel/settings/backup/?format=${fmt}`;
+    setTimeout(()=>{ clearInterval(t); if(bar) bar.style.width='100%'; if(msg) msg.textContent='✅ جار التحميل...'; },3000);
+}
+
+/* ══ البريد ══ */
+async function sendTestEmail() {
+    const email = document.getElementById('testEmailAddr').value.trim();
+    if (!email) { toast('أدخل البريد الإلكتروني','error'); return; }
+    const fd=new FormData(); fd.append('csrfmiddlewaretoken',CSRF); fd.append('email',email);
+    const r    = await fetch('/admin-panel/settings/test-email/',{method:'POST',body:fd});
+    const data = await r.json();
+    closeModal('testEmailModal');
+    showSuccess(data.status==='success'?'✉️':'⚠️',data.status==='success'?'تم الإرسال':'خطأ',data.message);
+}
+
+async function toggleNotifications() {
+    const fd=new FormData(); fd.append('csrfmiddlewaretoken',CSRF);
+    const r    = await fetch('/admin-panel/settings/toggle-notifications/',{method:'POST',body:fd});
+    const data = await r.json();
+    if (data.status==='success') {
+        const btn=document.getElementById('notifToggle');
+        if(btn){ btn.classList.toggle('on',data.enabled); btn.classList.toggle('off',!data.enabled); }
+        showSuccess('🔔','الإشعارات',data.message);
+    }
+}
+
+/* ══ الأمان ══ */
+async function saveSecuritySettings() {
+    const fd=new FormData(); fd.append('csrfmiddlewaretoken',CSRF);
+    fd.append('max_login_attempts',document.getElementById('max_login_attempts').value);
+    fd.append('session_timeout',   document.getElementById('session_timeout').value);
+    const r    = await fetch('/admin-panel/settings/security/',{method:'POST',body:fd});
+    const data = await r.json();
+    showSuccess(data.status==='success'?'🔒':'⚠️',data.status==='success'?'تم الحفظ':'خطأ',data.message);
+}
+
+async function addBlockedIp() {
+    const ip=document.getElementById('newBlockedIp').value.trim();
+    if (!ip) return;
+    const fd=new FormData(); fd.append('csrfmiddlewaretoken',CSRF);
+    fd.append('action','add'); fd.append('ip',ip);
+    const r    = await fetch('/admin-panel/settings/blocked-ips/',{method:'POST',body:fd});
+    const data = await r.json();
+    if (data.status==='success') {
+        document.getElementById('newBlockedIp').value='';
+        document.getElementById('noIpsMsg')?.remove();
+        const div=document.createElement('div');
+        div.id=`ip_${ip}`;
+        div.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:7px 11px;background:var(--bg-secondary,#f4f9f6);border-radius:8px;margin-bottom:6px';
+        div.innerHTML=`<span style="font-family:monospace;font-size:0.84rem">${ip}</span><button class="st-btn st-btn-r" style="padding:3px 9px;font-size:0.72rem" onclick="removeBlockedIp('${ip}')">حذف</button>`;
+        document.getElementById('blockedIpsList').appendChild(div);
+        toast('تم حظر IP','success');
+    } else toast(data.message,'error');
+}
+
+async function removeBlockedIp(ip) {
+    const fd=new FormData(); fd.append('csrfmiddlewaretoken',CSRF);
+    fd.append('action','remove'); fd.append('ip',ip);
+    const r    = await fetch('/admin-panel/settings/blocked-ips/',{method:'POST',body:fd});
+    const data = await r.json();
+    if (data.status==='success') { document.getElementById('ip_'+ip)?.remove(); toast('تم رفع الحظر','success'); }
+}
+
+/* ══ معلومات النظام ══ */
+async function loadSysInfo() {
+
+    const r = await fetch('/admin-panel/settings/system-info/', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+
+    const data = await r.json();
+    if (data.status !== 'success') return;
+
+    // الجلسات حسب النوع
+    const st = data.sessions_by_type || {};
+
+    const TYPE_LABELS = {
+        admin:   'أدمن',
+        orphan:  'أيتام',
+        family:  'أسر',
+        special: 'ذوو احتياجات',
+        sponsor: 'كفلاء',
+        unknown: 'غير محدد',
+    };
+
+    const sessionsHtml = Object.keys(st).length
+        ? Object.entries(st).map(([k, v]) =>
+            v > 0
+                ? `<span style="background:var(--bg-secondary,#f4f9f6);border-radius:6px;padding:2px 8px;font-size:0.75rem;font-weight:700;margin-left:4px">${TYPE_LABELS[k] || k}: ${v}</span>`
+                : ''
+        ).join('')
+        : data.active_sessions;
+
+    const rows = [
+        ['Django', data.django_version],
+        ['Python', data.python_version],
+        ['النظام', data.platform],
+        ['قاعدة البيانات', data.db_engine],
+        ['المستخدمون', data.total_users],
+        ['السجلات', (data.total_logs || 0).toLocaleString('ar')],
+        ['الجلسات النشطة', sessionsHtml || data.active_sessions],
+        ['الذاكرة', data.mem_used + ' / ' + data.mem_total]
+    ];
+
+    document.getElementById('sysInfoContent').innerHTML =
+        rows.map(([l, v]) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(124,58,237,0.05);flex-wrap:wrap;gap:6px">
+            <span style="color:#9ca3af;font-family:'Tajawal',sans-serif;font-size:0.82rem">${l}</span>
+            <div style="font-weight:700;color:var(--text,#1a1a2e);font-family:'Tajawal',sans-serif;font-size:0.82rem">${v || '—'}</div>
+        </div>
+    `).join('');
+
+    document.getElementById('sysLastLogs').innerHTML =
+        (data.last_logs || []).map(l => `
+        <div style="padding:7px 0;border-bottom:1px solid rgba(124,58,237,0.05)">
+            <div style="font-size:0.82rem;font-weight:700;color:var(--text,#1a1a2e);font-family:'Tajawal',sans-serif">
+                ${l.user} — ${l.action}
+            </div>
+            <div style="font-size:0.74rem;color:#9ca3af;font-family:'Tajawal',sans-serif">
+                ${l.desc}
+            </div>
+            <div style="font-size:0.68rem;color:#9ca3af;margin-top:1px">
+                ${l.time}
+            </div>
+        </div>
+    `).join('');
+}
+
+/* ══ مساعدات ══ */
+function openModal(id)  { document.getElementById(id)?.classList.add('show'); }
+function closeModal(id) { document.getElementById(id)?.classList.remove('show'); }
+
+function showSuccess(icon,title,msg) {
+    document.getElementById('successIcon').textContent  = icon;
+    document.getElementById('successTitle').textContent = title;
+    document.getElementById('successMsg').textContent   = msg;
+    openModal('successModal');
+    setTimeout(()=>closeModal('successModal'),2800);
+}
+function confirmDeleteAdmin(id, name) {
+    document.getElementById('deleteAdminId').value        = id;
+    document.getElementById('deleteAdminName').textContent = name;
+    openModal('deleteAdminModal');
+}
+
+async function execDeleteAdmin() {
+    const id = document.getElementById('deleteAdminId').value;
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('admin_id', id);
+    const r    = await fetch('/admin-panel/settings/admin/delete/', {method:'POST',body:fd});
+    const data = await r.json();
+    closeModal('deleteAdminModal');
+    if (data.status === 'success') {
+        document.getElementById('admRow_' + id)?.remove();
+        showSuccess('🗑️','تم الحذف',data.message);
+    } else showSuccess('⚠️','خطأ',data.message);
+}
+async function deleteAdmin(id, name) {
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('admin_id', id);
+    const r    = await fetch('/admin-panel/settings/admin/delete/', {method:'POST',body:fd});
+    const data = await r.json();
+    if (data.status === 'success') {
+        document.getElementById('admRow_' + id)?.remove();
+        showSuccess('🗑️','تم الحذف',data.message);
+    } else {
+        showSuccess('⚠️','خطأ',data.message);
+    }
+}
+function toast(msg,type='info') {
+    const c=document.getElementById('toastWrap');
+    const el=document.createElement('div');
+    el.className=`st-toast ${type}`;
+    el.innerHTML=`<span>${{success:'✅',error:'⚠️',info:'ℹ️'}[type]||'ℹ️'}</span><span style="font-family:'Tajawal',sans-serif;color:var(--text,#1a1a2e)">${msg}</span>`;
+    c.appendChild(el);
+    setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity 0.3s'; setTimeout(()=>el.remove(),300); },3500);
+}
+
+
+document.querySelectorAll('.m-overlay').forEach(m => {
+    m.addEventListener('click', e => { if(e.target===m) m.classList.remove('show'); });
+});
+
+// تهيئة أوقات العمل
+toggleDaysMode(document.getElementById('work_days_type')?.value||'week');
+</script>
+{% endblock %}

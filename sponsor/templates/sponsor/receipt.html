@@ -1,0 +1,268 @@
+{% extends 'sponsor/base.html' %}
+{% block title %}رفع وصل مالي{% endblock %}
+{% block page_title %}📤 رفع وصل مالي{% endblock %}
+
+{% block extra_css %}
+<style>
+.receipt-status { display:flex; align-items:center; gap:6px; padding:4px 12px; border-radius:20px; font-size:0.72rem; font-weight:700; }
+.receipt-status.pending  { background:rgba(245,158,11,0.12); color:#b45309; }
+.receipt-status.approved { background:rgba(26,122,74,0.12);  color:var(--green); }
+.receipt-status.rejected { background:rgba(229,62,62,0.1);   color:#c53030; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+    <!-- فورم الرفع -->
+    <div class="col-lg-7">
+        <div class="dash-card fade-in">
+            <div class="section-title mb-4">📋 بيانات الوصل</div>
+            <div class="dash-alert" id="receiptAlert"></div>
+
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">تاريخ الوصل <span class="req">*</span></label>
+                    <input type="date" id="receiptDate" class="form-control"
+                           max="{{ today|date:'Y-m-d' }}"
+                           oninput="clearErr('receiptDate','errDate')">
+                    <div class="field-error" id="errDate"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">اسم المُرسِل <span class="req">*</span></label>
+                    <input type="text" id="senderName" class="form-control"
+                           placeholder="أدخل اسم المرسل"
+                           oninput="clearErr('senderName','errSender')">
+                    <div class="field-error" id="errSender"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">المبلغ (شيقل) <span class="req">*</span></label>
+                    <input type="number" id="amountShekel" class="form-control"
+                           placeholder="0.00" min="0" step="0.01"
+                           oninput="convertAmount(); clearErr('amountShekel','errAmount')">
+                    <div class="field-error" id="errAmount"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">المبلغ (دولار)</label>
+                    <input type="number" id="amountDollar" class="form-control"
+                           placeholder="0.00" min="0" step="0.01" readonly
+                           style="background:var(--bg-secondary,#f4f9f6);cursor:not-allowed">
+                    <div style="font-size:0.72rem;color:var(--text-muted,#9ca3af);margin-top:3px;font-family:'Tajawal',sans-serif">
+                        سعر الصرف: {{ rates.USD_TO_ILS }} ₪/$
+                    </div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">الرقم الفريد للوصل <span class="req">*</span></label>
+                    <input type="text" id="uniqueNumber" class="form-control"
+                           placeholder="أدخل الرقم المرجعي أو رقم العملية"
+                           oninput="clearErr('uniqueNumber','errUnique')">
+                    <div class="field-error" id="errUnique"></div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">صورة الوصل <span class="req">*</span></label>
+                    <div id="photoBox"
+                         style="border:2px dashed rgba(26,122,74,0.25);border-radius:14px;
+                                padding:28px;text-align:center;cursor:pointer;
+                                background:var(--bg-secondary,#f4f9f6);
+                                transition:all 0.3s;position:relative"
+                         onclick="document.getElementById('receiptImage').click()">
+                        <input type="file" id="receiptImage" accept=".jpg,.jpeg,.png,.pdf"
+                               onchange="handleReceiptFile(this)"
+                               onclick="event.stopPropagation()"
+                               style="position:absolute;inset:0;opacity:0;cursor:pointer">
+                        <div id="photoPlaceholder">
+                            <div style="font-size:2.5rem;margin-bottom:8px">📎</div>
+                            <div style="font-family:'Tajawal',sans-serif;font-size:0.85rem;color:var(--text-muted,#6b7280)">
+                                اضغط لرفع صورة الوصل<br>
+                                <small>JPG • PNG • PDF — الحد 4MB</small>
+                            </div>
+                        </div>
+                        <div id="photoPreview" style="display:none">
+                            <div style="font-size:2rem;margin-bottom:6px">✅</div>
+                            <div id="photoName" style="font-family:'Tajawal',sans-serif;font-size:0.85rem;color:var(--green);font-weight:600"></div>
+                        </div>
+                    </div>
+                    <div class="field-error" id="errImage"></div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">ملاحظات</label>
+                    <textarea id="receiptNotes" class="form-control" rows="3"
+                              placeholder="أي ملاحظات إضافية (اختياري)"
+                              maxlength="500"></textarea>
+                </div>
+                <div class="col-12">
+                    <button id="submitBtn" class="btn-green w-100" onclick="submitReceipt()"
+                            style="padding:14px;font-size:1rem;justify-content:center">
+                        <span>📤</span> إرسال الوصل للمراجعة
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- آخر الوصولات -->
+    <div class="col-lg-5">
+        <div class="dash-card fade-in fade-in-d1">
+            <div class="section-hdr">
+                <div class="section-title">📋 آخر الوصولات</div>
+                <a href="{% url 'sponsor:wallet' %}" class="btn-secondary" style="font-size:0.8rem;padding:6px 14px">
+                    عرض الكل
+                </a>
+            </div>
+            {% if receipts %}
+                {% for r in receipts %}
+                <div style="padding:14px 0;border-bottom:1px solid rgba(26,122,74,0.06)">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+                        <div style="font-size:0.85rem;font-weight:700;color:var(--text,#1a1a2e)">
+                            {{ r.amount_shekel }} ₪ / {{ r.amount_dollar }} $
+                        </div>
+                        <span class="receipt-status {% if r.status == 'موافق' %}approved{% elif r.status == 'مرفوض' %}rejected{% else %}pending{% endif %}">
+                            {{ r.status }}
+                        </span>
+                    </div>
+                    <div style="font-size:0.78rem;color:var(--text-muted,#9ca3af)">
+                        {{ r.receipt_date }} — {{ r.sender_name }}
+                    </div>
+                    {% if r.reject_reason %}
+                    <div style="font-size:0.78rem;color:#c53030;margin-top:4px;
+                                background:rgba(229,62,62,0.06);border-radius:6px;padding:6px 10px">
+                        سبب الرفض: {{ r.reject_reason }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="empty-state" style="padding:24px">
+                <div class="empty-icon" style="font-size:2rem">📤</div>
+                <div class="empty-text">لا توجد وصولات سابقة</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const RATE_ILS_TO_USD = {{ rates.ILS_TO_USD }};
+
+function convertAmount() {
+    const shekel = parseFloat(document.getElementById('amountShekel').value) || 0;
+    document.getElementById('amountDollar').value = (shekel * RATE_ILS_TO_USD).toFixed(2);
+}
+
+function handleReceiptFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 4 * 1024 * 1024) {
+        showErr('errImage', 'الملف يتجاوز 4MB');
+        input.value = '';
+        return;
+    }
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['jpg','jpeg','png','pdf'].includes(ext)) {
+        showErr('errImage', 'نوع الملف غير مسموح');
+        input.value = '';
+        return;
+    }
+    document.getElementById('photoPlaceholder').style.display = 'none';
+    document.getElementById('photoPreview').style.display     = 'block';
+    document.getElementById('photoName').textContent          = file.name;
+    document.getElementById('photoBox').style.borderColor     = '#1a7a4a';
+    document.getElementById('photoBox').style.borderStyle     = 'solid';
+    clearErr('receiptImage','errImage');
+}
+
+function clearErr(fieldId, errId) {
+    const f = document.getElementById(fieldId);
+    const e = document.getElementById(errId);
+    if (f) f.classList.remove('is-invalid');
+    if (e) { e.textContent=''; e.classList.remove('show'); }
+}
+
+function showErr(errId, msg) {
+    const e = document.getElementById(errId);
+    if (e) { e.textContent = msg; e.classList.add('show'); }
+}
+
+function showAlert(type, msg) {
+    const el = document.getElementById('receiptAlert');
+    el.className = 'dash-alert show ' + type;
+    el.innerHTML = (type==='success'?'✅ ':'⚠️ ') + msg;
+    if (type !== 'success') setTimeout(()=>el.classList.remove('show'), 6000);
+}
+
+async function submitReceipt() {
+    const btn = document.getElementById('submitBtn');
+    let valid  = true;
+
+    const date   = document.getElementById('receiptDate').value;
+    const sender = document.getElementById('senderName').value.trim();
+    const shekel = document.getElementById('amountShekel').value;
+    const dollar = document.getElementById('amountDollar').value;
+    const unique = document.getElementById('uniqueNumber').value.trim();
+    const img    = document.getElementById('receiptImage').files[0];
+    const notes  = document.getElementById('receiptNotes').value.trim();
+
+    if (!date)   { showErr('errDate',   'التاريخ مطلوب');       valid=false; }
+    if (!sender) { showErr('errSender', 'اسم المرسل مطلوب');    valid=false; }
+    if (!shekel || parseFloat(shekel) <= 0) { showErr('errAmount', 'أدخل مبلغاً صحيحاً'); valid=false; }
+    if (!unique) { showErr('errUnique', 'الرقم الفريد مطلوب');  valid=false; }
+    if (!img)    { showErr('errImage',  'صورة الوصل مطلوبة');   valid=false; }
+    if (!valid)  return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳</span> جار الإرسال...';
+
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', getCsrf());
+    fd.append('receipt_date',  date);
+    fd.append('sender_name',   sender);
+    fd.append('amount_shekel', shekel);
+    fd.append('amount_dollar', dollar);
+    fd.append('unique_number', unique);
+    fd.append('receipt_image', img);
+    fd.append('notes',         notes);
+
+    try {
+        const r    = await fetch('/sponsor/receipt/submit/', { method:'POST', body:fd });
+        const data = await r.json();
+        if (data.status === 'success') {
+            showAlert('success', data.message);
+            document.getElementById('receiptDate').value  = '';
+            document.getElementById('senderName').value   = '';
+            document.getElementById('amountShekel').value = '';
+            document.getElementById('amountDollar').value = '';
+            document.getElementById('uniqueNumber').value = '';
+            document.getElementById('receiptNotes').value = '';
+            document.getElementById('receiptImage').value = '';
+            document.getElementById('photoPlaceholder').style.display = 'block';
+            document.getElementById('photoPreview').style.display     = 'none';
+            document.getElementById('photoBox').style.borderColor     = 'rgba(26,122,74,0.25)';
+            document.getElementById('photoBox').style.borderStyle     = 'dashed';
+        } else {
+            if (data.errors) {
+                const map = {
+                    receipt_date:'errDate', sender_name:'errSender',
+                    amount_shekel:'errAmount', unique_number:'errUnique',
+                    receipt_image:'errImage',
+                };
+                Object.entries(data.errors).forEach(([k,v]) => {
+                    if (map[k]) showErr(map[k], v);
+                });
+            }
+            showAlert('error', data.message || 'يرجى تصحيح الأخطاء');
+        }
+    } catch(e) {
+        showAlert('error', 'حدث خطأ في الاتصال');
+    }
+    btn.disabled = false;
+    btn.innerHTML = '<span>📤</span> إرسال الوصل للمراجعة';
+}
+
+function getCsrf() {
+    return document.cookie.split(';').find(c=>c.trim().startsWith('csrftoken='))?.split('=')[1]||'';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,338 @@
+{% load static %}
+
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    /* الأسماء العربية */
+    [
+        ['special_guardian_first_name',  'اسم المعيل'],
+        ['special_guardian_father_name', 'اسم أب المعيل'],
+        ['special_guardian_grand_name',  'اسم جد المعيل'],
+        ['special_guardian_family_name', 'لقب المعيل'],
+    ].forEach(([id, lbl]) => bindArabicField(id, 'err_' + id, lbl));
+
+    /* تواريخ الميلاد */
+    ['special_birth_date'].forEach(id => bindDateField(id, 'err_' + id));
+
+    /* الأرقام */
+    bindNumberField('special_monthly_rent',            '',                                  'مبلغ الإيجار',  0);
+    bindNumberField('special_guardian_monthly_income', 'err_special_guardian_monthly_income','الدخل الشهري', 0);
+    bindNumberField('special_guardian_dependents',     'err_special_guardian_dependents',   'عدد المُعالين', 1);
+
+    /* رقم هوية المعيل مع تحقق API */
+    bindIdField('special_guardian_id_number', 'err_special_guardian_id_number');
+});
+</script>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     بيانات المريض
+══════════════════════════════════════════════════════════ -->
+<div class="sec-title mb-3"><span>♿</span> بيانات المريض</div>
+<div class="row g-3 mb-4">
+
+    <div class="col-md-4">
+        <label class="form-label">تاريخ الميلاد <span class="req">*</span></label>
+        <input type="date" id="special_birth_date" class="form-control" max="">
+        <div class="field-err" id="err_special_birth_date"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label">الحالة الصحية <span class="req">*</span></label>
+        <select id="special_health_status" class="form-select form-control">
+            <option value="">-- اختر --</option>
+            <option>سليم</option>
+            <option>مرض مزمن</option>
+            <option>ذوو احتياجات خاصة</option>
+            <option>مصاب حرب</option>
+        </select>
+        <div class="field-err" id="err_special_health_status"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label">المستوى التعليمي <span class="req">*</span></label>
+        <select id="special_education_level" class="form-select form-control"
+                onchange="updateGrade('special_education_level','special_school_grade','special_grade_wrap')">
+            <option value="">-- اختر --</option>
+            <option>غير متعلم</option>
+            <option>رياض الأطفال</option>
+            <option>ابتدائي</option>
+            <option>إعدادي</option>
+            <option>ثانوي</option>
+            <option>جامعي</option>
+        </select>
+        <div class="field-err" id="err_special_education_level"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-4 d-none" id="special_grade_wrap">
+        <label class="form-label">الصف الدراسي <span class="req">*</span></label>
+        <select id="special_school_grade" class="form-select form-control">
+            <option value="">-- اختر --</option>
+        </select>
+        <div class="field-err" id="err_special_school_grade"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label">اسم المدرسة <span class="opt">(اختياري)</span></label>
+        <input type="text" id="special_school_name" class="form-control" placeholder="اسم المدرسة">
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label">صورة المريض <span class="req">*</span></label>
+        <div class="photo-box" id="special_photo_box"
+             onclick="document.getElementById('special_photo').click()">
+            <input type="file" id="special_photo" accept=".jpg,.jpeg,.png"
+                   onchange="previewPhoto(this,'specialPhotoPreview','specialPhotoHolder','special_photo_box')"
+                   onclick="event.stopPropagation()">
+            <img id="specialPhotoPreview" class="photo-preview" src="" alt="">
+            <div id="specialPhotoHolder">
+                <div style="font-size:1.8rem;margin-bottom:4px">📷</div>
+                <div class="file-box-text">اضغط لرفع صورة المريض<br><small>JPG • PNG — 4MB</small></div>
+            </div>
+        </div>
+        <div class="field-err" id="err_special_photo"><span>⚠️</span><span></span></div>
+    </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     العنوان الحالي
+══════════════════════════════════════════════════════════ -->
+<div class="sec-title mb-3"><span>📍</span> العنوان الحالي</div>
+<div class="row g-3 mb-3">
+
+    <div class="col-md-4">
+        <label class="form-label">المدينة <span class="req">*</span></label>
+        <select id="special_current_city" class="form-select form-control">
+            <option value="">-- اختر --</option>
+            <option>رفح</option><option>خانيونس</option><option>القرارة</option>
+            <option>دير البلح</option><option>الزوايدة</option><option>النصيرات</option>
+            <option>المغازي</option><option>البريج</option><option>مدينة غزة</option>
+            <option>شمال غزة</option><option>شرق غزة</option><option>غرب غزة</option>
+            <option>غير محدد</option>
+        </select>
+        <div class="field-err" id="err_special_current_city"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label">الشارع <span class="req">*</span></label>
+        <input type="text" id="special_current_street" class="form-control" placeholder="اسم الشارع" data-type="address">
+        <div class="field-err" id="err_special_current_street"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label">أقرب معلم/مسجد <span class="req">*</span></label>
+        <input type="text" id="special_current_landmark" class="form-control" placeholder="أقرب معلم أو مسجد" data-type="address">
+        <div class="field-err" id="err_special_current_landmark"><span>⚠️</span><span></span></div>
+    </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     العنوان السابق (اختياري)
+══════════════════════════════════════════════════════════ -->
+<div class="sec-title mb-3">
+    <span>📍</span> العنوان السابق
+    <span style="font-size:0.72rem;color:#9ca3af">(اختياري)</span>
+</div>
+<div class="row g-3 mb-4">
+
+    <div class="col-md-4">
+        <label class="form-label">المدينة</label>
+        <select id="special_previous_city" class="form-select form-control">
+            <option value="">-- اختر --</option>
+            <option>رفح</option><option>خانيونس</option><option>القرارة</option>
+            <option>دير البلح</option><option>الزوايدة</option><option>النصيرات</option>
+            <option>المغازي</option><option>البريج</option><option>مدينة غزة</option>
+            <option>شمال غزة</option><option>شرق غزة</option><option>غرب غزة</option>
+            <option>غير محدد</option>
+        </select>
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label">الشارع</label>
+        <input type="text" id="special_previous_street" class="form-control" placeholder="اسم الشارع" data-type="address">
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label">أقرب معلم/مسجد</label>
+        <input type="text" id="special_previous_landmark" class="form-control" placeholder="أقرب معلم أو مسجد" data-type="address">
+    </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     السكن
+══════════════════════════════════════════════════════════ -->
+<div class="sec-title mb-3"><span>🏠</span> السكن</div>
+<div class="row g-3 mb-4">
+
+    <div class="col-md-4">
+        <label class="form-label">نوع السكن <span class="req">*</span></label>
+        <select id="special_housing_type" class="form-select form-control">
+            <option value="">-- اختر --</option>
+            <option>خيمة</option>
+            <option>بيت باطون</option>
+            <option>بيت زينقو</option>
+        </select>
+        <div class="field-err" id="err_special_housing_type"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label">ملكية السكن <span class="req">*</span></label>
+        <select id="special_housing_ownership" class="form-select form-control"
+                onchange="document.getElementById('special_rent_wrap').classList.toggle('d-none',this.value!=='إيجار')">
+            <option value="">-- اختر --</option>
+            <option>ملك</option>
+            <option>إيجار</option>
+        </select>
+        <div class="field-err" id="err_special_housing_ownership"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-4 d-none" id="special_rent_wrap">
+        <label class="form-label">مبلغ الإيجار (₪) <span class="req">*</span></label>
+        <input type="number" id="special_monthly_rent" class="form-control" placeholder="0" min="0">
+        <div class="field-err" id="err_special_monthly_rent"><span>⚠️</span><span></span></div>
+    </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     المعيل الحالي
+══════════════════════════════════════════════════════════ -->
+<div class="sec-title mb-3"><span>🧑</span> المعيل الحالي</div>
+<div class="row g-3 mb-4">
+
+    <div class="col-sm-6 col-md-3">
+        <label class="form-label">الاسم الأول <span class="req">*</span></label>
+        <input type="text" id="special_guardian_first_name" class="form-control" placeholder="الاسم">
+        <div class="field-err" id="err_special_guardian_first_name"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+        <label class="form-label">اسم الأب <span class="req">*</span></label>
+        <input type="text" id="special_guardian_father_name" class="form-control" placeholder="اسم الأب">
+        <div class="field-err" id="err_special_guardian_father_name"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+        <label class="form-label">اسم الجد <span class="req">*</span></label>
+        <input type="text" id="special_guardian_grand_name" class="form-control" placeholder="اسم الجد">
+        <div class="field-err" id="err_special_guardian_grand_name"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+        <label class="form-label">اسم العائلة <span class="req">*</span></label>
+        <input type="text" id="special_guardian_family_name" class="form-control" placeholder="اسم العائلة">
+        <div class="field-err" id="err_special_guardian_family_name"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">رقم الهوية <span class="req">*</span></label>
+        <div style="position:relative">
+            <input type="text" id="special_guardian_id_number" class="form-control" maxlength="9"
+                   placeholder="9XXXXXXXX" inputmode="numeric"
+                   oninput="liveId(this,'hint_sg_id')">
+        </div>
+        <div class="phone-hint" id="hint_sg_id"></div>
+        <div class="field-err" id="err_special_guardian_id_number"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">الجنس <span class="req">*</span></label>
+        <select id="special_guardian_gender" class="form-select form-control">
+            <option value="">-- اختر --</option>
+            <option>ذكر</option><option>أنثى</option>
+        </select>
+        <div class="field-err" id="err_special_guardian_gender"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">القرابة للمريض <span class="req">*</span></label>
+        <select id="special_guardian_relation" class="form-select form-control">
+            <option value="">-- اختر --</option>
+            <option value="عم">عم/ـة</option><option value="خال">خال/ـة</option>
+            <option value="جد">جد/ة</option><option value="أخ">أخ</option>
+            <option value="أخت">أخت</option><option value="أب">أب</option>
+            <option value="أم">أم</option><option value="أخرى">أخرى</option>
+        </select>
+        <div class="field-err" id="err_special_guardian_relation"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">المهنة <span class="req">*</span></label>
+        <select id="special_guardian_job" class="form-select form-control">
+            <option value="">-- اختر المهنة --</option>
+            <option>موظف حكومي</option><option>موظف قطاع خاص</option>
+            <option>تاجر</option><option>معلم/ـة</option>
+            <option>عامل</option><option>لا يعمل</option><option>أخرى</option>
+        </select>
+        <div class="field-err" id="err_special_guardian_job"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">الحالة الصحية <span class="req">*</span></label>
+        <select id="special_guardian_health_status" class="form-select form-control">
+            <option value="">-- اختر --</option>
+            <option>سليم</option><option>مرض مزمن</option>
+            <option>ذوو احتياجات خاصة</option><option>مصاب حرب</option>
+        </select>
+        <div class="field-err" id="err_special_guardian_health_status"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">المستوى التعليمي <span class="req">*</span></label>
+        <select id="special_guardian_education_level" class="form-select form-control">
+            <option value="">-- اختر --</option>
+            <option>غير متعلم</option><option>ابتدائي</option><option>إعدادي</option>
+            <option>ثانوي</option><option>جامعي</option><option>ماجستير</option>
+        </select>
+        <div class="field-err" id="err_special_guardian_education_level"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">الدخل الشهري (₪) <span class="req">*</span></label>
+        <input type="number" id="special_guardian_monthly_income" class="form-control" placeholder="0" min="0">
+        <div class="field-err" id="err_special_guardian_monthly_income"><span>⚠️</span><span></span></div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">عدد من يعيلهم <span class="req">*</span></label>
+        <input type="number" id="special_guardian_dependents" class="form-control" placeholder="1" min="1" value="1">
+        <div class="field-err" id="err_special_guardian_dependents"><span>⚠️</span><span></span></div>
+    </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     أفراد الأسرة (اختياري)
+══════════════════════════════════════════════════════════ -->
+<div class="sec-title mb-3">
+    <span>👨‍👩‍👧</span> أفراد الأسرة
+    <span style="font-size:0.72rem;color:#9ca3af">(اختياري — إذا أضفت فرداً يجب تعبئته كاملاً)</span>
+</div>
+<div id="specialMembersContainer" class="mb-3"></div>
+<button type="button" class="btn-add-member mb-4"
+        onclick="addMember('specialMembersContainer')">
+    <span>➕</span> إضافة فرد
+</button>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     تفاصيل الحالة
+══════════════════════════════════════════════════════════ -->
+<div class="sec-title mb-3"><span>🏥</span> تفاصيل الحالة</div>
+<div class="mb-2">
+    <textarea id="special_case_details" class="form-control" rows="5" maxlength="1000"
+              placeholder="اكتب تفاصيل الحالة الصحية هنا... (مطلوب)"
+              oninput="document.getElementById('special_case_count').textContent=this.value.length"></textarea>
+    <div class="char-count"><span id="special_case_count">0</span>/1000</div>
+    <div class="field-err" id="err_special_case_details"><span>⚠️</span><span>تفاصيل الحالة مطلوبة</span></div>
+</div>

@@ -1,0 +1,915 @@
+{% load static %}
+{% load custom_filters %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}لوحة الأدمن{% endblock %} — رُحَـــمـــاء</title>
+<link rel="stylesheet" href="{% static 'bootstrap/bootstrap.rtl.min.css' %}">
+<link rel="stylesheet" href="{% static 'fonts/cairo/cairo.css' %}">
+<link rel="stylesheet" href="{% static 'css/main.css' %}">
+<style>
+/* ══ Variables ══ */
+:root{
+  --adm:#7c3aed;--adm-l:#8b5cf6;--adm-dim:rgba(124,58,237,.10);--adm-dim2:rgba(124,58,237,.05);
+  --green:#1a7a4a;
+  --sw:268px;--swc:62px;--tbh:60px;
+  --ease:cubic-bezier(.4,0,.2,1);--tr:.28s var(--ease);
+  --r-lg:16px;--r-md:11px;--r-sm:8px;
+  --sh-sm:0 2px 8px rgba(124,58,237,.07);--sh-md:0 6px 20px rgba(124,58,237,.11);--sh-lg:0 14px 40px rgba(124,58,237,.18);
+  --bg:#f4f3ff;--bg-c:#fff;--text:#1a1a2e;--muted:#6b7280;--border:rgba(124,58,237,.09);
+}
+body.dark-mode{--bg:#07050f;--bg-c:#0e0b1c;--text:#e8e4ff;--muted:#7a6fa0;--border:rgba(139,92,246,.13);}
+
+/* ══ Base ══ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Tajawal','Cairo',sans-serif;background:var(--bg);color:var(--text);transition:background var(--tr),color var(--tr);}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(124,58,237,.22);border-radius:10px}
+
+/* ══ Progress Bar ══ (نقطة 15) */
+#nprogress{position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--adm),#a78bfa,var(--green));z-index:9999;transform-origin:right;animation:nprog 1.8s var(--ease) infinite;display:none;}
+#nprogress.active{display:block;}
+@keyframes nprog{0%{transform:scaleX(0)}60%{transform:scaleX(0.8)}100%{transform:scaleX(1)}}
+
+/* ══ Layout ══ */
+.dash-wrap{display:flex;min-height:100vh;}
+.main-content{flex:1;margin-right:var(--sw);display:flex;flex-direction:column;min-height:100vh;transition:margin-right var(--tr);}
+.main-content.sb-col{margin-right:var(--swc);}
+
+/* ══ Sidebar ══ */
+.sidebar{
+  width:var(--sw);background:var(--bg-c);
+  border-left:1px solid var(--border);
+  display:flex;flex-direction:column;
+  position:fixed;top:0;right:0;height:100vh;
+  z-index:200;transition:width var(--tr),transform var(--tr);
+  overflow:visible;will-change:width;
+}
+body.dark-mode .sidebar{background:linear-gradient(180deg,#0e0b1c,#0d0a1a);box-shadow:-2px 0 20px rgba(0,0,0,.4);}
+.sidebar.collapsed{width:var(--swc);}
+
+/* ══ زر التبديل (نقطة 1) ══ */
+.sb-toggle{
+  display:flex;align-items:center;justify-content:center;
+  width:32px;height:32px;background:var(--bg);
+  border:2px solid var(--adm);border-radius:var(--r-sm);
+  cursor:pointer;color:var(--adm);font-size:.82rem;font-weight:900;
+  transition:all .22s;flex-shrink:0;
+  box-shadow:0 2px 10px rgba(124,58,237,.2);user-select:none;
+}
+.sb-toggle:hover{background:var(--adm);color:#fff;box-shadow:0 4px 18px rgba(124,58,237,.45);transform:scale(1.1);}
+body.dark-mode .sb-toggle{background:#1a1430;}
+
+.sidebar-top{padding:14px 12px 12px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:10px;flex-shrink:0;background:linear-gradient(135deg,rgba(124,58,237,.04),transparent);}
+.sb-toggle-row{display:flex;justify-content:flex-start;align-items:center;min-height:32px;}
+.sidebar.collapsed .sb-toggle-row{justify-content:center;}
+
+.sidebar-logo-row{display:flex;align-items:center;gap:10px;overflow:hidden;transition:all var(--tr);}
+.sidebar-logo-row img{width:36px;height:36px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 2px 8px rgba(124,58,237,.35));}
+.sidebar-brand-wrap{min-width:0;transition:opacity var(--tr),width var(--tr);}
+.sidebar-brand{font-family:'Amiri',serif;font-size:1.2rem;font-weight:700;background:linear-gradient(135deg,#7c3aed,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;white-space:nowrap;}
+.sidebar-role-txt{font-size:.63rem;color:var(--muted);font-weight:600;white-space:nowrap;}
+.sidebar.collapsed .sidebar-brand-wrap{opacity:0;width:0;overflow:hidden;pointer-events:none;}
+.sidebar.collapsed .sidebar-logo-row{justify-content:center;}
+
+/* ══ صورة الأدمن (نقطة 6) ══ */
+.sidebar-user{padding:11px 12px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;gap:10px;overflow:hidden;transition:padding var(--tr);}
+.admin-avatar{width:38px;height:38px;border-radius:10px;overflow:hidden;background:linear-gradient(135deg,#7c3aed,#a78bfa);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.9rem;flex-shrink:0;box-shadow:0 3px 10px rgba(124,58,237,.32);transition:transform .2s;}
+.admin-avatar img{width:100%;height:100%;object-fit:cover;}
+.sidebar-user:hover .admin-avatar{transform:scale(1.06);}
+.user-info{min-width:0;flex:1;transition:opacity var(--tr),width var(--tr);}
+.admin-name{font-size:.84rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.admin-role{font-size:.65rem;color:var(--adm);font-weight:700;}
+body.dark-mode .admin-role{color:#a78bfa;}
+.sidebar.collapsed .user-info{opacity:0;width:0;overflow:hidden;pointer-events:none;}
+.sidebar.collapsed .sidebar-user{justify-content:center;padding:11px 0;}
+
+/* ══ Nav ══ */
+.sidebar-nav{flex:1;padding:8px;overflow-y:auto;overflow-x:hidden;}
+.sidebar-nav::-webkit-scrollbar{width:3px}
+
+.nav-section-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:12px 10px 4px;user-select:none;transition:opacity var(--tr);}
+.nav-section-toggle:hover .nav-section-label{color:var(--adm);}
+.nav-section-label{font-size:.6rem;font-weight:700;color:var(--muted);letter-spacing:1.8px;text-transform:uppercase;white-space:nowrap;overflow:hidden;transition:opacity var(--tr),width var(--tr);display:flex;align-items:center;gap:5px;}
+.sec-ico{font-size:.78rem;}
+.toggle-arrow{font-size:.58rem;color:var(--muted);transition:transform .25s,opacity var(--tr);flex-shrink:0;}
+.nav-section-toggle.sec-closed .toggle-arrow{transform:rotate(-90deg);}
+.sidebar.collapsed .nav-section-label{opacity:0;width:0;overflow:hidden;pointer-events:none;}
+.sidebar.collapsed .toggle-arrow{opacity:0;width:0;overflow:hidden;}
+.sidebar.collapsed .nav-section-toggle{padding:6px 0;justify-content:center;cursor:default;pointer-events:none;}
+
+/* ══ انيميشن القسم (نقطة 19) ══ */
+.nav-section-group{overflow:hidden;transition:max-height .35s var(--ease),opacity .25s ease;}
+
+/* ══ Nav Item ══ */
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:var(--r-md);text-decoration:none;color:var(--muted);font-size:.84rem;font-weight:500;transition:all .2s;margin-bottom:1px;position:relative;overflow:hidden;white-space:nowrap;}
+body.dark-mode .nav-item{color:#7a6fa0;}
+.nav-item:hover{background:var(--adm-dim);color:var(--adm);}
+.nav-item.active{background:linear-gradient(135deg,rgba(124,58,237,.13),rgba(167,139,250,.05));color:var(--adm);font-weight:700;border-right:3px solid var(--adm);box-shadow:inset 0 0 0 1px rgba(124,58,237,.08);}
+body.dark-mode .nav-item.active{color:#a78bfa;border-color:#a78bfa;}
+.nav-icon{font-size:1.05rem;width:22px;text-align:center;flex-shrink:0;transition:transform .2s;}
+.nav-item:hover .nav-icon{transform:scale(1.18);}
+.nav-text{flex:1;transition:opacity var(--tr),width var(--tr);}
+
+/* ══ بادج الصفحة (نقطة 5) ══ */
+.nav-badge{
+  margin-right:auto;background:#e53e3e;color:#fff;
+  font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:20px;
+  font-family:'Cairo',sans-serif;flex-shrink:0;
+  animation:bPulse 2.2s infinite;
+  transition:opacity .3s,transform .3s;
+}
+@keyframes bPulse{0%,100%{box-shadow:0 0 0 0 rgba(229,62,62,.55);}55%{box-shadow:0 0 0 5px rgba(229,62,62,0);}}
+.nav-badge.hide{opacity:0;transform:scale(0);}
+
+.sidebar.collapsed .nav-text{opacity:0;width:0;overflow:hidden;pointer-events:none;}
+.sidebar.collapsed .nav-badge{opacity:0;width:0;overflow:hidden;}
+.sidebar.collapsed .nav-item{justify-content:center;padding:10px 0;border-right:none!important;}
+.sidebar.collapsed .nav-icon{width:auto;font-size:1.15rem;}
+
+/* ══ Tooltip JS (نقطة 7) ══ */
+.sb-tooltip{
+  position:fixed;background:var(--adm);color:#fff;
+  font-size:.75rem;font-weight:700;padding:5px 10px;border-radius:var(--r-sm);
+  white-space:nowrap;pointer-events:none;z-index:9999;
+  box-shadow:var(--sh-md);opacity:0;transition:opacity .15s;
+}
+.sb-tooltip.show{opacity:1;}
+
+/* Ripple */
+.ripple{position:absolute;border-radius:50%;background:rgba(124,58,237,.18);transform:scale(0);animation:rippleA .55s linear;pointer-events:none;}
+@keyframes rippleA{to{transform:scale(4);opacity:0;}}
+
+/* ══ Footer ══ */
+.sidebar-footer{padding:11px 12px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:6px;}
+.sidebar.collapsed .sidebar-footer{flex-direction:column;padding:10px 0;align-items:center;}
+.btn-dark{background:none;border:none;width:32px;height:32px;border-radius:var(--r-sm);cursor:pointer;font-size:.95rem;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all .2s;}
+.btn-dark:hover{background:var(--adm-dim);color:var(--adm);}
+.btn-logout{font-size:.78rem;color:#e53e3e;text-decoration:none;display:flex;align-items:center;gap:5px;padding:5px 9px;border-radius:var(--r-sm);transition:all .2s;white-space:nowrap;overflow:hidden;}
+.btn-logout:hover{background:rgba(229,62,62,.09);color:#e53e3e;}
+.sidebar.collapsed .btn-logout span{display:none;}
+.sidebar.collapsed .btn-logout{padding:7px;}
+
+/* ══ Topbar ══ */
+.topbar{background:var(--bg-c);border-bottom:1px solid var(--border);padding:0 22px;height:var(--tbh);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;transition:box-shadow .3s,background var(--tr);}
+body.dark-mode .topbar{background:#0e0b1c;}
+.topbar.scrolled{box-shadow:0 4px 20px rgba(124,58,237,.10);}
+.topbar-left{display:flex;align-items:center;gap:10px;}
+.topbar-title{font-size:1rem;font-weight:700;color:var(--text);}
+.topbar-right{display:flex;align-items:center;gap:7px;}
+.btn-menu{display:none;background:none;border:none;width:36px;height:36px;border-radius:var(--r-md);cursor:pointer;font-size:1.15rem;color:var(--muted);align-items:center;justify-content:center;transition:all .2s;}
+.btn-menu:hover{background:var(--adm-dim);color:var(--adm);}
+
+/* ══ Notifications ══ */
+.notif-wrap{position:relative;}
+.notif-btn{position:relative;background:none;border:none;width:38px;height:38px;border-radius:var(--r-md);cursor:pointer;font-size:1.05rem;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all .2s;}
+.notif-btn:hover{background:var(--adm-dim);color:var(--adm);}
+.notif-count{position:absolute;top:3px;left:3px;min-width:17px;height:17px;background:#e53e3e;color:#fff;border-radius:9px;padding:0 4px;font-size:.58rem;font-weight:700;display:flex;align-items:center;justify-content:center;animation:bPulse 2.2s infinite;}
+.notif-dropdown{position:fixed;width:315px;background:var(--bg-c);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sh-lg);z-index:9999;opacity:0;pointer-events:none;transform:translateY(-8px);transition:opacity .22s,transform .22s;overflow:hidden;}
+.notif-dropdown.show{opacity:1;pointer-events:auto;transform:translateY(0);}
+body.dark-mode .notif-dropdown{background:#0e0b1c;}
+.notif-hdr{display:flex;align-items:center;justify-content:space-between;padding:13px 15px 10px;border-bottom:1px solid var(--border);}
+.notif-hdr h4{font-size:.88rem;font-weight:700;color:var(--text);}
+.notif-mark-all{font-size:.7rem;color:var(--adm);background:none;border:none;cursor:pointer;font-family:'Tajawal',sans-serif;font-weight:600;padding:3px 7px;border-radius:6px;transition:background .2s;}
+.notif-mark-all:hover{background:var(--adm-dim);}
+.notif-list{max-height:260px;overflow-y:auto;}
+.notif-item{display:flex;align-items:flex-start;gap:10px;padding:11px 15px;border-bottom:1px solid var(--border);transition:background .15s,opacity .2s;cursor:pointer;position:relative;}
+.notif-item:last-child{border-bottom:none;}
+.notif-item:hover{background:var(--adm-dim2);}
+.notif-item.unread{background:rgba(124,58,237,.04);}
+.notif-item.unread::before{content:'';position:absolute;right:8px;top:50%;transform:translateY(-50%);width:6px;height:6px;border-radius:50%;background:var(--adm);}
+.notif-ico{width:34px;height:34px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.95rem;}
+.ico-purple{background:rgba(124,58,237,.13);}.ico-green{background:rgba(26,122,74,.13);}.ico-red{background:rgba(229,62,62,.11);}.ico-orange{background:rgba(245,158,11,.13);}
+.notif-body{flex:1;min-width:0;}
+.notif-body strong{display:block;font-size:.82rem;font-weight:700;color:var(--text);margin-bottom:2px;}
+.notif-body span{display:block;font-size:.75rem;color:var(--muted);}
+.notif-time{font-size:.68rem!important;color:var(--adm)!important;margin-top:3px!important;}
+.notif-empty{padding:24px;text-align:center;color:var(--muted);font-size:.82rem;}
+.notif-loading{padding:16px;text-align:center;color:var(--muted);font-size:.82rem;}
+.notif-footer{padding:10px 15px;border-top:1px solid var(--border);text-align:center;}
+.notif-footer a{font-size:.78rem;color:var(--adm);text-decoration:none;font-weight:600;}
+.notif-footer a:hover{text-decoration:underline;}
+
+/* ══ Cards / Forms ══ */
+.dash-card{background:var(--bg-c);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;box-shadow:var(--sh-sm);transition:box-shadow .2s;}
+.dash-card:hover{box-shadow:var(--sh-md);}
+body.dark-mode .dash-card{background:#0e0b1c;}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.stat-card{background:var(--bg-c);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;transition:all .25s;cursor:default;}
+body.dark-mode .stat-card{background:#0e0b1c;}
+.stat-card:hover{transform:translateY(-2px);box-shadow:var(--sh-md);}
+.stat-val{font-size:1.7rem;font-weight:900;font-family:'Cairo',sans-serif;color:var(--adm);}
+.stat-lbl{font-size:.74rem;color:var(--muted);margin-top:3px;}
+.page-content{padding:20px 22px;flex:1;}
+.dash-table{width:100%;border-collapse:collapse;font-size:.85rem;}
+.dash-table thead tr{background:rgba(124,58,237,.04);border-bottom:2px solid var(--border);}
+.dash-table th{padding:11px 14px;font-weight:700;color:var(--muted);font-size:.78rem;white-space:nowrap;}
+.dash-table td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;}
+.dash-table tbody tr:hover{background:var(--adm-dim2);}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;}
+.badge-green{background:rgba(26,122,74,.1);color:var(--green);}
+.badge-red{background:rgba(229,62,62,.1);color:#c53030;}
+.badge-orange{background:rgba(245,158,11,.1);color:#b45309;}
+.badge-purple{background:rgba(124,58,237,.1);color:var(--adm);}
+.badge-blue{background:rgba(43,108,176,.1);color:#2b6cb0;}
+.btn-adm{background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;border:none;padding:8px 18px;border-radius:var(--r-md);font-family:'Tajawal',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px;}
+.btn-adm:hover{box-shadow:0 4px 14px rgba(124,58,237,.35);transform:translateY(-1px);}
+.btn-adm.w-100{width:100%;justify-content:center;}
+.btn-sec{background:var(--bg);border:1.5px solid var(--border);color:var(--text);padding:7px 15px;border-radius:var(--r-md);font-family:'Tajawal',sans-serif;font-size:.84rem;font-weight:600;cursor:pointer;transition:all .2s;}
+.btn-sec:hover{border-color:var(--adm);color:var(--adm);}
+.btn-success{background:rgba(26,122,74,.1);color:var(--green);border:1.5px solid rgba(26,122,74,.2);padding:7px 14px;border-radius:var(--r-md);font-family:'Tajawal',sans-serif;font-size:.84rem;font-weight:700;cursor:pointer;transition:all .2s;}
+.btn-success:hover{background:rgba(26,122,74,.18);}
+.btn-danger{background:rgba(229,62,62,.1);color:#c53030;border:1.5px solid rgba(229,62,62,.2);padding:7px 14px;border-radius:var(--r-md);font-family:'Tajawal',sans-serif;font-size:.84rem;font-weight:700;cursor:pointer;transition:all .2s;}
+.btn-danger:hover{background:rgba(229,62,62,.18);}
+.form-control,.form-select{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-md);padding:9px 12px;font-family:'Tajawal',sans-serif;font-size:.88rem;color:var(--text);transition:border .2s,box-shadow .2s;width:100%;}
+body.dark-mode .form-control,body.dark-mode .form-select{background:#130f24;border-color:rgba(139,92,246,.15);color:#e8e4ff;}
+.form-control:focus,.form-select:focus{border-color:var(--adm);box-shadow:0 0 0 3px rgba(124,58,237,.12);outline:none;}
+.form-label{font-family:'Tajawal',sans-serif;font-size:.8rem;font-weight:700;color:var(--muted);display:block;margin-bottom:5px;}
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.section-title{font-size:.98rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;}
+body.dark-mode .section-title{color:#e8e4ff;}
+.dash-alert{border-radius:var(--r-md);padding:11px 16px;font-family:'Tajawal',sans-serif;font-size:.86rem;margin-bottom:14px;display:none;align-items:center;gap:9px;font-weight:600;}
+.dash-alert.show{display:flex;}
+.dash-alert.success{background:rgba(26,122,74,.10);color:var(--green);border:1px solid rgba(26,122,74,.2);}
+.dash-alert.error{background:rgba(229,62,62,.08);color:#c53030;border:1px solid rgba(229,62,62,.2);}
+.search-wrap{position:relative;}.search-wrap input{padding-right:38px;}.search-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:.9rem;pointer-events:none;}
+.filter-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
+.filter-pill{padding:7px 16px;border-radius:50px;font-size:.82rem;font-weight:600;cursor:pointer;border:1.5px solid rgba(124,58,237,.18);background:transparent;color:var(--muted);font-family:'Tajawal',sans-serif;transition:all .2s;text-decoration:none;}
+.filter-pill:hover,.filter-pill.active{background:linear-gradient(135deg,#6d28d9,#a78bfa);color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(124,58,237,.25);}
+.empty-state{text-align:center;padding:48px 24px;color:var(--muted);}.empty-icon{font-size:3rem;margin-bottom:12px;}.empty-text{font-size:.9rem;}
+
+/* ══ Toast / BackToTop ══ (نقطة 16) */
+.toast-container{position:fixed;bottom:18px;right:18px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast-item{background:var(--bg-c);border:1px solid var(--border);border-radius:var(--r-md);padding:11px 15px;display:flex;align-items:center;gap:9px;box-shadow:var(--sh-lg);font-size:.82rem;font-weight:600;color:var(--text);animation:toastIn .3s ease both;pointer-events:auto;min-width:220px;}
+.toast-item.out{animation:toastOut .3s ease both;}
+@keyframes toastIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateY(14px)}}
+.back-to-top{position:fixed;bottom:22px;left:22px;width:38px;height:38px;background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;border:none;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;box-shadow:var(--sh-md);opacity:0;pointer-events:none;transition:all .3s;z-index:150;}
+.back-to-top.vis{opacity:1;pointer-events:auto;}
+.back-to-top:hover{transform:translateY(-3px);box-shadow:var(--sh-lg);}
+.skeleton{background:linear-gradient(90deg,var(--border) 25%,rgba(124,58,237,.04) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:var(--r-sm);}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ══ Bottom Nav ══ (نقطة 9,10) */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg-c);border-top:1px solid var(--border);z-index:180;height:56px;justify-content:space-around;align-items:center;box-shadow:0 -4px 16px rgba(124,58,237,.08);}
+body.dark-mode .bottom-nav{background:#0e0b1c;}
+.bn-item{display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;color:var(--muted);font-size:.58rem;font-weight:600;flex:1;padding:7px 4px;border-radius:var(--r-sm);transition:all .2s;position:relative;}
+.bn-item .bn-ico{font-size:1.2rem;line-height:1;}
+.bn-item.active{color:var(--adm);}
+.bn-item.active .bn-ico{transform:scale(1.15);}
+.bn-badge{position:absolute;top:4px;right:calc(50% - 16px);min-width:15px;height:15px;background:#e53e3e;color:#fff;border-radius:8px;font-size:.55rem;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 3px;}
+
+/* ══ Overlay ══ */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:199;backdrop-filter:blur(2px);}
+.sidebar-overlay.show{display:block;}
+
+/* ══ Animations ══ */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeInUp .38s ease both;}
+.fade-in-d1{animation-delay:.05s;}.fade-in-d2{animation-delay:.10s;}.fade-in-d3{animation-delay:.15s;}.fade-in-d4{animation-delay:.20s;}
+
+/* ══ Print ══ */
+@media print{.sidebar,.topbar,.sidebar-overlay,.back-to-top,.toast-container,.bottom-nav{display:none!important;}.main-content{margin-right:0!important;}.page-content{padding:0!important;}}
+
+/* ══ Responsive ══ */
+/* Tablet (نقطة 11,13) */
+@media(max-width:1199px) and (min-width:769px){
+  .sidebar:not(.force-open){width:var(--swc);}
+  .sidebar:not(.force-open) .sidebar-brand-wrap,
+  .sidebar:not(.force-open) .user-info,
+  .sidebar:not(.force-open) .nav-section-label,
+  .sidebar:not(.force-open) .toggle-arrow,
+  .sidebar:not(.force-open) .nav-text,
+  .sidebar:not(.force-open) .nav-badge{opacity:0;width:0;overflow:hidden;pointer-events:none;}
+  .sidebar:not(.force-open) .sidebar-logo-row{justify-content:center;}
+  .sidebar:not(.force-open) .sidebar-user{justify-content:center;padding:11px 0;}
+  .sidebar:not(.force-open) .nav-section-toggle{padding:6px 0;justify-content:center;cursor:default;pointer-events:none;}
+  .sidebar:not(.force-open) .nav-item{justify-content:center;padding:10px 0;border-right:none!important;}
+  .sidebar:not(.force-open) .nav-icon{width:auto;font-size:1.15rem;}
+  .sidebar:not(.force-open) .sidebar-footer{flex-direction:column;padding:10px 0;align-items:center;}
+  .sidebar:not(.force-open) .btn-logout span{display:none;}
+  .sidebar:not(.force-open) .btn-logout{padding:7px;}
+  .sidebar:not(.force-open) .sb-toggle-row{justify-content:center;}
+  .main-content:not(.force-open){margin-right:var(--swc);}
+  .stat-grid{grid-template-columns:repeat(2,1fr);}
+}
+/* Mobile (نقطة 12) */
+@media(max-width:768px){
+  .sidebar{transform:translateX(100%);width:var(--sw)!important;transition:transform var(--tr)!important;max-height:100vh;}
+  .sidebar .sidebar-nav{max-height:calc(100vh - 200px);overflow-y:auto;}
+  .sidebar.open{transform:translateX(0);box-shadow:-6px 0 28px rgba(0,0,0,.22);}
+  .sidebar.open .sidebar-brand-wrap,.sidebar.open .user-info,
+  .sidebar.open .nav-section-label,.sidebar.open .toggle-arrow,
+  .sidebar.open .nav-text,.sidebar.open .nav-badge{opacity:1!important;width:auto!important;overflow:visible!important;pointer-events:auto!important;}
+  .sidebar.open .sidebar-logo-row{justify-content:flex-start!important;}
+  .sidebar.open .sidebar-user{justify-content:flex-start!important;padding:11px 12px!important;}
+  .sidebar.open .nav-section-toggle{padding:12px 10px 4px!important;justify-content:space-between!important;cursor:pointer!important;pointer-events:auto!important;}
+  .sidebar.open .nav-item{justify-content:flex-start!important;padding:9px 10px!important;}
+  .sidebar.open .sidebar-footer{flex-direction:row!important;padding:11px 12px!important;}
+  .sidebar.open .btn-logout span{display:inline!important;}
+  .sidebar.open .sb-toggle-row{justify-content:flex-start!important;}
+  .main-content{margin-right:0!important;}
+  .btn-menu{display:flex;}
+  .page-content{padding:14px 12px;padding-bottom:68px;}
+  .topbar{padding:0 12px;}
+  .bottom-nav{display:flex;}
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .toast-container{right:10px;bottom:68px;left:10px;}
+}
+@media(max-width:480px){
+  .stat-grid{grid-template-columns:1fr 1fr;gap:10px;}
+  .filter-pills{gap:5px;}
+  .filter-pill{padding:5px 11px;font-size:.78rem;}
+  .notif-dropdown{width:calc(100vw - 20px)!important;}
+  .page-content{padding:10px;}
+}
+</style>
+{% block extra_css %}{% endblock %}
+</head>
+
+<body class="{% if request.user.dark_mode %}dark-mode{% endif %}">
+
+<!-- Progress Bar (نقطة 15) -->
+<div id="nprogress"></div>
+
+<div class="dash-wrap">
+
+<!-- ══════════ SIDEBAR ══════════ -->
+<aside class="sidebar" id="sidebar" role="navigation" aria-label="القائمة الجانبية">
+
+  <div class="sidebar-top">
+    <div class="sb-toggle-row">
+      <button class="sb-toggle" id="sbToggleBtn" onclick="toggleSidebar(event)" aria-label="طي/فتح القائمة" title="طي/فتح القائمة">◀</button>
+    </div>
+    <div class="sidebar-logo-row">
+      <img src="{% static 'images/logo.png' %}" alt="رُحَمَاء">
+      <div class="sidebar-brand-wrap">
+        <div class="sidebar-brand">رُحَمَاء</div>
+        <div class="sidebar-role-txt">لوحة الإدارة</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- الأدمن (نقطة 6) -->
+  <div class="sidebar-user">
+    <div class="admin-avatar">
+      {% if request.user.photo %}
+        <img src="{{ request.user.photo.url }}" alt="{{ request.user.first_name }}">
+      {% else %}
+        {{ request.user.first_name|first }}{{ request.user.family_name|first }}
+      {% endif %}
+    </div>
+    <div class="user-info">
+      <div class="admin-name">{{ request.user.get_short_name }}</div>
+      <div class="admin-role">ADMIN — مدير النظام</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+
+    <!-- لوحة التحكم -->
+    <div class="nav-section-group" id="sec-home">
+      <a href="{% url 'admin_panel:dashboard' %}"
+         class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+         data-title="لوحة التحكم"
+         onclick="autoCloseMobile()">
+        <span class="nav-icon">📊</span>
+        <span class="nav-text">لوحة التحكم</span>
+      </a>
+    </div>
+
+    <!-- المستخدمون -->
+    <div class="nav-section-toggle" onclick="toggleSec('sec-users',this)">
+      <span class="nav-section-label"><span class="sec-ico">👥</span>إدارة المستخدمين</span>
+      <span class="toggle-arrow">▾</span>
+    </div>
+    <div class="nav-section-group" id="sec-users">
+      <a href="{% url 'admin_panel:requests' %}"
+         class="nav-item {% if request.resolver_match.url_name == 'requests' %}active{% endif %}"
+         data-title="طلبات التسجيل" onclick="autoCloseMobile();hideBadge(this)">
+        <span class="nav-icon">📋</span>
+        <span class="nav-text">طلبات التسجيل</span>
+        {% if pending_count %}<span class="nav-badge" id="badge-requests">{{ pending_count }}</span>{% endif %}
+      </a>
+      <a href="{% url 'admin_panel:search' %}"
+         class="nav-item {% if request.resolver_match.url_name == 'search' %}active{% endif %}"
+         data-title="البحث الموحد" onclick="autoCloseMobile()">
+        <span class="nav-icon">🔍</span>
+        <span class="nav-text">البحث الموحد</span>
+      </a>
+      <a href="{% url 'admin_panel:compare' %}"
+         class="nav-item {% if request.resolver_match.url_name == 'compare' %}active{% endif %}"
+         data-title="مقارنة المستفيدين" onclick="autoCloseMobile()">
+        <span class="nav-icon">⚖️</span>
+        <span class="nav-text">مقارنة المستفيدين</span>
+      </a>
+    </div>
+
+    <!-- المستفيدون -->
+    <div class="nav-section-toggle" onclick="toggleSec('sec-benef',this)">
+      <span class="nav-section-label"><span class="sec-ico">🫂</span>المستفيدون</span>
+      <span class="toggle-arrow">▾</span>
+    </div>
+    <div class="nav-section-group" id="sec-benef">
+      <a href="{% url 'admin_panel:orphans' %}"
+         class="nav-item {% if request.resolver_match.url_name == 'orphans' %}active{% endif %}"
+         data-title="الأيتام" onclick="autoCloseMobile()">
+        <span class="nav-icon">👦</span>
+        <span class="nav-text">الأيتام</span>
+      </a>
+      <a href="{% url 'admin_panel:families' %}"
+         class="nav-item {% if request.resolver_match.url_name == 'families' %}active{% endif %}"
+         data-title="الأسر" onclick="autoCloseMobile()">
+        <span class="nav-icon">👨‍👩‍👧</span>
+        <span class="nav-text">الأسر</span>
+      </a>
+      <a href="{% url 'admin_panel:specials' %}"
+         class="nav-item {% if request.resolver_match.url_name == 'specials' %}active{% endif %}"
+         data-title="ذوو الاحتياجات" onclick="autoCloseMobile()">
+        <span class="nav-icon">♿</span>
+        <span class="nav-text">ذوو الاحتياجات</span>
+      </a>
+    </div>
+
+    <!-- الكفلاء (نقطة 4,5) -->
+    <div class="nav-section-toggle" onclick="toggleSec('sec-sponsors',this)">
+      <span class="nav-section-label"><span class="sec-ico">🤝</span>الكفلاء</span>
+      <span class="toggle-arrow">▾</span>
+    </div>
+    <div class="nav-section-group" id="sec-sponsors">
+      <a href="{% url 'admin_panel:sponsors' %}"
+         class="nav-item {% if request.resolver_match.url_name == 'sponsors' %}active{% endif %}"
+         data-title="الكفلاء" onclick="autoCloseMobile()">
+        <span class="nav-icon">🤝</span>
+        <span class="nav-text">قائمة الكفلاء</span>
+      </a>
+    </div>
+
+    <!-- المالية -->
+    <div class="nav-section-toggle" onclick="toggleSec('sec-fin',this)">
+      <span class="nav-section-label"><span class="sec-ico">💰</span>المالية</span>
+      <span class="toggle-arrow">▾</span>
+    </div>
+    <div class="nav-section-group" id="sec-fin">
+      <a href="{% url 'admin_panel:receipts' %}"
+         class="nav-item {% if request.resolver_match.url_name == 'receipts' %}active{% endif %}"
+         data-title="الوصولات المالية" onclick="autoCloseMobile();hideBadge(this)">
+        <span class="nav-icon">💳</span>
+        <span class="nav-text">الوصولات المالية</span>
+        {% if pending_receipts %}<span class="nav-badge" id="badge-receipts">{{ pending_receipts }}</span>{% endif %}
+      </a>
+    </div>
+
+    <!-- المتابعة -->
+    <div class="nav-section-toggle" onclick="toggleSec('sec-monitor',this)">
+      <span class="nav-section-label"><span class="sec-ico">📡</span>المتابعة</span>
+      <span class="toggle-arrow">▾</span>
+    </div>
+    <div class="nav-section-group" id="sec-monitor">
+      <a href="{% url 'admin_panel:alerts' %}"
+         class="nav-item {% if request.resolver_match.url_name == 'alerts' %}active{% endif %}"
+         data-title="التنبيهات الذكية" onclick="autoCloseMobile();hideBadge(this)">
+        <span class="nav-icon">🔔</span>
+        <span class="nav-text">التنبيهات الذكية</span>
+        {% if smart_alerts_count %}<span class="nav-badge" id="badge-alerts">{{ smart_alerts_count }}</span>{% endif %}
+      </a>
+      <a href="{% url 'admin_panel:map_timeline' %}"
+         class="nav-item {% if request.resolver_match.url_name == 'map_timeline' %}active{% endif %}"
+         data-title="الخريطة التفاعلية" onclick="autoCloseMobile()">
+        <span class="nav-icon">🗺️</span>
+        <span class="nav-text">الخريطة التفاعلية</span>
+      </a>
+    </div>
+
+    <!-- الإدارة -->
+    <div class="nav-section-toggle" onclick="toggleSec('sec-admin',this)">
+      <span class="nav-section-label"><span class="sec-ico">🛠️</span>الإدارة</span>
+      <span class="toggle-arrow">▾</span>
+    </div>
+    <div class="nav-section-group" id="sec-admin">
+      <a href="{% url 'admin_panel:reports' %}"
+         class="nav-item {% if request.resolver_match.url_name == 'reports' %}active{% endif %}"
+         data-title="التقارير" onclick="autoCloseMobile()">
+        <span class="nav-icon">📊</span>
+        <span class="nav-text">التقارير</span>
+      </a>
+<a href="{% url 'admin_panel:messages' %}"
+   class="nav-item {% if request.resolver_match.url_name == 'messages' %}active{% endif %}"
+   data-title="التواصل" onclick="autoCloseMobile()">
+  <span class="nav-icon">💬</span>
+  <span class="nav-text">التواصل</span>
+  {% if unread_messages_count %}
+  <span class="nav-badge" id="badge-messages">{{ unread_messages_count }}</span>
+  {% endif %}
+</a>
+      <a href="{% url 'admin_panel:complaints' %}"
+         class="nav-item {% if request.resolver_match.url_name == 'complaints' %}active{% endif %}"
+         data-title="الشكاوى" onclick="autoCloseMobile();hideBadge(this)">
+        <span class="nav-icon">📩</span>
+        <span class="nav-text">الشكاوى</span>
+        {% if unseen_complaints %}<span class="nav-badge" id="badge-complaints">{{ unseen_complaints }}</span>{% endif %}
+      </a>
+    <a href="{% url 'admin_panel:faq' %}"
+   class="nav-item {% if request.resolver_match.url_name == 'faq' %}active{% endif %}"
+   data-title="الأسئلة الشائعة" onclick="autoCloseMobile()">
+  <span class="nav-icon">❓</span>
+  <span class="nav-text">الأسئلة الشائعة</span>
+</a>
+      <a href="{% url 'admin_panel:logs' %}"
+         class="nav-item {% if request.resolver_match.url_name == 'logs' %}active{% endif %}"
+         data-title="سجل النشاط" onclick="autoCloseMobile()">
+        <span class="nav-icon">📜</span>
+        <span class="nav-text">سجل النشاط</span>
+      </a>
+      <a href="{% url 'admin_panel:settings' %}"
+         class="nav-item {% if request.resolver_match.url_name == 'settings' %}active{% endif %}"
+         data-title="الإعدادات" onclick="autoCloseMobile()">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-text">الإعدادات</span>
+      </a>
+    </div>
+
+  </nav>
+
+  <div class="sidebar-footer">
+    <a href="{% url 'main:logout' %}" class="btn-logout" title="تسجيل الخروج">🚪 <span>خروج</span></a>
+    <button class="btn-dark" id="darkBtn" onclick="toggleDark()" title="تبديل المظهر">🌙</button>
+  </div>
+</aside>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- ══════════ MAIN ══════════ -->
+<div class="main-content" id="mainContent">
+
+  <header class="topbar" id="topbar">
+    <div class="topbar-left">
+      <button class="btn-menu" id="btnMenu" onclick="toggleMobileMenu()" aria-label="فتح القائمة">☰</button>
+      <div>
+        <h1 class="topbar-title">{% block page_title %}لوحة التحكم{% endblock %}</h1>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="notif-wrap" id="notifWrap">
+        <button class="notif-btn" id="notifBtn" onclick="toggleNotif(event)" aria-label="التنبيهات" aria-haspopup="true" aria-expanded="false">
+          🔔
+          {% if smart_alerts_count %}
+          <span class="notif-count" id="notifBadge">{{ smart_alerts_count }}</span>
+          {% endif %}
+        </button>
+        <div class="notif-dropdown" id="notifDropdown" role="dialog">
+          <div class="notif-hdr">
+            <h4>🔔 التنبيهات</h4>
+            <button class="notif-mark-all" onclick="dismissAllAlerts()">تجاهل الكل</button>
+          </div>
+          <div class="notif-list" id="notifList">
+            <div class="notif-loading">⏳ جار التحميل...</div>
+          </div>
+          <div class="notif-footer">
+            <a href="{% url 'admin_panel:alerts' %}">عرض جميع التنبيهات ←</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="page-content" role="main">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+
+
+</div>
+
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="للأعلى">↑</button>
+<div class="toast-container" id="toastContainer" aria-live="polite"></div>
+<div class="sb-tooltip" id="sbTooltip"></div>
+
+<script src="{% static 'bootstrap/bootstrap.bundle.min.js' %}"></script>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const isMobile = () => window.innerWidth <= 768;
+const isTablet = () => window.innerWidth > 768 && window.innerWidth <= 1199;
+function getCsrf(){ return document.cookie.split(';').find(c=>c.trim().startsWith('csrftoken='))?.split('=')[1]||''; }
+
+/* ══ Progress Bar (نقطة 15) ══ */
+const nprog = $('nprogress');
+function progressStart(){ nprog.classList.add('active'); }
+function progressDone(){ nprog.classList.remove('active'); }
+document.querySelectorAll('a[href]').forEach(a => {
+  if (a.href && !a.href.startsWith('#') && !a.getAttribute('target')) {
+    a.addEventListener('click', () => progressStart());
+  }
+});
+window.addEventListener('load', progressDone);
+
+/* ══ Sidebar ══ */
+const sidebar     = $('sidebar');
+const mainContent = $('mainContent');
+const sbBtn       = $('sbToggleBtn');
+const overlay     = $('sidebarOverlay');
+
+/* نقطة 1: إصلاح زر الموبايل */
+function toggleMobileMenu() {
+  if (sidebar.classList.contains('open')) {
+    closeSidebar();
+  } else {
+    openSidebar();
+  }
+}
+
+function toggleSidebar(e) {
+  if (e) e.stopPropagation();
+  if (isMobile()) { toggleMobileMenu(); return; }
+  const isCol = sidebar.classList.toggle('collapsed');
+  mainContent.classList.toggle('sb-col', isCol);
+  sbBtn.textContent = isCol ? '▶' : '◀';
+  if (isTablet()) {
+    sidebar.classList.toggle('force-open', !isCol);
+    mainContent.classList.toggle('force-open', !isCol);
+  }
+  localStorage.setItem('sb_col', isCol ? '1' : '0');
+}
+
+function openSidebar() {
+  sidebar.classList.add('open');
+  overlay.classList.add('show');
+  document.body.style.overflow = 'hidden';
+  $('btnMenu').textContent = '✕';
+}
+function closeSidebar() {
+  sidebar.classList.remove('open');
+  overlay.classList.remove('show');
+  document.body.style.overflow = '';
+  $('btnMenu').textContent = '☰';
+}
+
+/* نقطة 8: إغلاق تلقائي على الموبايل */
+function autoCloseMobile() {
+  if (isMobile()) closeSidebar();
+}
+
+/* ضبط أولي */
+(function initSB() {
+  if (isMobile()) return;
+  if (isTablet()) return;
+  if (localStorage.getItem('sb_col') === '1') {
+    sidebar.classList.add('collapsed');
+    mainContent.classList.add('sb-col');
+    if (sbBtn) sbBtn.textContent = '▶';
+  }
+})();
+
+/* نقطة 17: فتح القسم النشط تلقائياً */
+(function openActiveSection() {
+  const activeItem = sidebar.querySelector('.nav-item.active');
+  if (!activeItem) return;
+  const grp = activeItem.closest('.nav-section-group');
+  if (grp && grp.classList.contains('sec-hidden')) {
+    grp.classList.remove('sec-hidden');
+    grp.style.maxHeight = grp.scrollHeight + 'px';
+    const btn = grp.previousElementSibling;
+    if (btn) btn.classList.remove('sec-closed');
+  }
+})();
+
+let rsTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(rsTimer);
+  rsTimer = setTimeout(() => {
+    if (isMobile()) {
+      sidebar.classList.remove('collapsed','force-open');
+      mainContent.classList.remove('sb-col','force-open');
+    }
+  }, 160);
+});
+
+/* Swipe */
+let txStart = 0;
+document.addEventListener('touchstart', e => { txStart = e.touches[0].clientX; }, {passive:true});
+document.addEventListener('touchend', e => {
+  if (!isMobile()) return;
+  const dx = e.changedTouches[0].clientX - txStart;
+  if (dx < -55 && sidebar.classList.contains('open')) closeSidebar();
+  if (dx > 55 && !sidebar.classList.contains('open') && txStart < 30) openSidebar();
+}, {passive:true});
+
+/* ══ Section Collapse (نقطة 18,19) ══ */
+function toggleSec(id, btn) {
+  if (sidebar.classList.contains('collapsed') && !isMobile()) return;
+  const grp = $(id);
+  if (!grp) return;
+  const closing = !grp.classList.contains('sec-hidden');
+  grp.classList.toggle('sec-hidden', closing);
+  btn.classList.toggle('sec-closed', closing);
+  grp.style.maxHeight = closing ? '0' : grp.scrollHeight + 'px';
+  grp.style.opacity   = closing ? '0' : '1';
+  localStorage.setItem('sec_' + id, closing ? '0' : '1');
+}
+
+document.querySelectorAll('.nav-section-group').forEach(g => {
+  const saved = localStorage.getItem('sec_' + g.id);
+  if (saved === '0') {
+    g.classList.add('sec-hidden');
+    const btn = g.previousElementSibling;
+    if (btn) btn.classList.add('sec-closed');
+    g.style.maxHeight = '0';
+    g.style.opacity   = '0';
+  } else {
+    g.style.maxHeight = g.scrollHeight + 'px';
+    g.style.opacity   = '1';
+  }
+});
+
+/* ══ Tooltip JS (نقطة 7) ══ */
+const tooltip = $('sbTooltip');
+sidebar.querySelectorAll('.nav-item[data-title]').forEach(item => {
+  item.addEventListener('mouseenter', e => {
+    if (!sidebar.classList.contains('collapsed') || isMobile()) return;
+    tooltip.textContent = item.dataset.title;
+    tooltip.classList.add('show');
+    const r = item.getBoundingClientRect();
+    tooltip.style.top  = (r.top + r.height/2 - tooltip.offsetHeight/2) + 'px';
+    tooltip.style.right = 'auto';
+    tooltip.style.left  = (window.innerWidth - r.left + 10) + 'px';
+  });
+  item.addEventListener('mouseleave', () => tooltip.classList.remove('show'));
+});
+
+/* ══ بادج الصفحة (نقطة 5) ══ */
+function hideBadge(el) {
+  const badge = el.querySelector('.nav-badge');
+  if (badge) { badge.classList.add('hide'); setTimeout(()=>badge.remove(),300); }
+}
+
+/* Ripple */
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', function(e) {
+    const r = document.createElement('span');
+    r.className = 'ripple';
+    const rect = this.getBoundingClientRect();
+    const sz = Math.max(rect.width, rect.height);
+    r.style.cssText = `width:${sz}px;height:${sz}px;left:${e.clientX-rect.left-sz/2}px;top:${e.clientY-rect.top-sz/2}px`;
+    this.appendChild(r);
+    setTimeout(()=>r.remove(), 600);
+  });
+});
+
+/* ══ Notifications (نقطة 2,3) ══ */
+const notifDropdown = $('notifDropdown');
+const notifBtn      = $('notifBtn');
+let notifLoaded = false;
+
+function toggleNotif(e) {
+  e.stopPropagation();
+  const open = notifDropdown.classList.toggle('show');
+  notifBtn.setAttribute('aria-expanded', open);
+  if (open) { positionDropdown(); if (!notifLoaded) loadAlerts(); }
+}
+function closeNotif() {
+  notifDropdown?.classList.remove('show');
+  notifBtn?.setAttribute('aria-expanded','false');
+}
+function positionDropdown() {
+  const btnR = notifBtn.getBoundingClientRect();
+  const ddW  = window.innerWidth <= 576 ? window.innerWidth - 20 : 315;
+  let left   = btnR.left + btnR.width/2 - ddW/2;
+  left = Math.max(10, Math.min(left, window.innerWidth - ddW - 10));
+  notifDropdown.style.width = ddW + 'px';
+  notifDropdown.style.left  = left + 'px';
+  notifDropdown.style.right = 'auto';
+  notifDropdown.style.top   = (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tbh'))||60) + 6 + 'px';
+}
+
+function loadAlerts() {
+  notifLoaded = true;
+  fetch('/admin-panel/alerts/data/?page=1', {headers:{'X-Requested-With':'XMLHttpRequest','X-CSRFToken':getCsrf()}})
+  .then(r=>r.json())
+  .then(data => {
+    const list   = $('notifList');
+    const alerts = (data.alerts||data.results||data.data||[]).slice(0,5);
+    if (!alerts.length) { list.innerHTML='<div class="notif-empty"><span>🔕</span> لا توجد تنبيهات</div>'; return; }
+    const typeMap = {critical:{ico:'🚨',cls:'ico-red'},warning:{ico:'⚠️',cls:'ico-orange'},info:{ico:'📌',cls:'ico-purple'},success:{ico:'✅',cls:'ico-green'}};
+    list.innerHTML = alerts.map(a => {
+      const t = typeMap[a.alert_type||a.type]||{ico:'📌',cls:'ico-purple'};
+      return `<div class="notif-item ${a.is_dismissed?'':'unread'}" onclick="dismissAlert(this,'${a.id}')">
+        <div class="notif-ico ${t.cls}">${t.ico}</div>
+        <div class="notif-body">
+          <strong>${a.title||a.message||'تنبيه'}</strong>
+          <span>${a.message||a.description||''}</span>
+          <span class="notif-time">${a.time_ago||a.created_at||''}</span>
+        </div>
+      </div>`;
+    }).join('');
+  })
+  .catch(() => { $('notifList').innerHTML='<div class="notif-empty">⚠️ تعذّر التحميل</div>'; });
+}
+
+/* نقطة 3: تخفيض العدّاد فوراً */
+function dismissAlert(el, id) {
+  if (!el.classList.contains('unread')) return;
+  el.classList.remove('unread');
+  el.style.opacity = '0.45';
+  updateBadge(-1);
+  fetch('/admin-panel/alerts/dismiss/', {
+    method:'POST',
+    headers:{'X-CSRFToken':getCsrf(),'Content-Type':'application/json'},
+    body:JSON.stringify({alert_id:id})
+  }).catch(()=>{});
+}
+
+function dismissAllAlerts() {
+  document.querySelectorAll('#notifList .notif-item.unread').forEach(el => {
+    el.classList.remove('unread'); el.style.opacity='0.45';
+  });
+  fetch('/admin-panel/alerts/dismiss-all/', {method:'POST',headers:{'X-CSRFToken':getCsrf()}}).catch(()=>{});
+  const b = $('notifBadge');
+  if (b) b.style.display = 'none';
+  const bb = $('bnAlertBadge');
+  if (bb) bb.style.display = 'none';
+}
+
+function updateBadge(delta) {
+  [$('notifBadge'), $('bnAlertBadge')].forEach(b => {
+    if (!b) return;
+    const n = Math.max(0, (parseInt(b.textContent)||0) + delta);
+    b.textContent = n;
+    b.style.display = n ? '' : 'none';
+  });
+}
+
+/* نقطة 20: visibility API — لا تُحدَّث في الخلفية */
+let notifInterval;
+function startNotifInterval() {
+  notifInterval = setInterval(() => {
+    if (document.hidden) return;
+    fetch('/admin-panel/alerts/data/?page=1', {headers:{'X-Requested-With':'XMLHttpRequest'}})
+    .then(r=>r.json())
+    .then(d => {
+      const count = (d.alerts||d.results||d.data||[]).filter(a=>!a.is_dismissed).length;
+      [$('notifBadge'), $('bnAlertBadge')].forEach(b => {
+        if (!b) { if (count>0) {} return; }
+        b.textContent = count; b.style.display = count ? '' : 'none';
+      });
+      if (notifDropdown.classList.contains('show')) { notifLoaded=false; loadAlerts(); }
+    }).catch(()=>{});
+  }, 60000);
+}
+startNotifInterval();
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) { clearInterval(notifInterval); startNotifInterval(); }
+});
+
+/* ══ Dark Mode (نقطة 14) ══ */
+function toggleDark() {
+  const dark = document.body.classList.toggle('dark-mode');
+  const btn  = $('darkBtn');
+  if (btn) btn.textContent = dark ? '☀️' : '🌙';
+  localStorage.setItem('dark', dark ? '1' : '0');
+  fetch('/admin-panel/settings/toggle-dark/', {
+    method:'POST',
+    headers:{'X-CSRFToken':getCsrf(),'Content-Type':'application/x-www-form-urlencoded'},
+    body:'action=toggle_dark'
+  }).catch(()=>{});
+}
+if (localStorage.getItem('dark')==='1') document.body.classList.add('dark-mode');
+const _db = $('darkBtn');
+if (_db) _db.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
+
+/* ══ Scroll ══ */
+window.addEventListener('scroll', () => {
+  $('backToTop')?.classList.toggle('vis', window.scrollY > 280);
+  $('topbar')?.classList.toggle('scrolled', window.scrollY > 10);
+});
+
+/* ══ Keyboard + Outside Click ══ */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeSidebar(); closeNotif(); }
+});
+document.addEventListener('click', e => {
+  if (!e.target.closest('.notif-wrap')) closeNotif();
+  if (isMobile() && !e.target.closest('#sidebar') && !e.target.closest('#btnMenu')) closeSidebar();
+});
+
+/* ══ Toast + Alert ══ */
+function showToast(msg, type='info', ms=3500) {
+  const icons = {success:'✅',error:'❌',warning:'⚠️',info:'📌'};
+  const t = document.createElement('div');
+  t.className = 'toast-item';
+  t.innerHTML = `<span>${icons[type]||'📌'}</span><span>${msg}</span>`;
+  $('toastContainer').appendChild(t);
+  setTimeout(()=>{ t.classList.add('out'); setTimeout(()=>t.remove(),300); }, ms);
+}
+function showAlert(id, type, msg) {
+  const el = $(id); if (!el) return;
+  el.className = 'dash-alert show ' + type;
+  el.innerHTML = (type==='success'?'✅ ':'⚠️ ') + msg;
+  if (type!=='success') setTimeout(()=>el.classList.remove('show'),5000);
+}
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

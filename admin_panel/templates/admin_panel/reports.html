@@ -1,0 +1,727 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% block title %}لوحة التقارير{% endblock %}
+{% block page_title %}📊 لوحة التقارير الشاملة{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ══ فلاتر ══ */
+.rp-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-end;
+    background: #fff;
+    border: 1px solid #ede9fe;
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+}
+body.dark-mode .rp-filters { background: #0f0b1e; border-color: rgba(139,92,246,0.15); }
+
+.rp-filter-group { display: flex; flex-direction: column; gap: 5px; }
+.rp-filter-group label {
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #9ca3af;
+}
+.rp-select, .rp-input {
+    background: #f8f7ff;
+    border: 1.5px solid #ede9fe;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.84rem;
+    color: #1a1a2e;
+    outline: none;
+    min-width: 150px;
+    transition: border 0.2s;
+}
+.rp-select:focus, .rp-input:focus { border-color: var(--adm); box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+body.dark-mode .rp-select, body.dark-mode .rp-input { background: #130f24; color: #e8f5ee; border-color: rgba(139,92,246,0.2); }
+
+.rp-custom-dates { display: none; gap: 8px; }
+.rp-custom-dates.show { display: flex; }
+
+.rp-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    border-radius: 10px;
+    border: none;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.84rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.rp-btn-primary { background: var(--adm); color: #fff; }
+.rp-btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+.rp-btn-green { background: #1a7a4a; color: #fff; }
+.rp-btn-green:hover { opacity: 0.9; }
+.rp-btn-red { background: #c53030; color: #fff; }
+.rp-btn-red:hover { opacity: 0.9; }
+.rp-btn-outline { background: transparent; border: 1.5px solid var(--adm); color: var(--adm); }
+
+/* ══ شريط الإجراءات ══ */
+.rp-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+.rp-period-badge {
+    background: rgba(124,58,237,0.08);
+    border: 1px solid rgba(124,58,237,0.15);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--adm);
+}
+
+/* ══ مربعات الملخص ══ */
+.rp-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 22px;
+}
+.rp-stat {
+    background: #fff;
+    border: 1px solid #ede9fe;
+    border-radius: 16px;
+    padding: 18px 16px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.28s;
+}
+body.dark-mode .rp-stat { background: #110d1f; border-color: rgba(139,92,246,0.14); }
+.rp-stat:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(124,58,237,0.12); }
+.rp-stat-accent {
+    position: absolute;
+    top: 0; right: 0;
+    width: 4px;
+    height: 100%;
+    border-radius: 0 16px 16px 0;
+}
+.rp-stat-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    margin-bottom: 12px;
+}
+.rp-stat-val {
+    font-size: 1.8rem;
+    font-weight: 900;
+    font-family: 'Cairo', sans-serif;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+.rp-stat-lbl {
+    font-size: 0.73rem;
+    color: #9ca3af;
+    font-weight: 600;
+}
+.rp-stat-sub {
+    font-size: 0.72rem;
+    font-weight: 600;
+    margin-top: 6px;
+    padding: 2px 8px;
+    border-radius: 8px;
+    display: inline-block;
+}
+
+/* ══ الأقسام ══ */
+.rp-section {
+    background: #fff;
+    border: 1px solid #ede9fe;
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+body.dark-mode .rp-section { background: #0f0b1e; border-color: rgba(139,92,246,0.12); }
+.rp-section-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid #f0ebff;
+    background: linear-gradient(135deg, rgba(124,58,237,0.04), transparent);
+}
+body.dark-mode .rp-section-hdr { border-color: rgba(139,92,246,0.1); }
+.rp-section-title {
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+body.dark-mode .rp-section-title { color: #e8f5ee; }
+.rp-section-body { padding: 18px 20px; }
+
+/* ══ Grid للمقارنة ══ */
+.rp-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.rp-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+/* ══ بطاقات الأقسام ══ */
+.rp-type-card {
+    border-radius: 14px;
+    padding: 16px;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+}
+.rp-type-card:hover { transform: translateY(-2px); }
+.rp-type-card .val { font-size: 2rem; font-weight: 900; font-family: 'Cairo', sans-serif; }
+.rp-type-card .lbl { font-size: 0.78rem; font-weight: 600; opacity: 0.8; margin-top: 2px; }
+.rp-type-card .sub { font-size: 0.72rem; margin-top: 8px; opacity: 0.7; }
+
+/* ══ Mini stats ══ */
+.mini-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.mini-stat {
+    background: #f8f7ff;
+    border-radius: 10px;
+    padding: 10px 12px;
+    text-align: center;
+}
+body.dark-mode .mini-stat { background: #130f24; }
+.mini-stat .v { font-size: 1.2rem; font-weight: 900; font-family: 'Cairo', sans-serif; }
+.mini-stat .l { font-size: 0.68rem; color: #9ca3af; margin-top: 2px; font-weight: 600; }
+
+/* ══ جداول ══ */
+.rp-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+.rp-table th {
+    background: #f8f7ff;
+    color: #7c6ea8;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    padding: 10px 12px;
+    text-align: right;
+    border-bottom: 2px solid #ede9fe;
+    white-space: nowrap;
+}
+body.dark-mode .rp-table th { background: #130f24; color: #7c6ea8; }
+.rp-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(124,58,237,0.05);
+    color: #1a1a2e;
+    vertical-align: middle;
+}
+body.dark-mode .rp-table td { color: #e8f5ee; }
+.rp-table tr:last-child td { border-bottom: none; }
+.rp-table tr:hover td { background: rgba(124,58,237,0.025); }
+
+/* ══ Loader ══ */
+.rp-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    flex-direction: column;
+    gap: 14px;
+    color: #9ca3af;
+    font-family: 'Tajawal', sans-serif;
+}
+.rp-spinner {
+    width: 44px;
+    height: 44px;
+    border: 4px solid #ede9fe;
+    border-top-color: var(--adm);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ══ Responsive ══ */
+@media(max-width:1200px) { .rp-stats { grid-template-columns: repeat(2,1fr); } }
+@media(max-width:900px)  { .rp-grid-2, .rp-grid-3 { grid-template-columns: 1fr; } }
+@media(max-width:768px)  {
+    .rp-stats   { grid-template-columns: 1fr 1fr; }
+    .rp-filters { flex-direction: column; }
+    .rp-actions { flex-direction: column; align-items: stretch; }
+    .mini-stats { grid-template-columns: 1fr 1fr; }
+}
+@media(max-width:480px)  { .rp-stats { grid-template-columns: 1fr; } }
+
+/* ══ Chart containers ══ */
+.chart-wrap {
+    position: relative;
+    height: 260px;
+    width: 100%;
+}
+.chart-wrap-sm {
+    position: relative;
+    height: 200px;
+    width: 100%;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══ فلاتر ══ -->
+<div class="rp-filters fade-in">
+    <div class="rp-filter-group">
+        <label>الفترة الزمنية</label>
+        <select class="rp-select" id="periodSel" onchange="onPeriodChange();loadReports()">
+            <option value="week">آخر أسبوع</option>
+            <option value="month" selected>هذا الشهر</option>
+            <option value="quarter">آخر 3 أشهر</option>
+            <option value="year">هذا العام</option>
+            <option value="all">كل الوقت</option>
+            <option value="custom">تحديد يدوي</option>
+        </select>
+    </div>
+
+    <div class="rp-custom-dates" id="customDates">
+        <div class="rp-filter-group">
+            <label>من تاريخ</label>
+
+            <input type="date" class="rp-input" id="dateFrom" onchange="loadReports()">
+
+        </div>
+        <div class="rp-filter-group">
+            <label>إلى تاريخ</label>
+           <input type="date" class="rp-input" id="dateTo"   onchange="loadReports()">
+        </div>
+    </div>
+
+    <div class="rp-filter-group">
+        <label>الكافل (اختياري)</label>
+
+        <select class="rp-select" id="sponsorSel" onchange="loadReports()" style="min-width:200px">
+            <option value="">كل الكفلاء</option>
+            {% for sp in sponsors %}
+            <option value="{{ sp.pk }}">{{ sp.user.get_full_name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="rp-filter-group" style="justify-content:flex-end">
+        <label>&nbsp;</label>
+        <div style="display:flex;gap:8px">
+            <button class="rp-btn rp-btn-primary" onclick="loadReports()">🔍 تطبيق</button>
+            <button class="rp-btn rp-btn-outline" onclick="resetFilters()">🔄 إعادة</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ شريط الإجراءات ══ -->
+<div class="rp-actions fade-in fade-in-d1">
+    <div class="rp-period-badge" id="periodBadge">📅 هذا الشهر</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="rp-btn rp-btn-green" onclick="exportExcel()">📊 تصدير Excel</button>
+        <button class="rp-btn rp-btn-red"   onclick="exportPdf()">📋 تصدير PDF</button>
+    </div>
+</div>
+
+<!-- ══ محتوى التقرير ══ -->
+<div id="reportContent">
+    <div class="rp-loading">
+        <div class="rp-spinner"></div>
+        <span>جار تحميل التقرير...</span>
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+'use strict';
+
+let chartsInstances = {};
+
+function onPeriodChange() {
+    const v = document.getElementById('periodSel').value;
+    document.getElementById('customDates').classList.toggle('show', v === 'custom');
+}
+
+function resetFilters() {
+    document.getElementById('periodSel').value  = 'month';
+    document.getElementById('sponsorSel').value = '';
+    document.getElementById('dateFrom').value   = '';
+    document.getElementById('dateTo').value     = '';
+    document.getElementById('customDates').classList.remove('show');
+    loadReports();
+}
+
+function _params() {
+    const period    = document.getElementById('periodSel').value;
+    const sponsorId = document.getElementById('sponsorSel').value;
+    const dateFrom  = document.getElementById('dateFrom').value;
+    const dateTo    = document.getElementById('dateTo').value;
+    return new URLSearchParams({ period, sponsor_id: sponsorId, date_from: dateFrom, date_to: dateTo });
+}
+
+async function loadReports() {
+    document.getElementById('reportContent').innerHTML = `
+        <div class="rp-loading"><div class="rp-spinner"></div><span>جار تحميل التقرير...</span></div>`;
+
+    // تدمير الرسوم البيانية القديمة
+    Object.values(chartsInstances).forEach(c => c.destroy());
+    chartsInstances = {};
+
+    try {
+        const r    = await fetch(`/admin-panel/reports/data/?${_params()}`, {
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        });
+        const data = await r.json();
+        renderReport(data);
+    } catch(e) {
+        document.getElementById('reportContent').innerHTML =
+            `<div class="rp-loading" style="color:#e53e3e">⚠️ خطأ في تحميل البيانات</div>`;
+    }
+}
+
+function renderReport(d) {
+    const PERIOD_LABELS = {
+        week:'آخر أسبوع', month:'هذا الشهر', quarter:'آخر 3 أشهر',
+        year:'هذا العام', all:'كل الوقت', custom:'تحديد يدوي'
+    };
+    const period = document.getElementById('periodSel').value;
+    document.getElementById('periodBadge').textContent =
+        `📅 ${PERIOD_LABELS[period] || ''} (${d.period.from} → ${d.period.to})`;
+
+    const s  = d.summary;
+    const b  = d.beneficiaries;
+    const p  = d.payments;
+    const a  = d.aids;
+    const ch = d.charts;
+
+    document.getElementById('reportContent').innerHTML = `
+
+    <!-- ══ ملخص عام ══ -->
+    <div class="rp-stats fade-in">
+        ${_stat('👥', s.total_users,        'إجمالي المستفيدين',   `${s.new_users} جديد في الفترة`,  'rgba(124,58,237,0.1)', '#7c3aed', '#7c3aed')}
+        ${_stat('💰', s.total_pays_ils+'₪', 'إجمالي المدفوعات',   `$${s.total_pays_usd}`,             'rgba(26,122,74,0.1)',  '#1a7a4a', '#1a7a4a')}
+        ${_stat('🎁', s.total_aids,         'إجمالي المساعدات',   '',                                  'rgba(245,158,11,0.1)', '#b45309', '#b45309')}
+        ${_stat('🤝', b.sponsored,          'مكفولون',             `${b.unsponsored} غير مكفول`,       'rgba(43,108,176,0.1)', '#2b6cb0', '#2b6cb0')}
+    </div>
+
+    <!-- ══ الرسوم البيانية الرئيسية ══ -->
+    <div class="rp-grid-2 fade-in fade-in-d1" style="margin-bottom:20px">
+        <div class="rp-section">
+            <div class="rp-section-hdr">
+                <div class="rp-section-title">💰 المدفوعات الشهرية (آخر 12 شهر)</div>
+            </div>
+            <div class="rp-section-body"><div class="chart-wrap"><canvas id="chartPays"></canvas></div></div>
+        </div>
+        <div class="rp-section">
+            <div class="rp-section-hdr">
+                <div class="rp-section-title">👥 المستفيدون الجدد شهرياً</div>
+            </div>
+            <div class="rp-section-body"><div class="chart-wrap"><canvas id="chartUsers"></canvas></div></div>
+        </div>
+    </div>
+
+    <div class="rp-grid-3 fade-in fade-in-d2" style="margin-bottom:20px">
+        <div class="rp-section">
+            <div class="rp-section-hdr">
+                <div class="rp-section-title">🥧 توزيع المستفيدين</div>
+            </div>
+            <div class="rp-section-body"><div class="chart-wrap-sm"><canvas id="chartDist"></canvas></div></div>
+        </div>
+        <div class="rp-section">
+            <div class="rp-section-hdr">
+                <div class="rp-section-title">🎁 أنواع المساعدات</div>
+            </div>
+            <div class="rp-section-body"><div class="chart-wrap-sm"><canvas id="chartAids"></canvas></div></div>
+        </div>
+        <div class="rp-section">
+            <div class="rp-section-hdr">
+                <div class="rp-section-title">🏆 أعلى 5 كفلاء مدفوعاً</div>
+            </div>
+            <div class="rp-section-body"><div class="chart-wrap-sm"><canvas id="chartSponsors"></canvas></div></div>
+        </div>
+    </div>
+
+    <!-- ══ تفاصيل المستفيدين ══ -->
+    <div class="rp-section fade-in fade-in-d2" style="margin-bottom:20px">
+        <div class="rp-section-hdr">
+            <div class="rp-section-title">👥 تفاصيل المستفيدين حسب النوع</div>
+        </div>
+        <div class="rp-section-body">
+            <div class="rp-grid-3" style="gap:12px">
+                ${_typeCard('👦 الأيتام',    b.orphans_total,  b.new_orphans,  '#1a7a4a', 'rgba(26,122,74,0.08)',  '#bbf7d0')}
+                ${_typeCard('👨‍👩‍👧 الأسر',     b.families_total, b.new_families, '#b45309', 'rgba(245,158,11,0.08)', '#fde68a')}
+                ${_typeCard('♿ ذوو احتياجات',b.specials_total, b.new_specials, '#c53030', 'rgba(229,62,62,0.08)',  '#fca5a5')}
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ تفاصيل المدفوعات ══ -->
+    <div class="rp-section fade-in fade-in-d3" style="margin-bottom:20px">
+        <div class="rp-section-hdr">
+            <div class="rp-section-title">💰 تفاصيل المدفوعات</div>
+        </div>
+        <div class="rp-section-body">
+            <div class="mini-stats" style="margin-bottom:16px">
+                <div class="mini-stat">
+                    <div class="v" style="color:#1a7a4a">${p.paid_ils}₪</div>
+                    <div class="l">✅ مدفوعة (${p.paid_count})</div>
+                </div>
+                <div class="mini-stat">
+                    <div class="v" style="color:#b45309">${p.pending_ils}₪</div>
+                    <div class="l">⏳ معلّقة (${p.pending_count})</div>
+                </div>
+                <div class="mini-stat">
+                    <div class="v" style="color:#c53030">${p.late_ils}₪</div>
+                    <div class="l">🔴 متأخرة (${p.late_count})</div>
+                </div>
+                <div class="mini-stat">
+                    <div class="v" style="color:#2b6cb0">${p.sponsor_pays}₪</div>
+                    <div class="l">🤝 من الكفلاء</div>
+                </div>
+                <div class="mini-stat">
+                    <div class="v" style="color:#7c3aed">${p.admin_pays}₪</div>
+                    <div class="l">🏢 من الإدارة</div>
+                </div>
+                <div class="mini-stat">
+                    <div class="v" style="color:#6b7280">${p.ext_pays}₪</div>
+                    <div class="l">🌐 من جهات خارجية</div>
+                </div>
+            </div>
+            <div style="background:#f8f7ff;border-radius:10px;padding:12px;font-family:'Tajawal',sans-serif;font-size:0.84rem;color:#6b7280;text-align:center">
+                متوسط الدفعة الواحدة: <strong style="color:var(--adm);font-size:1rem">${p.avg_ils}₪</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ أعلى الكفلاء ══ -->
+    ${ch.top_sponsors.length ? `
+    <div class="rp-section fade-in fade-in-d3" style="margin-bottom:20px">
+        <div class="rp-section-hdr">
+            <div class="rp-section-title">🏆 أعلى الكفلاء من حيث المدفوعات</div>
+        </div>
+        <div class="rp-section-body">
+            <table class="rp-table">
+                <thead><tr><th>#</th><th>اسم الكافل</th><th>إجمالي المدفوع ₪</th></tr></thead>
+                <tbody>
+                    ${ch.top_sponsors.map((sp,i)=>`
+                    <tr>
+                        <td><span style="background:rgba(124,58,237,0.1);color:var(--adm);padding:2px 8px;border-radius:8px;font-weight:700">${i+1}</span></td>
+                        <td style="font-weight:700">${sp.name}</td>
+                        <td><span style="color:#1a7a4a;font-weight:700">${sp.total}₪</span></td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+        </div>
+    </div>` : ''}
+
+    `;
+
+    // رسم الـ Charts
+    _drawCharts(ch);
+}
+
+function _stat(icon, val, lbl, sub, iconBg, valColor, accentColor) {
+    return `
+    <div class="rp-stat">
+        <div class="rp-stat-accent" style="background:${accentColor}"></div>
+        <div class="rp-stat-icon" style="background:${iconBg}">${icon}</div>
+        <div class="rp-stat-val" style="color:${valColor}">${val}</div>
+        <div class="rp-stat-lbl">${lbl}</div>
+        ${sub ? `<div class="rp-stat-sub" style="background:${iconBg};color:${valColor}">${sub}</div>` : ''}
+    </div>`;
+}
+
+function _typeCard(title, total, newCount, color, bg, borderColor) {
+    return `
+    <div class="rp-type-card" style="background:${bg};border-color:${borderColor}">
+        <div style="font-family:'Tajawal',sans-serif;font-size:0.82rem;font-weight:700;color:${color};margin-bottom:8px">${title}</div>
+        <div class="val" style="color:${color}">${total}</div>
+        <div class="lbl" style="color:${color}">إجمالي المسجلين</div>
+        <div class="sub" style="color:${color}">➕ ${newCount} جديد في الفترة</div>
+    </div>`;
+}
+
+function _drawCharts(ch) {
+    const isDark = document.body.classList.contains('dark-mode');
+    const gridColor  = isDark ? 'rgba(139,92,246,0.12)' : 'rgba(124,58,237,0.08)';
+    const tickColor  = isDark ? '#6b4fa0' : '#9ca3af';
+    const fontFamily = "'Cairo', 'Arial', sans-serif";
+
+    Chart.defaults.font.family = fontFamily;
+    Chart.defaults.color       = tickColor;
+
+    // المدفوعات الشهرية
+    chartsInstances.pays = new Chart(document.getElementById('chartPays'), {
+        type: 'bar',
+        data: {
+            labels:   ch.monthly_pays.map(m => m.month),
+            datasets: [{
+                label: 'المدفوعات ₪',
+                data:  ch.monthly_pays.map(m => m.ils),
+                backgroundColor: 'rgba(26,122,74,0.75)',
+                borderColor:     '#1a7a4a',
+                borderWidth:     1.5,
+                borderRadius:    6,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { color: gridColor }, ticks: { font: { size: 10 } } },
+                y: { grid: { color: gridColor }, ticks: { font: { size: 10 } } },
+            }
+        }
+    });
+
+    // المستفيدون الجدد
+    chartsInstances.users = new Chart(document.getElementById('chartUsers'), {
+        type: 'line',
+        data: {
+            labels:   ch.monthly_new_users.map(m => m.month),
+            datasets: [{
+                label:           'مستفيدون جدد',
+                data:            ch.monthly_new_users.map(m => m.count),
+                borderColor:     '#7c3aed',
+                backgroundColor: 'rgba(124,58,237,0.1)',
+                borderWidth:     2.5,
+                fill:            true,
+                tension:         0.4,
+                pointBackgroundColor: '#7c3aed',
+                pointRadius:     4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { color: gridColor }, ticks: { font: { size: 10 } } },
+                y: { grid: { color: gridColor }, ticks: { font: { size: 10 }, stepSize: 1 } },
+            }
+        }
+    });
+
+    // توزيع المستفيدين
+    chartsInstances.dist = new Chart(document.getElementById('chartDist'), {
+        type: 'doughnut',
+        data: {
+            labels: ['الأيتام', 'الأسر', 'ذوو احتياجات', 'الكفلاء'],
+            datasets: [{
+                data: [
+                    ch.distribution.orphan,
+                    ch.distribution.family,
+                    ch.distribution.special,
+                    ch.distribution.sponsor,
+                ],
+                backgroundColor: ['#1a7a4a','#b45309','#c53030','#2b6cb0'],
+                borderWidth: 0,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { font: { size: 10 }, padding: 8 } }
+            },
+            cutout: '65%',
+        }
+    });
+
+    // أنواع المساعدات
+    const aidLabels = ['غذائية','طبية','مالية','ملابس','أثاث','تعليمية','أخرى'];
+    const aidData   = [
+        ch.aids_distribution.food, ch.aids_distribution.medical,
+        ch.aids_distribution.financial, ch.aids_distribution.clothing,
+        ch.aids_distribution.furniture, ch.aids_distribution.education,
+        ch.aids_distribution.other,
+    ];
+    chartsInstances.aids = new Chart(document.getElementById('chartAids'), {
+        type: 'pie',
+        data: {
+            labels: aidLabels,
+            datasets: [{
+                data: aidData,
+                backgroundColor: ['#1a7a4a','#2b6cb0','#7c3aed','#b45309','#c53030','#ed8936','#9ca3af'],
+                borderWidth: 0,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { font: { size: 10 }, padding: 8 } }
+            }
+        }
+    });
+
+    // أعلى الكفلاء
+    if (ch.top_sponsors.length) {
+        chartsInstances.sponsors = new Chart(document.getElementById('chartSponsors'), {
+            type: 'bar',
+            data: {
+                labels:   ch.top_sponsors.map(s => s.name.split(' ').slice(0,2).join(' ')),
+                datasets: [{
+                    label: '₪',
+                    data:  ch.top_sponsors.map(s => s.total),
+                    backgroundColor: 'rgba(124,58,237,0.75)',
+                    borderColor:     '#7c3aed',
+                    borderWidth:     1.5,
+                    borderRadius:    6,
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { color: gridColor }, ticks: { font: { size: 10 } } },
+                    y: { grid: { color: gridColor }, ticks: { font: { size: 10 } } },
+                }
+            }
+        });
+    }
+}
+
+// ══ تصدير ══
+function exportExcel() {
+    window.location.href = `/admin-panel/reports/export-excel/?${_params()}`;
+}
+
+async function exportPdf() {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = '⏳ جار التجهيز...';
+    try {
+        const resp = await fetch(
+            `/admin-panel/reports/export-pdf/?${_params()}`,
+            { headers: {'X-Requested-With': 'XMLHttpRequest'} }
+        );
+        if (!resp.ok) throw new Error();
+        const blob = await resp.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href = url; a.download = 'report.pdf';
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch {
+        alert('فشل تصدير PDF');
+    }
+    btn.disabled = false;
+    btn.textContent = '📋 تصدير PDF';
+}
+
+document.addEventListener('DOMContentLoaded', loadReports);
+</script>
+{% endblock %}

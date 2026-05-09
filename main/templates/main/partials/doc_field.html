@@ -1,0 +1,51 @@
+{% comment %}
+Parameters:
+  doc_id   : معرّف المستند (يُستخدم في id="doc_{{ doc_id }}")
+  label    : اسم المستند
+  required : True / False
+{% endcomment %}
+
+<div class="col-md-4 col-sm-6">
+
+    <label class="form-label">
+        {% if required %}
+            <span class="doc-req-badge">✳️ إلزامي</span>
+        {% else %}
+            <span class="doc-opt-badge">اختياري</span>
+        {% endif %}
+        <br>{{ label }}
+        {% if required %}<span class="req">*</span>{% endif %}
+    </label>
+
+    <div class="file-box {% if required %}doc-required{% endif %}"
+         id="docbox_{{ doc_id }}"
+         onclick="document.getElementById('doc_{{ doc_id }}').click()"
+         ondragover="event.preventDefault();this.classList.add('dragover')"
+         ondragleave="this.classList.remove('dragover')"
+         ondrop="handleDocDrop(event,'{{ doc_id }}',{% if required %}true{% else %}false{% endif %})">
+
+       <input type="file"
+       id="doc_{{ doc_id }}"
+       name="doc_{{ doc_id }}"
+       {% if multi %}multiple{% endif %}
+       accept=".jpg,.jpeg,.png,.pdf"
+       data-required="{% if required %}true{% else %}false{% endif %}"
+       onchange="handleDocFile(this,'{{ doc_id }}',{% if required %}true{% else %}false{% endif %})"
+       onclick="event.stopPropagation()">
+
+        <span class="file-box-icon" id="dicon_{{ doc_id }}">
+            {% if required %}📎{% else %}📄{% endif %}
+        </span>
+
+        <div class="file-box-text" id="dtext_{{ doc_id }}">
+            اضغط أو اسحب الملف هنا<br>
+            <small>JPG • PNG • PDF — الحد 4MB</small>
+        </div>
+
+        <div class="file-box-name" id="docname_{{ doc_id }}"></div>
+
+    </div>
+
+    <div class="field-error" id="err_doc_{{ doc_id }}"></div>
+
+</div>

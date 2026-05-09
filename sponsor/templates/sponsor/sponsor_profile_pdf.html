@@ -1,0 +1,314 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>ملف الكافل — {{ sponsor.user.get_full_name }}</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Arial',sans-serif; background:#fff; color:#1a1a2e; font-size:10pt; direction:rtl; }
+
+/* ══ Header ══ */
+.hdr {
+    background:linear-gradient(135deg,#1a7a4a 0%,#2ecc71 100%);
+    padding:0; border-radius:12px; margin-bottom:20px; overflow:hidden;
+    display:table; width:100%;
+}
+.hdr-right { display:table-cell; vertical-align:middle; padding:20px 24px; width:60%; }
+.hdr-left  { display:table-cell; vertical-align:middle; padding:20px 24px; text-align:left; width:40%; background:rgba(0,0,0,0.08); }
+.org-name  { font-size:22pt; font-weight:900; color:#fff; letter-spacing:-0.5px; }
+.org-sub   { font-size:8.5pt; color:rgba(255,255,255,0.8); margin-top:4px; }
+.doc-type  { font-size:9pt; color:rgba(255,255,255,0.7); margin-bottom:4px; }
+.doc-title { font-size:14pt; font-weight:900; color:#fff; }
+.hdr-meta  { font-size:8pt; color:rgba(255,255,255,0.75); line-height:2; }
+.hdr-meta strong { color:#fff; }
+
+/* ══ Profile Hero ══ */
+.profile-hero {
+    background:linear-gradient(135deg,#f0fdf4,#e8f5e9);
+    border:1px solid #bbf7d0; border-radius:12px;
+    padding:20px 24px; margin-bottom:18px;
+    display:table; width:100%;
+}
+.hero-photo-cell { display:table-cell; width:90px; vertical-align:middle; }
+.hero-photo {
+    width:80px; height:80px; border-radius:50%;
+    border:3px solid #1a7a4a; object-fit:cover;
+}
+.hero-avatar {
+    width:80px; height:80px; border-radius:50%;
+    background:linear-gradient(135deg,#1a7a4a,#2ecc71);
+    display:flex; align-items:center; justify-content:center;
+    font-size:22pt; font-weight:900; color:#fff;
+}
+.hero-info-cell { display:table-cell; vertical-align:middle; padding-right:16px; }
+.hero-name  { font-size:16pt; font-weight:900; color:#1a7a4a; margin-bottom:4px; }
+.hero-meta  { font-size:8.5pt; color:#4a7c59; line-height:1.9; }
+.hero-meta strong { color:#1a7a4a; }
+.hero-reg   { display:inline-block; background:#1a7a4a; color:#fff; padding:3px 12px; border-radius:20px; font-size:8pt; font-weight:700; margin-top:6px; }
+.hero-stats-cell { display:table-cell; vertical-align:middle; text-align:left; width:200px; }
+.hs-grid { display:table; width:100%; border-collapse:separate; border-spacing:6px; }
+.hs-row  { display:table-row; }
+.hs-cell { display:table-cell; width:50%; }
+.hs-box  { background:#fff; border:1px solid #bbf7d0; border-radius:8px; padding:8px; text-align:center; }
+.hs-val  { font-size:13pt; font-weight:900; color:#1a7a4a; }
+.hs-lbl  { font-size:6.5pt; color:#9ca3af; font-weight:700; margin-top:2px; }
+
+/* ══ Sections ══ */
+.section { margin-bottom:16px; border:1px solid #bbf7d0; border-radius:10px; overflow:hidden; page-break-inside:avoid; }
+.section-title { background:#f0fdf4; padding:9px 16px; font-size:9.5pt; font-weight:700; color:#1a7a4a; border-bottom:1px solid #bbf7d0; display:table; width:100%; }
+.st-icon { display:table-cell; width:24px; vertical-align:middle; font-size:11pt; }
+.st-text { display:table-cell; vertical-align:middle; padding-right:6px; }
+.section-body { padding:14px 16px; }
+
+/* ══ Info Grid ══ */
+.i-grid { display:table; width:100%; border-collapse:separate; border-spacing:8px; }
+.i-row  { display:table-row; }
+.i-cell { display:table-cell; width:33.33%; vertical-align:top; }
+.i-cell-half { display:table-cell; width:50%; vertical-align:top; }
+.i-box  { background:#f8fffe; border:1px solid #d1fae5; border-radius:8px; padding:8px 12px; }
+.i-lbl  { font-size:6.5pt; color:#9ca3af; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:3px; }
+.i-val  { font-size:9pt; font-weight:700; color:#1a1a2e; }
+
+/* ══ Stats Row ══ */
+.stats-row { display:table; width:100%; border-collapse:separate; border-spacing:8px; margin-bottom:18px; }
+.stats-cell { display:table-cell; width:25%; vertical-align:top; }
+.stats-box  { border-radius:10px; padding:14px; text-align:center; border:1px solid transparent; }
+.sb-green  { background:#f0fdf4; border-color:#bbf7d0; }
+.sb-blue   { background:#eff6ff; border-color:#bfdbfe; }
+.sb-orange { background:#fff7ed; border-color:#fed7aa; }
+.sb-purple { background:#f5f3ff; border-color:#c4b5fd; }
+.sb-val    { font-size:18pt; font-weight:900; margin-bottom:4px; }
+.sv-green  { color:#1a7a4a; } .sv-blue { color:#2b6cb0; } .sv-orange { color:#b45309; } .sv-purple { color:#7c3aed; }
+.sb-lbl    { font-size:7pt; color:#9ca3af; font-weight:700; }
+
+/* ══ Beneficiaries Table ══ */
+.bene-table { width:100%; border-collapse:collapse; font-size:8pt; }
+.bene-table th { background:#f0fdf4; color:#1a7a4a; padding:8px 10px; font-weight:700; text-align:right; border-bottom:1px solid #bbf7d0; font-size:7.5pt; }
+.bene-table td { padding:8px 10px; border-bottom:1px solid #e8f5e9; vertical-align:middle; }
+.bene-table tr:last-child td { border-bottom:none; }
+.bene-table tr:nth-child(even) td { background:#f8fffe; }
+.badge { display:inline-block; padding:2px 9px; border-radius:20px; font-size:7pt; font-weight:700; }
+.b-orphan  { background:rgba(26,122,74,0.1);  color:#1a7a4a; }
+.b-special { background:rgba(229,62,62,0.1);  color:#c53030; }
+.b-family  { background:rgba(245,158,11,0.1); color:#b45309; }
+
+/* ══ Receipts Table ══ */
+.pay-table { width:100%; border-collapse:collapse; font-size:8pt; }
+.pay-table th { background:#eff6ff; color:#2b6cb0; padding:7px 10px; font-weight:700; text-align:right; border-bottom:1px solid #bfdbfe; font-size:7.5pt; }
+.pay-table td { padding:7px 10px; border-bottom:1px solid #e8f0ff; vertical-align:middle; }
+.pay-table tr:last-child td { border-bottom:none; }
+.pay-table tr:nth-child(even) td { background:#f5f8ff; }
+.status-ok  { color:#1a7a4a; font-weight:700; }
+.status-no  { color:#c53030; font-weight:700; }
+.status-pnd { color:#b45309; font-weight:700; }
+
+/* ══ Footer ══ */
+.footer { margin-top:20px; padding-top:14px; border-top:2px solid #bbf7d0; display:table; width:100%; font-size:7.5pt; }
+.footer-right { display:table-cell; width:50%; color:#9ca3af; }
+.footer-left  { display:table-cell; width:50%; color:#9ca3af; text-align:left; }
+.footer-brand { font-size:11pt; font-weight:900; color:#1a7a4a; }
+
+/* ══ Page Break ══ */
+.pb { page-break-before:always; }
+.no-break { page-break-inside:avoid; }
+</style>
+</head>
+<body>
+
+<!-- ══ Header ══ -->
+<div class="hdr">
+    <div class="hdr-right">
+        <div class="org-name">رُحَمَاء</div>
+        <div class="org-sub">جمعية نسائم فلسطين الخيرية</div>
+    </div>
+    <div class="hdr-left">
+        <div class="doc-type">ملف الكافل</div>
+        <div class="doc-title">{{ sponsor.user.get_full_name }}</div>
+        <div class="hdr-meta" style="margin-top:6px">
+            <div><strong>رقم التسجيل:</strong> {{ sponsor.user.registration_number|default:"—" }}</div>
+            <div><strong>تاريخ التصدير:</strong> {% now "Y/m/d H:i" %}</div>
+            <div><strong>أعدّه:</strong> {{ printed_by }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ Profile Hero ══ -->
+<div class="profile-hero">
+    <div class="hero-photo-cell">
+        {% if sponsor.photo %}
+            <img src="{{ request.scheme }}://{{ request.get_host }}{{ sponsor.photo.url }}" class="hero-photo" alt="صورة">
+        {% else %}
+            <div class="hero-avatar">
+                {{ sponsor.user.first_name|slice:":1" }}{{ sponsor.user.family_name|slice:":1" }}
+            </div>
+        {% endif %}
+    </div>
+    <div class="hero-info-cell">
+        <div class="hero-name">{{ sponsor.user.get_full_name }}</div>
+        <div class="hero-meta">
+            <div><strong>المستخدم:</strong> @{{ sponsor.user.username }}</div>
+            <div><strong>البريد:</strong> {{ sponsor.user.email|default:"—" }}</div>
+            <div><strong>الجوال:</strong> {{ sponsor.user.phone_country }}{{ sponsor.user.phone|default:"—" }}</div>
+            <div><strong>الانضمام:</strong> {{ sponsor.user.date_joined|date:"Y/m/d" }}</div>
+        </div>
+        <div class="hero-reg">{{ sponsor.user.registration_number|default:"—" }}</div>
+    </div>
+    <div class="hero-stats-cell">
+        <div class="hs-grid">
+            <div class="hs-row">
+                <div class="hs-cell"><div class="hs-box"><div class="hs-val">{{ stats.total_sponsored }}</div><div class="hs-lbl">المكفولون</div></div></div>
+                <div class="hs-cell"><div class="hs-box"><div class="hs-val">{{ stats.total_ils }}₪</div><div class="hs-lbl">المدفوع</div></div></div>
+            </div>
+            <div class="hs-row" style="padding-top:6px">
+                <div class="hs-cell"><div class="hs-box"><div class="hs-val">{{ stats.orphans_count }}</div><div class="hs-lbl">أيتام</div></div></div>
+                <div class="hs-cell"><div class="hs-box"><div class="hs-val">{{ stats.families_count }}</div><div class="hs-lbl">أسر</div></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ إحصائيات ══ -->
+<div class="stats-row">
+    <div class="stats-cell"><div class="stats-box sb-green"><div class="sb-val sv-green">{{ stats.total_sponsored }}</div><div class="sb-lbl">إجمالي المكفولين</div></div></div>
+    <div class="stats-cell"><div class="stats-box sb-blue"><div class="sb-val sv-blue">{{ stats.total_ils }}₪</div><div class="sb-lbl">إجمالي المدفوع (شيقل)</div></div></div>
+    <div class="stats-cell"><div class="stats-box sb-orange"><div class="sb-val sv-orange">${{ stats.total_usd }}</div><div class="sb-lbl">إجمالي المدفوع (دولار)</div></div></div>
+    <div class="stats-cell"><div class="stats-box sb-purple"><div class="sb-val sv-purple">{{ stats.orphans_count }}</div><div class="sb-lbl">أيتام مكفولون</div></div></div>
+</div>
+
+<!-- ══ البيانات الشخصية ══ -->
+<div class="section no-break">
+    <div class="section-title"><div class="st-icon">👤</div><div class="st-text">البيانات الشخصية</div></div>
+    <div class="section-body">
+        <div class="i-grid">
+            <div class="i-row">
+                <div class="i-cell"><div class="i-box"><div class="i-lbl">الاسم الأول</div><div class="i-val">{{ sponsor.user.first_name|default:"—" }}</div></div></div>
+                <div class="i-cell"><div class="i-box"><div class="i-lbl">اسم الأب</div><div class="i-val">{{ sponsor.user.father_name|default:"—" }}</div></div></div>
+                <div class="i-cell"><div class="i-box"><div class="i-lbl">اسم الجد</div><div class="i-val">{{ sponsor.user.grand_name|default:"—" }}</div></div></div>
+            </div>
+            <div class="i-row" style="padding-top:8px">
+                <div class="i-cell"><div class="i-box"><div class="i-lbl">اسم العائلة</div><div class="i-val">{{ sponsor.user.family_name|default:"—" }}</div></div></div>
+                <div class="i-cell"><div class="i-box"><div class="i-lbl">رقم الهوية</div><div class="i-val">{{ sponsor.user.id_number|default:"—" }}</div></div></div>
+                <div class="i-cell"><div class="i-box"><div class="i-lbl">الجنس</div><div class="i-val">{{ sponsor.user.gender|default:"—" }}</div></div></div>
+            </div>
+            <div class="i-row" style="padding-top:8px">
+                <div class="i-cell"><div class="i-box"><div class="i-lbl">الجنسية</div><div class="i-val">{{ sponsor.user.nationality|default:"—" }}</div></div></div>
+                <div class="i-cell"><div class="i-box"><div class="i-lbl">المهنة</div><div class="i-val">{{ sponsor.job|default:"—" }}</div></div></div>
+                <div class="i-cell"><div class="i-box"><div class="i-lbl">الدولة / المدينة</div><div class="i-val">{{ sponsor.country|default:"—" }} / {{ sponsor.city|default:"—" }}</div></div></div>
+            </div>
+            <div class="i-row" style="padding-top:8px">
+                <div class="i-cell"><div class="i-box"><div class="i-lbl">البريد الإلكتروني</div><div class="i-val" style="direction:ltr;text-align:right">{{ sponsor.user.email|default:"—" }}</div></div></div>
+                <div class="i-cell"><div class="i-box"><div class="i-lbl">رقم الجوال</div><div class="i-val" style="direction:ltr;text-align:right">{{ sponsor.user.phone_country }}{{ sponsor.user.phone|default:"—" }}</div></div></div>
+                <div class="i-cell"><div class="i-box"><div class="i-lbl">الواتساب</div><div class="i-val" style="direction:ltr;text-align:right">{{ sponsor.whatsapp_country }}{{ sponsor.whatsapp|default:"—" }}</div></div></div>
+            </div>
+            <div class="i-row" style="padding-top:8px">
+                <div class="i-cell"><div class="i-box"><div class="i-lbl">اسم المستخدم</div><div class="i-val">@{{ sponsor.user.username }}</div></div></div>
+                <div class="i-cell"><div class="i-box"><div class="i-lbl">تاريخ الانضمام</div><div class="i-val">{{ sponsor.user.date_joined|date:"Y/m/d" }}</div></div></div>
+                <div class="i-cell"><div class="i-box"><div class="i-lbl">آخر تحديث</div><div class="i-val">{{ sponsor.updated_at|date:"Y/m/d"|default:"—" }}</div></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ قائمة المكفولين ══ -->
+{% if beneficiaries %}
+<div class="section">
+    <div class="section-title"><div class="st-icon">❤️</div><div class="st-text">المكفولون ({{ beneficiaries|length }} مستفيد/ة)</div></div>
+    <div class="section-body" style="padding:0">
+        <table class="bene-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>الاسم الكامل</th>
+                    <th>رقم التسجيل</th>
+                    <th>النوع</th>
+                    <th>المدينة</th>
+                    <th>تاريخ الكفالة</th>
+                    <th>إجمالي المدفوع</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in beneficiaries %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td><strong>{{ b.full_name }}</strong></td>
+                    <td style="direction:ltr;text-align:right;font-size:7.5pt">{{ b.reg_number }}</td>
+                    <td>
+                        <span class="badge {% if b.type_label == 'يتيم' %}b-orphan{% elif b.type_label == 'ذو احتياج' %}b-special{% else %}b-family{% endif %}">
+                            {{ b.type_label }}
+                        </span>
+                    </td>
+                    <td>{{ b.city|default:"—" }}</td>
+                    <td>{{ b.sponsorship_date }}</td>
+                    <td style="color:#1a7a4a;font-weight:700">{{ b.total_pays }}₪</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- ══ الوصولات المالية ══ -->
+{% if receipts %}
+<div class="section pb">
+    <div class="section-title" style="background:#eff6ff;color:#2b6cb0;border-color:#bfdbfe">
+        <div class="st-icon">💳</div><div class="st-text">الوصولات المالية ({{ receipts|length }})</div>
+    </div>
+    <div class="section-body" style="padding:0">
+        <table class="pay-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>الرقم المرجعي</th>
+                    <th>المستفيد</th>
+                    <th>المبلغ الأصلي</th>
+                    <th>بالشيقل</th>
+                    <th>بالدولار</th>
+                    <th>التاريخ</th>
+                    <th>الحالة</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in receipts %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td style="font-size:7.5pt">{{ r.system_ref|default:r.unique_number }}</td>
+                    <td>{{ r.beneficiary.get_full_name|default:"—" }}</td>
+                    <td>{{ r.amount_original }} {{ r.currency }}</td>
+                    <td style="color:#1a7a4a;font-weight:700">{{ r.amount_shekel }}₪</td>
+                    <td style="color:#2b6cb0;font-weight:700">${{ r.amount_dollar }}</td>
+                    <td>{{ r.receipt_date|default:"—" }}</td>
+                    <td>
+                        {% if r.status == 'موافق' %}
+                            <span class="status-ok">✓ موافق</span>
+                        {% elif r.status == 'مرفوض' %}
+                            <span class="status-no">✗ مرفوض</span>
+                        {% else %}
+                            <span class="status-pnd">⏳ انتظار</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- ══ Footer ══ -->
+<div class="footer">
+    <div class="footer-right">
+        <div class="footer-brand">رُحَمَاء</div>
+        <div style="margin-top:3px">جمعية نسائم فلسطين الخيرية</div>
+        <div style="margin-top:2px">ملف الكافل — {{ sponsor.user.get_full_name }}</div>
+    </div>
+    <div class="footer-left">
+        <div>تاريخ التصدير: {% now "Y/m/d H:i" %}</div>
+        <div>أعدّه: {{ printed_by }}</div>
+        <div style="margin-top:4px;font-size:6.5pt;color:#bbb">وثيقة إلكترونية صادرة من منصة رُحَمَاء</div>
+    </div>
+</div>
+
+</body>
+</html>

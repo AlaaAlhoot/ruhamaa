@@ -1,0 +1,1956 @@
+{% extends 'main/base.html' %}
+{% load static %}
+{% block title %}إنشاء حساب{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+
+{% block extra_css %}
+<style>
+html { scroll-behavior: smooth; }
+
+/* ── صفحة التسجيل ── */
+.auth-page { background: linear-gradient(150deg,#e8f5e9 0%,#f0faf4 40%,#e8f4fd 100%); min-height: 100vh; }
+body.dark-mode .auth-page { background: linear-gradient(150deg,#060e09 0%,#0a160e 40%,#080d18 100%); }
+
+.reg-card {
+    background: rgba(255,255,255,0.96);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(26,122,74,0.15);
+    border-radius: 24px;
+    padding: 40px 44px;
+    box-shadow: 0 20px 60px rgba(26,122,74,0.10);
+}
+body.dark-mode .reg-card { background: rgba(17,30,22,0.97); border-color: rgba(46,204,113,0.15); }
+
+/* ── شريط الخطوات ── */
+.steps-bar { display: flex; align-items: center; margin-bottom: 32px; overflow-x: auto; }
+.step-item  { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 60px; }
+.step-circle {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--bg-secondary,#f4f9f6);
+    border: 2px solid rgba(26,122,74,0.18);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.82rem; color: #9ca3af;
+    transition: all 0.35s; position: relative; z-index: 1;
+    font-family: 'Cairo', sans-serif;
+}
+body.dark-mode .step-circle { background: #0d1a12; border-color: rgba(46,204,113,0.2); }
+.step-circle.active { background: linear-gradient(135deg,#1a7a4a,#2ecc71); border-color: transparent; color: #fff; box-shadow: 0 4px 16px rgba(26,122,74,0.4); transform: scale(1.1); }
+.step-circle.done   { background: #1a7a4a; border-color: transparent; color: #fff; }
+.step-label { font-size: 0.65rem; margin-top: 5px; text-align: center; color: #9ca3af; font-family: 'Tajawal',sans-serif; white-space: nowrap; }
+.step-item.active .step-label { color: #1a7a4a; font-weight: 700; }
+body.dark-mode .step-item.active .step-label { color: #4ade80; }
+.step-line { flex: 1; height: 2px; background: rgba(26,122,74,0.12); margin-bottom: 20px; border-radius: 2px; transition: background 0.4s; min-width: 16px; }
+.step-line.done { background: linear-gradient(90deg,#1a7a4a,#2ecc71); }
+
+/* ── بطاقات النوع ── */
+.type-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 8px; }
+.type-card {
+    border: 2px solid rgba(26,122,74,0.15); border-radius: 16px;
+    padding: 18px 10px 13px; text-align: center; cursor: pointer;
+    transition: all 0.3s; background: var(--bg-secondary,#f4f9f6);
+    position: relative; user-select: none;
+}
+body.dark-mode .type-card { background: #0d1a12; border-color: rgba(46,204,113,0.12); }
+.type-card:hover         { border-color: #2ecc71; transform: translateY(-4px); box-shadow: 0 8px 22px rgba(26,122,74,0.12); }
+.type-card.selected      { border-color: #1a7a4a; background: linear-gradient(135deg,rgba(26,122,74,0.08),rgba(46,204,113,0.04)); box-shadow: 0 0 0 3px rgba(26,122,74,0.18); transform: translateY(-3px); }
+body.dark-mode .type-card.selected { background: rgba(26,122,74,0.12); border-color: #2ecc71; }
+.type-card input[type=radio] { display: none; }
+.check-badge { position: absolute; top: 7px; left: 7px; width: 19px; height: 19px; background: linear-gradient(135deg,#1a7a4a,#2ecc71); border-radius: 50%; display: none; align-items: center; justify-content: center; color: #fff; font-size: 9px; }
+.type-card.selected .check-badge { display: flex; }
+.type-icon  { font-size: 2rem; display: block; margin-bottom: 7px; }
+.type-label { font-family: 'Tajawal',sans-serif; font-weight: 700; font-size: 0.83rem; color: var(--text,#1a1a2e); }
+body.dark-mode .type-label { color: #c8e6c9; }
+.type-card.selected .type-label { color: #1a7a4a; }
+
+/* ── عناوين الأقسام ── */
+.sec-title {
+    font-family: 'Tajawal',sans-serif; font-size: 0.72rem; font-weight: 700;
+    color: #1a7a4a; letter-spacing: 1.2px; text-transform: uppercase;
+    margin-bottom: 14px; padding-bottom: 8px;
+    border-bottom: 2px solid rgba(26,122,74,0.1);
+    display: flex; align-items: center; gap: 7px;
+}
+body.dark-mode .sec-title { color: #4ade80; border-color: rgba(46,204,113,0.12); }
+
+/* ── حقول النموذج ── */
+.form-label { font-family: 'Tajawal',sans-serif; font-size: 0.82rem; font-weight: 600; color: var(--text,#1a1a2e); margin-bottom: 5px; display: flex; align-items: center; gap: 3px; }
+body.dark-mode .form-label { color: #c8e6c9; }
+.form-label .req { color: #e53e3e; font-size: 0.85rem; }
+.form-label .opt { color: #9ca3af; font-size: 0.72rem; font-weight: 400; }
+
+.form-control, .form-select {
+    background: var(--bg-secondary,#f4f9f6);
+    border: 1.5px solid rgba(26,122,74,0.18);
+    color: var(--text,#1a1a2e);
+    border-radius: 11px; padding: 10px 14px;
+    font-family: 'Tajawal',sans-serif; font-size: 0.9rem;
+    transition: all 0.25s; width: 100%;
+}
+body.dark-mode .form-control,
+body.dark-mode .form-select { background: #0d1a12; border-color: rgba(46,204,113,0.15); color: #e8f5ee; }
+.form-control:focus, .form-select:focus { border-color: #1a7a4a; box-shadow: 0 0 0 3px rgba(26,122,74,0.14); background: #fff; color: #1a1a2e; outline: none; }
+body.dark-mode .form-control:focus,
+body.dark-mode .form-select:focus { background: #111e16; color: #e8f5ee; }
+.form-control::placeholder { color: #9ca3af; }
+body.dark-mode .form-control::placeholder { color: #4a7a5e; }
+.form-control.is-invalid, .form-select.is-invalid { border-color: #e53e3e !important; box-shadow: 0 0 0 3px rgba(229,62,62,0.12) !important; }
+.form-control.is-valid   { border-color: #1a7a4a !important; box-shadow: 0 0 0 3px rgba(26,122,74,0.12) !important; }
+
+/* ── رسائل الخطأ ── */
+.field-err { font-family: 'Tajawal',sans-serif; font-size: 0.76rem; color: #e53e3e; margin-top: 4px; display: none; align-items: center; gap: 4px; }
+.field-err.show { display: flex; }
+.field-hint { font-family: 'Tajawal',sans-serif; font-size: 0.73rem; color: #9ca3af; margin-top: 3px; }
+body.dark-mode .field-hint { color: #4a7a5e; }
+.phone-hint { font-family: 'Tajawal',sans-serif; font-size: 0.73rem; margin-top: 3px; min-height: 14px; }
+
+/* ── كلمة المرور ── */
+.pass-wrap { position: relative; }
+.pass-wrap .form-control { padding-left: 40px; }
+.pass-toggle { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 0.95rem; color: #6b7280; padding: 0; z-index: 2; }
+.pass-toggle:hover { color: #1a7a4a; }
+.pass-str { height: 4px; background: rgba(26,122,74,0.1); border-radius: 4px; overflow: hidden; margin-top: 6px; }
+body.dark-mode .pass-str { background: rgba(46,204,113,0.1); }
+.pass-str-bar  { height: 100%; border-radius: 4px; transition: all 0.3s; width: 0%; }
+.pass-str-hint { font-family: 'Tajawal',sans-serif; font-size: 0.72rem; margin-top: 3px; min-height: 14px; }
+.pass-match-msg{ font-family: 'Tajawal',sans-serif; font-size: 0.72rem; margin-top: 4px; min-height: 14px; }
+
+/* ── القائمة المنسدلة (دول / مفاتيح) ── */
+.dd-wrap     { position: relative; }
+.dd-selector {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg-secondary,#f4f9f6);
+    border: 1.5px solid rgba(26,122,74,0.18);
+    border-radius: 11px; padding: 9px 13px;
+    cursor: pointer; transition: all 0.25s; user-select: none;
+}
+body.dark-mode .dd-selector { background: #0d1a12; border-color: rgba(46,204,113,0.15); }
+.dd-selector:hover, .dd-selector.open { border-color: #1a7a4a; box-shadow: 0 0 0 3px rgba(26,122,74,0.12); }
+.dd-selector.is-invalid { border-color: #e53e3e !important; box-shadow: 0 0 0 3px rgba(229,62,62,0.12) !important; }
+.dd-flag    { font-size: 1.2rem; flex-shrink: 0; line-height: 1; }
+.dd-text    { font-family: 'Tajawal',sans-serif; font-size: 0.88rem; flex: 1; color: var(--text,#1a1a2e); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.dark-mode .dd-text { color: #e8f5ee; }
+.dd-sub     { font-size: 0.78rem; color: #6b7280; flex-shrink: 0; }
+.dd-arrow   { font-size: 0.7rem; color: #9ca3af; transition: transform 0.25s; flex-shrink: 0; }
+.dd-selector.open .dd-arrow { transform: rotate(180deg); }
+.dd-dropdown {
+    display: none; position: absolute; top: calc(100% + 4px); right: 0; left: 0;
+    background: #fff; border: 1px solid rgba(26,122,74,0.2);
+    border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    z-index: 600; overflow: hidden;
+}
+body.dark-mode .dd-dropdown { background: #111e16; border-color: rgba(46,204,113,0.2); }
+.dd-dropdown.show { display: block; }
+.dd-search-wrap { padding: 9px; }
+.dd-search {
+    width: 100%; border: 1.5px solid rgba(26,122,74,0.18);
+    border-radius: 8px; padding: 7px 12px;
+    font-family: 'Tajawal',sans-serif; font-size: 0.84rem;
+    background: var(--bg-secondary,#f4f9f6); color: var(--text,#1a1a2e); outline: none;
+}
+body.dark-mode .dd-search { background: #0d1a12; color: #e8f5ee; border-color: rgba(46,204,113,0.15); }
+.dd-search:focus { border-color: #1a7a4a; }
+.dd-list  { max-height: 200px; overflow-y: auto; }
+.dd-item  { display: flex; align-items: center; gap: 9px; padding: 8px 13px; cursor: pointer; font-family: 'Tajawal',sans-serif; font-size: 0.86rem; color: var(--text,#1a1a2e); transition: background 0.15s; border-bottom: 1px solid rgba(26,122,74,0.04); }
+body.dark-mode .dd-item { color: #e8f5ee; border-color: rgba(46,204,113,0.04); }
+.dd-item:hover, .dd-item.selected { background: rgba(26,122,74,0.07); }
+body.dark-mode .dd-item:hover,
+body.dark-mode .dd-item.selected  { background: rgba(46,204,113,0.08); }
+.dd-item-flag { font-size: 1.1rem; flex-shrink: 0; }
+.dd-item-name { flex: 1; }
+.dd-item-sub  { font-size: 0.72rem; color: #9ca3af; }
+
+/* ── رفع الصور ── */
+.photo-box {
+    border: 2px dashed rgba(26,122,74,0.22); border-radius: 13px;
+    padding: 18px 12px; text-align: center; cursor: pointer;
+    transition: all 0.3s; background: var(--bg-secondary,#f4f9f6); position: relative;
+}
+body.dark-mode .photo-box { background: #0d1a12; border-color: rgba(46,204,113,0.15); }
+.photo-box:hover      { border-color: #1a7a4a; background: rgba(26,122,74,0.05); }
+.photo-box.has-photo  { border-style: solid; border-color: #1a7a4a; }
+.photo-box.is-invalid { border-color: #e53e3e !important; border-style: solid; }
+.photo-box input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.photo-preview { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #1a7a4a; display: none; margin: 0 auto 8px; }
+
+/* ── رفع الملفات (file_field) ── */
+.file-upload-box {
+    border: 2px dashed rgba(26,122,74,0.22); border-radius: 13px;
+    padding: 16px 12px; text-align: center; cursor: pointer;
+    transition: all 0.3s; background: var(--bg-secondary,#f4f9f6);
+    position: relative; overflow: hidden;
+}
+body.dark-mode .file-upload-box { background: #0d1a12; border-color: rgba(46,204,113,0.15); }
+.file-upload-box:hover,
+.file-upload-box.dragover { border-color: #1a7a4a; background: rgba(26,122,74,0.05); }
+.file-upload-box.has-file { border-style: solid; border-color: #1a7a4a; }
+.file-upload-box.is-invalid { border-color: #e53e3e !important; border-style: solid; }
+.file-upload-box input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.file-upload-icon { font-size: 1.5rem; margin-bottom: 6px; }
+.file-upload-text { font-family: 'Tajawal',sans-serif; font-size: 0.8rem; color: #6b7280; }
+.file-upload-name { font-family: 'Tajawal',sans-serif; font-size: 0.78rem; color: #1a7a4a; margin-top: 4px; font-weight: 600; word-break: break-all; }
+.file-req-badge { display: inline-block; font-size: 0.6rem; background: #e53e3e; color: #fff; border-radius: 4px; padding: 2px 5px; margin-bottom: 4px; font-family: 'Tajawal',sans-serif; font-weight: 700; }
+.file-opt-badge { display: inline-block; font-size: 0.6rem; background: #718096; color: #fff; border-radius: 4px; padding: 2px 5px; margin-bottom: 4px; font-family: 'Tajawal',sans-serif; }
+.field-error { font-family: 'Tajawal',sans-serif; font-size: 0.76rem; color: #e53e3e; margin-top: 4px; min-height: 14px; }
+
+/* ── المستندات (doc_field) ── */
+.file-box {
+    border: 2px dashed rgba(26,122,74,0.22); border-radius: 13px;
+    padding: 16px 12px; text-align: center; cursor: pointer;
+    transition: all 0.3s; background: var(--bg-secondary,#f4f9f6);
+    position: relative; overflow: hidden;
+}
+body.dark-mode .file-box { background: #0d1a12; border-color: rgba(46,204,113,0.15); }
+.file-box:hover, .file-box.dragover { border-color: #1a7a4a; background: rgba(26,122,74,0.05); }
+.file-box.has-file    { border-style: solid; border-color: #1a7a4a; }
+.file-box.is-invalid  { border-color: #e53e3e !important; border-style: solid; }
+.file-box input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.file-box-icon { font-size: 1.4rem; display: block; margin-bottom: 5px; }
+.file-box-text { font-family: 'Tajawal',sans-serif; font-size: 0.78rem; color: #6b7280; }
+.file-box-name { font-family: 'Tajawal',sans-serif; font-size: 0.75rem; color: #1a7a4a; margin-top: 4px; font-weight: 600; word-break: break-all; }
+.doc-req-badge { display: inline-block; font-size: 0.6rem; background: #e53e3e; color: #fff; border-radius: 4px; padding: 2px 5px; margin-bottom: 4px; font-family: 'Tajawal',sans-serif; font-weight: 700; }
+.doc-opt-badge { display: inline-block; font-size: 0.6rem; background: #718096; color: #fff; border-radius: 4px; padding: 2px 5px; margin-bottom: 4px; font-family: 'Tajawal',sans-serif; }
+
+/* ── ملخص المراجعة ── */
+.sum-item  { background: var(--bg-secondary,#f4f9f6); border: 1px solid rgba(26,122,74,0.1); border-radius: 11px; padding: 12px 14px; }
+body.dark-mode .sum-item { background: #0d1a12; border-color: rgba(46,204,113,0.1); }
+.sum-label { font-family: 'Tajawal',sans-serif; font-size: 0.7rem; color: #9ca3af; margin-bottom: 2px; font-weight: 600; }
+body.dark-mode .sum-label { color: #4a7a5e; }
+.sum-value { font-family: 'Tajawal',sans-serif; font-size: 0.88rem; font-weight: 700; color: var(--text,#1a1a2e); }
+body.dark-mode .sum-value { color: #e8f5ee; }
+
+/* ── أزرار ── */
+.btn-next, .btn-submit {
+    background: linear-gradient(135deg,#0f5232,#2ecc71);
+    border: none; color: #fff; padding: 12px 28px;
+    font-size: 0.95rem; font-weight: 700; border-radius: 50px;
+    box-shadow: 0 6px 18px rgba(26,122,74,0.30);
+    transition: all 0.3s; font-family: 'Tajawal',sans-serif;
+    cursor: pointer; flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+}
+.btn-next:hover:not(:disabled), .btn-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(26,122,74,0.38); }
+.btn-next:disabled, .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.btn-back {
+    background: transparent; border: 1.5px solid rgba(26,122,74,0.22);
+    color: #6b7280; padding: 12px 22px; font-size: 0.88rem; font-weight: 600;
+    border-radius: 50px; transition: all 0.2s;
+    font-family: 'Tajawal',sans-serif; cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+}
+body.dark-mode .btn-back { border-color: rgba(46,204,113,0.2); }
+.btn-back:hover { border-color: #1a7a4a; color: #1a7a4a; background: rgba(26,122,74,0.05); }
+.btn-add-member {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 50px;
+    border: 1.5px dashed rgba(26,122,74,0.3);
+    background: transparent; color: #1a7a4a;
+    font-family: 'Tajawal',sans-serif; font-size: 0.84rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+}
+body.dark-mode .btn-add-member { color: #4ade80; border-color: rgba(46,204,113,0.3); }
+.btn-add-member:hover { background: rgba(26,122,74,0.06); border-style: solid; }
+
+/* ── تنبيه ── */
+.reg-alert {
+    border-radius: 12px; padding: 12px 16px;
+    font-family: 'Tajawal',sans-serif; font-size: 0.86rem;
+    margin-bottom: 16px; display: none; align-items: center; gap: 9px; font-weight: 600;
+}
+.reg-alert.show    { display: flex; }
+.reg-alert.error   { background: rgba(229,62,62,0.08);   color: #c53030; border: 1px solid rgba(229,62,62,0.2); }
+.reg-alert.success { background: rgba(26,122,74,0.1);    color: #1a7a4a; border: 1px solid rgba(26,122,74,0.2); }
+body.dark-mode .reg-alert.error   { background: rgba(229,62,62,0.12);  color: #fc8181; }
+body.dark-mode .reg-alert.success { background: rgba(46,204,113,0.1);  color: #4ade80; }
+
+/* ── الموافقة ── */
+.agree-wrap { display: flex; align-items: flex-start; gap: 10px; padding: 13px 14px; background: var(--bg-secondary,#f4f9f6); border-radius: 11px; border: 1px solid rgba(26,122,74,0.1); }
+body.dark-mode .agree-wrap { background: #0d1a12; border-color: rgba(46,204,113,0.1); }
+.agree-wrap input[type=checkbox] { width: 17px; height: 17px; accent-color: #1a7a4a; margin-top: 2px; flex-shrink: 0; }
+.agree-label { font-family: 'Tajawal',sans-serif; font-size: 0.84rem; color: var(--text,#1a1a2e); line-height: 1.6; }
+body.dark-mode .agree-label { color: #c8e6c9; }
+.agree-label a { color: #1a7a4a; font-weight: 700; text-decoration: none; }
+
+/* ── أفراد الأسرة ── */
+.member-card { background: var(--bg-secondary,#f4f9f6); border: 1px solid rgba(26,122,74,0.1); border-radius: 12px; padding: 14px; margin-bottom: 10px; position: relative; }
+body.dark-mode .member-card { background: #111e16; border-color: rgba(46,204,113,0.1); }
+.member-remove { position: absolute; top: 8px; left: 8px; background: rgba(229,62,62,0.1); border: none; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 0.75rem; color: #c53030; display: flex; align-items: center; justify-content: center; }
+
+/* ── عداد الأحرف ── */
+.char-count { font-family: 'Tajawal',sans-serif; font-size: 0.7rem; color: #9ca3af; text-align: left; margin-top: 2px; }
+
+/* ── Shake ── */
+@keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-7px)} 40%{transform:translateX(7px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+.shake { animation: shake 0.4s ease; }
+
+/* ── Responsive ── */
+@media (max-width:991px) { .reg-card { padding: 32px 26px; } }
+@media (max-width:767px) { .reg-card { padding: 22px 14px; border-radius: 18px; } .type-grid { grid-template-columns: repeat(2,1fr); } .step-label { font-size: 0.58rem; } }
+@media (max-width:400px) { .btn-next, .btn-submit { padding: 11px 16px; font-size: 0.88rem; } }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="container py-5">
+<div class="row justify-content-center">
+<div class="col-xl-10 col-lg-11 col-12">
+<div class="reg-card">
+
+{% csrf_token %}
+
+<!-- Header -->
+<div class="text-center mb-4">
+    <img src="{% static 'images/logo.png' %}" height="66" alt="رُحَمَاء"
+         style="filter:drop-shadow(0 4px 14px rgba(26,122,74,0.30))">
+    <h3 class="mt-3 mb-1 fw-bold"
+        style="font-family:'Amiri',serif;background:linear-gradient(135deg,#0f5232,#2ecc71);
+               -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+               background-clip:text;font-size:1.85rem">
+        إنشاء حساب جديد
+    </h3>
+    <p style="color:#6b7280;font-size:0.85rem;font-family:'Tajawal',sans-serif">
+        أكمل الخطوات لإنشاء حسابك في منصة رُحَمَاء
+    </p>
+</div>
+
+<!-- شريط الخطوات -->
+<div class="steps-bar">
+    {% for i in "12345" %}
+    <div class="step-item {% if forloop.first %}active{% endif %}" id="si{{ i }}">
+        <div class="step-circle {% if forloop.first %}active{% endif %}" id="sc{{ i }}">{{ i }}</div>
+        <div class="step-label">
+            {% if i == "1" %}نوع الحساب
+            {% elif i == "2" %}البيانات
+            {% elif i == "3" %}التفاصيل
+            {% elif i == "4" %}الوثائق
+            {% else %}مراجعة{% endif %}
+        </div>
+    </div>
+    {% if not forloop.last %}
+    <div class="step-line" id="sl{{ i }}"></div>
+    {% endif %}
+    {% endfor %}
+</div>
+
+<div class="reg-alert" id="regAlert"></div>
+
+<!-- ══════════════════════ STEP 1 — نوع الحساب ══════════════════════ -->
+<div id="step1">
+    <div class="sec-title"><span>👤</span> اختر نوع حسابك</div>
+    <div class="type-grid">
+        <label class="type-card" id="tc_sponsor">
+            <input type="radio" name="userType" value="sponsor">
+            <div class="check-badge">✓</div>
+            <span class="type-icon">🤝</span>
+            <span class="type-label">كافل</span>
+        </label>
+        <label class="type-card" id="tc_orphan">
+            <input type="radio" name="userType" value="orphan">
+            <div class="check-badge">✓</div>
+            <span class="type-icon">👦</span>
+            <span class="type-label">يتيم</span>
+        </label>
+        <label class="type-card" id="tc_family">
+            <input type="radio" name="userType" value="family">
+            <div class="check-badge">✓</div>
+            <span class="type-icon">👨‍👩‍👧</span>
+            <span class="type-label">أسرة</span>
+        </label>
+        <label class="type-card" id="tc_special">
+            <input type="radio" name="userType" value="special">
+            <div class="check-badge">✓</div>
+            <span class="type-icon">♿</span>
+            <span class="type-label">ذوو احتياجات</span>
+        </label>
+    </div>
+    <div class="field-err mt-2" id="err_type"><span>⚠️</span><span>يرجى اختيار نوع الحساب</span></div>
+    <div class="mt-4">
+        <button class="btn-next w-100" onclick="goStep(2)"><span>التالي</span><span>←</span></button>
+    </div>
+</div>
+
+<!-- ══════════════════════ STEP 2 — البيانات الأساسية ══════════════════════ -->
+<div id="step2" class="d-none">
+
+    <!-- الاسم الرباعي -->
+    <div class="sec-title mb-3"><span>📝</span> الاسم الرباعي</div>
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-md-3">
+            <label class="form-label">الاسم الأول <span class="req">*</span></label>
+            <div style="position:relative">
+                <input type="text" id="first_name" class="form-control" placeholder="محمد">
+            </div>
+            <div class="field-err" id="err_first_name"><span>⚠️</span><span></span></div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <label class="form-label">اسم الأب <span class="req">*</span></label>
+            <div style="position:relative">
+                <input type="text" id="father_name" class="form-control" placeholder="أحمد">
+            </div>
+            <div class="field-err" id="err_father_name"><span>⚠️</span><span></span></div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <label class="form-label">اسم الجد <span class="req">*</span></label>
+            <div style="position:relative">
+                <input type="text" id="grand_name" class="form-control" placeholder="علي">
+            </div>
+            <div class="field-err" id="err_grand_name"><span>⚠️</span><span></span></div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <label class="form-label">اسم العائلة <span class="req">*</span></label>
+            <div style="position:relative">
+                <input type="text" id="family_name" class="form-control" placeholder="الحسن">
+            </div>
+            <div class="field-err" id="err_family_name"><span>⚠️</span><span></span></div>
+        </div>
+    </div>
+
+    <!-- بيانات الحساب -->
+    <div class="sec-title mb-3"><span>🔐</span> بيانات الحساب</div>
+    <div class="row g-3 mb-4">
+
+        <!-- اسم المستخدم — كافل فقط -->
+        <div class="col-md-6 d-none" id="f_username">
+            <label class="form-label">اسم المستخدم <span class="req">*</span></label>
+            <div style="position:relative">
+                <input type="text" id="username" class="form-control"
+                       placeholder="my_username" autocomplete="username">
+            </div>
+            <div class="field-hint">لا يقل عن 4 أحرف — بدون مسافات أو نص لغة عربية</div>
+            <div class="field-err" id="err_username"><span>⚠️</span><span></span></div>
+        </div>
+
+        <!-- رقم الهوية — غير كافل -->
+        <div class="col-md-6 d-none" id="f_id">
+            <label class="form-label">رقم الهوية <span class="req">*</span></label>
+            <div style="position:relative">
+                <input type="text" id="id_number" class="form-control" maxlength="9"
+                       placeholder="9XXXXXXXX" inputmode="numeric">
+            </div>
+            <div class="phone-hint" id="hint_id_number"></div>
+            <div class="field-hint">9 أرقام تبدأ بـ 9 أو 8 أو 4 أو 7</div>
+            <div class="field-err" id="err_id_number"><span>⚠️</span><span></span></div>
+        </div>
+
+        <!-- البريد الإلكتروني -->
+        <div class="col-md-6">
+            <label class="form-label">البريد الإلكتروني <span class="req">*</span></label>
+            <div style="position:relative">
+                <input type="email" id="email" class="form-control"
+                       placeholder="example@email.com" autocomplete="email">
+            </div>
+            <div class="field-err" id="err_email"><span>⚠️</span><span></span></div>
+        </div>
+
+        <!-- الجنسية -->
+        <div class="col-md-6">
+            <label class="form-label">الجنسية <span class="req">*</span></label>
+            <div class="dd-wrap" id="nat_wrap">
+                <div class="dd-selector" id="nat_sel" onclick="ddToggle('nat')" role="combobox" aria-expanded="false">
+                    <span class="dd-flag" id="nat_flag">🇵🇸</span>
+                    <span class="dd-text" id="nat_text">فلسطين</span>
+                    <span class="dd-arrow">▼</span>
+                </div>
+                <div class="dd-dropdown" id="nat_dd" role="listbox">
+                    <div class="dd-search-wrap">
+                        <input class="dd-search" id="nat_q" placeholder="ابحث عن دولتك..."
+                               oninput="ddFilter('nat',this.value)" onclick="event.stopPropagation()">
+                    </div>
+                    <div class="dd-list" id="nat_list"></div>
+                </div>
+            </div>
+            <input type="hidden" id="nationality"      value="فلسطين">
+            <input type="hidden" id="nationality_code" value="PS">
+            <div class="field-err" id="err_nationality"><span>⚠️</span><span></span></div>
+        </div>
+
+        <!-- الجنس -->
+        <div class="col-md-6">
+            <label class="form-label">الجنس <span class="req">*</span></label>
+            <select id="gender" class="form-select form-control">
+                <option value="">-- اختر --</option>
+                <option value="ذكر">ذكر</option>
+                <option value="أنثى">أنثى</option>
+            </select>
+            <div class="field-err" id="err_gender"><span>⚠️</span><span></span></div>
+        </div>
+
+        <!-- رقم الجوال الأول -->
+        <div class="col-md-6">
+            <label class="form-label">رقم الجوال الأول <span class="req">*</span></label>
+            <div class="d-flex gap-2" id="p1_wrap">
+                <div class="dd-wrap" style="width:150px;flex-shrink:0">
+                    <div class="dd-selector" id="p1_sel" onclick="ddToggle('p1')"
+                         style="padding:8px 10px" role="combobox" aria-expanded="false">
+                        <span class="dd-flag" id="p1_flag">🇵🇸</span>
+                        <span class="dd-sub"  id="p1_dial">+970</span>
+                        <span class="dd-arrow" style="font-size:0.65rem">▼</span>
+                    </div>
+                    <div class="dd-dropdown" id="p1_dd" role="listbox">
+                        <div class="dd-search-wrap">
+                            <input class="dd-search" id="p1_q" placeholder="بحث..."
+                                   oninput="ddFilter('p1',this.value)" onclick="event.stopPropagation()">
+                        </div>
+                        <div class="dd-list" id="p1_list"></div>
+                    </div>
+                </div>
+                <input type="hidden" id="phone1_country" value="+970">
+                <div style="position:relative;flex:1">
+                    <input type="tel" id="phone1" class="form-control"
+                           placeholder="05XXXXXXXX" inputmode="numeric" maxlength="15">
+                </div>
+            </div>
+            <div class="phone-hint" id="hint_phone1"></div>
+            <div class="field-err" id="err_phone1"><span>⚠️</span><span></span></div>
+        </div>
+
+        <!-- رقم الجوال الثاني -->
+        <div class="col-md-6">
+            <label class="form-label">رقم الجوال الثاني <span class="opt">(اختياري)</span></label>
+            <div class="d-flex gap-2" id="p2_wrap">
+                <div class="dd-wrap" style="width:150px;flex-shrink:0">
+                    <div class="dd-selector" id="p2_sel" onclick="ddToggle('p2')"
+                         style="padding:8px 10px" role="combobox" aria-expanded="false">
+                        <span class="dd-flag" id="p2_flag">🇵🇸</span>
+                        <span class="dd-sub"  id="p2_dial">+970</span>
+                        <span class="dd-arrow" style="font-size:0.65rem">▼</span>
+                    </div>
+                    <div class="dd-dropdown" id="p2_dd" role="listbox">
+                        <div class="dd-search-wrap">
+                            <input class="dd-search" id="p2_q" placeholder="بحث..."
+                                   oninput="ddFilter('p2',this.value)" onclick="event.stopPropagation()">
+                        </div>
+                        <div class="dd-list" id="p2_list"></div>
+                    </div>
+                </div>
+                <input type="hidden" id="phone2_country" value="+970">
+                <div style="position:relative;flex:1">
+                    <input type="tel" id="phone2" class="form-control"
+                           placeholder="05XXXXXXXX" inputmode="numeric" maxlength="15">
+                </div>
+            </div>
+            <div class="phone-hint" id="hint_phone2"></div>
+            <div class="field-err" id="err_phone2"><span>⚠️</span><span></span></div>
+        </div>
+
+        <!-- رقم الواتساب -->
+        <div class="col-md-6">
+            <label class="form-label">رقم الواتساب <span class="req">*</span></label>
+            <div class="d-flex gap-2" id="wa_wrap">
+                <div class="dd-wrap" style="width:150px;flex-shrink:0">
+                    <div class="dd-selector" id="wa_sel" onclick="ddToggle('wa')"
+                         style="padding:8px 10px" role="combobox" aria-expanded="false">
+                        <span class="dd-flag" id="wa_flag">🇵🇸</span>
+                        <span class="dd-sub"  id="wa_dial">+970</span>
+                        <span class="dd-arrow" style="font-size:0.65rem">▼</span>
+                    </div>
+                    <div class="dd-dropdown" id="wa_dd" role="listbox">
+                        <div class="dd-search-wrap">
+                            <input class="dd-search" id="wa_q" placeholder="بحث..."
+                                   oninput="ddFilter('wa',this.value)" onclick="event.stopPropagation()">
+                        </div>
+                        <div class="dd-list" id="wa_list"></div>
+                    </div>
+                </div>
+                <input type="hidden" id="whatsapp_country" value="+970">
+                <div style="position:relative;flex:1">
+                    <input type="tel" id="whatsapp" class="form-control"
+                           placeholder="05XXXXXXXX" inputmode="numeric" maxlength="15">
+                </div>
+            </div>
+            <div class="phone-hint" id="hint_whatsapp"></div>
+            <div class="field-err" id="err_whatsapp"><span>⚠️</span><span></span></div>
+        </div>
+
+        <!-- كلمة المرور -->
+        <div class="col-md-6">
+            <label class="form-label">كلمة المرور <span class="req">*</span></label>
+            <div class="pass-wrap">
+                <input type="password" id="password" class="form-control"
+                       placeholder="8 أحرف على الأقل" autocomplete="new-password"
+                       oninput="checkPassStr();checkPassMatch()">
+                <button class="pass-toggle" type="button" onclick="togglePass('password')">👁</button>
+            </div>
+            <div class="pass-str"><div class="pass-str-bar" id="passBar"></div></div>
+            <div class="pass-str-hint" id="passHint"></div>
+            <div class="field-err" id="err_password"><span>⚠️</span><span></span></div>
+        </div>
+
+        <!-- تأكيد كلمة المرور -->
+        <div class="col-md-6">
+            <label class="form-label">تأكيد كلمة المرور <span class="req">*</span></label>
+            <div class="pass-wrap">
+                <input type="password" id="password2" class="form-control"
+                       placeholder="أعد كتابة كلمة المرور" autocomplete="new-password"
+                       oninput="checkPassMatch()">
+                <button class="pass-toggle" type="button" onclick="togglePass('password2')">👁</button>
+            </div>
+            <div class="pass-match-msg" id="passMatch"></div>
+            <div class="field-err" id="err_password2"><span>⚠️</span><span></span></div>
+        </div>
+
+    </div>
+
+    <!-- بيانات إضافية للكافل -->
+    <div id="sponsorExtra" class="d-none">
+        <div class="sec-title mb-3"><span>💼</span> بيانات إضافية للكافل</div>
+        <div class="row g-3 mb-3">
+
+            <!-- الدولة -->
+            <div class="col-md-4">
+                <label class="form-label">الدولة <span class="req">*</span></label>
+                <div class="dd-wrap" id="country_wrap">
+                    <div class="dd-selector" id="country_sel" onclick="ddToggle('country')"
+                         role="combobox" aria-expanded="false">
+                        <span class="dd-flag" id="country_flag">🌍</span>
+                        <span class="dd-text" id="country_text">اختر الدولة</span>
+                        <span class="dd-arrow">▼</span>
+                    </div>
+                    <div class="dd-dropdown" id="country_dd" role="listbox">
+                        <div class="dd-search-wrap">
+                            <input class="dd-search" id="country_q" placeholder="ابحث عن دولتك..."
+                                   oninput="ddFilter('country',this.value)" onclick="event.stopPropagation()">
+                        </div>
+                        <div class="dd-list" id="country_list"></div>
+                    </div>
+                </div>
+                <input type="hidden" id="sponsor_country" value="">
+                <div class="field-err" id="err_sponsor_country"><span>⚠️</span><span></span></div>
+            </div>
+
+            <!-- المهنة -->
+            <div class="col-md-4">
+                <label class="form-label">المهنة <span class="req">*</span></label>
+                <select id="sponsor_job" class="form-select form-control">
+                    <option value="">-- اختر --</option>
+                    {% for j in jobs %}
+                    <option value="{{ j.0 }}">{{ j.1 }}</option>
+                    {% endfor %}
+                </select>
+                <div class="field-err" id="err_sponsor_job"><span>⚠️</span><span></span></div>
+            </div>
+
+            <!-- المدينة -->
+            <div class="col-md-4">
+                <label class="form-label">المدينة <span class="req">*</span></label>
+                <div style="position:relative">
+                    <input type="text" id="sponsor_city" class="form-control" placeholder="المدينة">
+                </div>
+                <div class="field-err" id="err_sponsor_city"><span>⚠️</span><span></span></div>
+            </div>
+
+            <!-- الصورة -->
+            <div class="col-md-6">
+                <label class="form-label">الصورة الشخصية <span class="req">*</span></label>
+                <div class="photo-box" id="sponsorPhotoBox"
+                     onclick="document.getElementById('sponsorPhoto').click()">
+                    <input type="file" id="sponsorPhoto" accept=".jpg,.jpeg,.png"
+                           onchange="previewPhoto(this,'sponsorPhotoPreview','sponsorPhotoHolder','sponsorPhotoBox')"
+                           onclick="event.stopPropagation()">
+                    <img id="sponsorPhotoPreview" class="photo-preview" src="" alt="">
+                    <div id="sponsorPhotoHolder">
+                        <div style="font-size:1.8rem;margin-bottom:5px">📷</div>
+                        <div style="font-family:'Tajawal',sans-serif;font-size:0.78rem;color:#6b7280">
+                            اضغط لرفع صورتك<br><small>JPG • PNG — الحد 4MB</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="field-err" id="err_sponsor_photo"><span>⚠️</span><span></span></div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="d-flex gap-3 mt-4">
+        <button class="btn-back" onclick="goStep(1)"><span>→</span> السابق</button>
+        <button class="btn-next" id="btn_step2_next" onclick="step2Next()"><span>التالي</span><span>←</span></button>
+    </div>
+</div>
+
+<!-- ══════════════════════ STEP 3 — التفاصيل ══════════════════════ -->
+<div id="step3" class="d-none">
+    <div id="s3_sponsor">
+        <div class="text-center py-5">
+            <div style="font-size:3rem;margin-bottom:12px">✅</div>
+            <h6 style="font-family:'Tajawal',sans-serif;font-weight:700;color:var(--text,#1a1a2e)">
+                لا توجد بيانات تكميلية للكافل
+            </h6>
+        </div>
+    </div>
+    <div id="s3_orphan"  class="d-none">{% include 'main/partials/orphan_details.html' %}</div>
+    <div id="s3_special" class="d-none">{% include 'main/partials/special_details.html' %}</div>
+    <div id="s3_family"  class="d-none">{% include 'main/partials/family_details.html' %}</div>
+    <div class="d-flex gap-3 mt-4">
+        <button class="btn-back" onclick="goStep(2)"><span>→</span> السابق</button>
+        <button class="btn-next" id="btn_step3_next" onclick="step3Next()"><span>التالي</span><span>←</span></button>
+    </div>
+</div>
+
+<!-- ══════════════════════ STEP 4 — الوثائق ══════════════════════ -->
+<div id="step4" class="d-none">
+
+    <div id="d_sponsor">
+        <div class="text-center py-5">
+            <div style="font-size:3rem;margin-bottom:12px">📄</div>
+            <h6 style="font-family:'Tajawal',sans-serif;font-weight:700;color:var(--text,#1a1a2e)">
+                لا توجد وثائق مطلوبة للكافل
+            </h6>
+        </div>
+    </div>
+
+    <div id="d_orphan" class="d-none">
+        <div class="sec-title mb-3"><span>📎</span> وثائق اليتيم</div>
+        <div class="row g-3">
+            {% include 'main/partials/doc_field.html' with doc_id="or_هوية_الوصي"          label="صورة هوية الوصي"     required=True %}
+            {% include 'main/partials/doc_field.html' with doc_id="or_شهادة_ميلاد_الطفل"   label="شهادة ميلاد الطفل"   required=True %}
+            {% include 'main/partials/doc_field.html' with doc_id="or_شهادة_وفاة_الاب"     label="شهادة وفاة الأب"     required=True %}
+            {% include 'main/partials/doc_field.html' with doc_id="or_حجة_وصاية"           label="حجة وصاية"           required=True %}
+            {% include 'main/partials/doc_field.html' with doc_id="or_حجة_ترمل"            label="حجة ترمل"            required=False %}
+            {% include 'main/partials/doc_field.html' with doc_id="or_حجة_ولاية"           label="حجة ولاية"           required=False %}
+            {% include 'main/partials/doc_field.html' with doc_id="or_حجة_اعالة"           label="حجة إعالة"           required=False %}
+            {% include 'main/partials/doc_field.html' with doc_id="or_حجة_اقرار_حضانة"    label="حجة إقرار حضانة"    required=False %}
+            {% include 'main/partials/doc_field.html' with doc_id="or_شهادة_ميلاد_الاخوة" label="شهادة ميلاد الأخوة" required=False multi=True %}
+        </div>
+    </div>
+
+    <div id="d_special" class="d-none">
+        <div class="sec-title mb-3"><span>📎</span> وثائق ذوو الاحتياجات</div>
+        <div class="row g-3">
+            {% include 'main/partials/doc_field.html' with doc_id="sp_هوية_المعيل"        label="هوية المعيل"        required=True %}
+            {% include 'main/partials/doc_field.html' with doc_id="sp_هوية_الاب"          label="هوية الأب"          required=True %}
+            {% include 'main/partials/doc_field.html' with doc_id="sp_هوية_الام"          label="هوية الأم"          required=True %}
+            {% include 'main/partials/doc_field.html' with doc_id="sp_شهادة_ميلاد_الشخص" label="شهادة ميلاد الشخص" required=True %}
+            {% include 'main/partials/doc_field.html' with doc_id="sp_التقرير_الطبي"      label="التقرير الطبي"      required=True %}
+            {% include 'main/partials/doc_field.html' with doc_id="sp_هوية_المريض"        label="هوية المريض"        required=True %}
+        </div>
+    </div>
+
+    <div id="d_family" class="d-none">
+        <div class="sec-title mb-3"><span>📎</span> وثائق الأسرة</div>
+        <div class="row g-3">
+            {% include 'main/partials/doc_field.html' with doc_id="fm_هوية_الام"   label="هوية الأم"   required=True %}
+            {% include 'main/partials/doc_field.html' with doc_id="fm_هوية_الاب"   label="هوية الأب"   required=True %}
+            {% include 'main/partials/doc_field.html' with doc_id="fm_هوية_المعيل" label="هوية المعيل" required=True %}
+            {% include 'main/partials/doc_field.html' with doc_id="fm_تقارير_طبية" label="تقارير طبية" required=False %}
+        </div>
+    </div>
+
+    <div class="d-flex gap-3 mt-4">
+        <button class="btn-back" onclick="goStep(3)"><span>→</span> السابق</button>
+        <button class="btn-next" onclick="step4Next()"><span>التالي</span><span>←</span></button>
+    </div>
+
+</div>
+
+<!-- ══════════════════════ STEP 5 — المراجعة والإرسال ══════════════════════ -->
+<div id="step5" class="d-none">
+    <div class="sec-title mb-3"><span>📋</span> مراجعة البيانات</div>
+    <div class="row g-3 mb-4" id="summaryGrid"></div>
+    <div class="agree-wrap mb-3">
+        <input type="checkbox" id="agreeTerms">
+        <label class="agree-label" for="agreeTerms">
+            أوافق على <a href="#">شروط الاستخدام</a> و<a href="#">سياسة الخصوصية</a>
+        </label>
+    </div>
+    <div class="field-err mb-3" id="err_agree"><span>⚠️</span><span>يجب الموافقة على الشروط</span></div>
+    <div class="d-flex gap-3">
+        <button class="btn-back" onclick="goStep(4)"><span>→</span> السابق</button>
+        <button class="btn-submit" id="submitBtn" onclick="submitReg()">
+            <span>✨</span><span>إنشاء الحساب</span>
+        </button>
+    </div>
+</div>
+
+<hr style="border-color:rgba(26,122,74,0.1);margin:26px 0 16px">
+<p class="text-center mb-0" style="font-family:'Tajawal',sans-serif;font-size:0.85rem;color:#6b7280">
+    لديك حساب؟
+    <a href="{% url 'main:login' %}" style="color:#1a7a4a;font-weight:700;text-decoration:none">سجّل دخولك</a>
+</p>
+
+</div>
+</div>
+</div>
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+{# ── مكتبات التحقق والقوائم ── #}
+<script src="{% static 'js/validation.js' %}"></script>
+<script src="{% static 'js/dropdown.js' %}"></script>
+
+<script>
+'use strict';
+
+/* ══════════════════════════════════════════════════
+   الحالة العامة
+══════════════════════════════════════════════════ */
+const CSRF = document.querySelector('[name=csrfmiddlewaretoken]')?.value
+    || document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='))?.split('=')[1] || '';
+
+let selectedType = '';
+let currentStep  = 1;
+let memberCount  = 0;
+
+/* ══════════════════════════════════════════════════
+   تهيئة عند تحميل الصفحة
+══════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+
+    /* اختيار النوع */
+    document.querySelectorAll('input[name="userType"]').forEach(r => {
+        r.addEventListener('change', function () { selectType(this.value); });
+    });
+
+    /* تحميل الدول */
+    loadCountries();
+
+    /* ── الاسم الرباعي — عربي وإنجليزي ── */
+    [
+        ['first_name',  'الاسم الأول'],
+        ['father_name', 'اسم الأب'],
+        ['grand_name',  'اسم الجد'],
+        ['family_name', 'اسم العائلة'],
+    ].forEach(([id, lbl]) => bindArabicField(id, 'err_' + id, lbl, true));
+
+    /* المدينة — عربي وإنجليزي */
+    bindArabicField('sponsor_city', 'err_sponsor_city', 'المدينة', true);
+
+    /* البريد */
+    bindEmailField('email', 'err_email');
+
+    /* اسم المستخدم */
+    bindUsernameField('username', 'err_username');
+
+    /* رقم الهوية */
+    bindIdField('id_number', 'err_id_number', 'hint_id_number');
+
+    /* الجوال الأول */
+    bindPhoneField(
+        'phone1',
+        () => getDialCode('p1'),
+        'err_phone1', 'hint_phone1',
+        true, 'phone1',
+        null
+    );
+
+    /* الجوال الثاني */
+    bindPhoneField(
+        'phone2',
+        () => getDialCode('p2'),
+        'err_phone2', 'hint_phone2',
+        true, 'phone2',
+        'phone1'
+    );
+
+    /* الواتساب */
+    bindPhoneField(
+        'whatsapp',
+        () => getDialCode('wa'),
+        'err_whatsapp', 'hint_whatsapp',
+        true, 'whatsapp',
+        null
+    );
+
+    /* حقول العنوان — نص حر بدون أي قيود */
+    document.querySelectorAll('[data-type="address"]').forEach(inp => {
+        inp.addEventListener('input', function () {
+            // منع رموز XSS فقط
+            this.value = this.value.replace(/[<>"';&]/g, '');
+            if (this.value.trim()) {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+                const errEl = document.getElementById('err_' + this.id);
+                if (errEl) errEl.classList.remove('show');
+            }
+        });
+    });
+
+    /* Drag & Drop للمستندات */
+    initDragDrop();
+});
+
+/* ══════════════════════════════════════════════════
+   اختيار نوع الحساب
+══════════════════════════════════════════════════ */
+function selectType(type) {
+    selectedType = type;
+    document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById('tc_' + type)?.classList.add('selected');
+    document.getElementById('f_username').classList.toggle('d-none', type !== 'sponsor');
+    document.getElementById('f_id').classList.toggle('d-none',       type === 'sponsor');
+    document.getElementById('sponsorExtra').classList.toggle('d-none', type !== 'sponsor');
+    clearErr(null, 'err_type');
+    markDirty();
+}
+
+/* ══════════════════════════════════════════════════
+   التنقل بين الخطوات
+══════════════════════════════════════════════════ */
+function goStep(target) {
+    if (target > currentStep && !validateStep(currentStep)) return;
+
+    for (let i = 1; i <= 5; i++) {
+        const sc = document.getElementById('sc' + i);
+        const si = document.getElementById('si' + i);
+        sc.classList.remove('active', 'done');
+        si.classList.remove('active');
+        if      (i < target)  { sc.classList.add('done'); sc.innerHTML = '✓'; }
+        else if (i === target) { sc.classList.add('active'); sc.innerHTML = i; si.classList.add('active'); }
+        else                   { sc.innerHTML = i; }
+        document.getElementById('sl' + i)?.classList.toggle('done', i < target);
+    }
+
+    document.getElementById('step' + currentStep).classList.add('d-none');
+    document.getElementById('step' + target).classList.remove('d-none');
+    currentStep = target;
+
+    if (target === 3) _showStep3();
+    if (target === 4) _showStep4();
+    if (target === 5) buildSummary();
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function _showStep3() {
+    ['sponsor','orphan','special','family'].forEach(t =>
+        document.getElementById('s3_' + t)?.classList.add('d-none')
+    );
+    document.getElementById('s3_' + selectedType)?.classList.remove('d-none');
+}
+
+function _showStep4() {
+    ['sponsor','orphan','special','family'].forEach(t =>
+        document.getElementById('d_' + t)?.classList.add('d-none')
+    );
+    document.getElementById('d_' + selectedType)?.classList.remove('d-none');
+}
+
+/* ══════════════════════════════════════════════════
+   التحقق من كل خطوة
+══════════════════════════════════════════════════ */
+function validateStep(step) {
+    let ok = true;
+
+    if (step === 1) {
+        if (!selectedType) { showErr('err_type'); shakeEl('err_type'); ok = false; }
+    }
+
+    if (step === 2) {
+        /* الاسم الرباعي */
+        [['first_name','الاسم الأول'],['father_name','اسم الأب'],
+         ['grand_name','اسم الجد'],  ['family_name','اسم العائلة']].forEach(([id, lbl]) => {
+            const v = gv(id);
+            if (!v) { fErr(id, 'err_' + id, lbl + ' مطلوب'); ok = false; }
+            else if (!/^[\u0600-\u06FF a-zA-Z\s]+$/.test(v)) { fErr(id, 'err_' + id, 'يجب إدخال نص عربي او انجليزي فقط'); ok = false; }
+        });
+
+        /* البريد */
+        const em = gv('email');
+        if (!em)                                        { fErr('email','err_email','البريد مطلوب'); ok = false; }
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { fErr('email','err_email','البريد غير صالح'); ok = false; }
+
+        /* الجنسية والجنس */
+        if (!gv('nationality')) { fErr('nat_sel','err_nationality','الجنسية مطلوبة'); ok = false; }
+        if (!gv('gender'))      { fErr('gender', 'err_gender',     'الجنس مطلوب');    ok = false; }
+
+        /* الجوال الأول */
+        const p1 = gv('phone1');
+        if (!p1) { fErr('phone1','err_phone1','رقم الجوال مطلوب'); ok = false; }
+        else {
+            const fmt = validatePhoneFormat(p1, getDialCode('p1'));
+            if (!fmt.valid) { fErr('phone1','err_phone1', fmt.message); ok = false; }
+        }
+
+        /* الجوال الثاني (اختياري) */
+        const p2 = gv('phone2');
+        if (p2) {
+            const fmt = validatePhoneFormat(p2, getDialCode('p2'));
+            if (!fmt.valid)  { fErr('phone2','err_phone2', fmt.message);                             ok = false; }
+            else if (p2===p1){ fErr('phone2','err_phone2','يجب أن يختلف عن رقم الجوال الأول');       ok = false; }
+        }
+
+        /* الواتساب */
+        const wa = gv('whatsapp');
+        if (!wa) { fErr('whatsapp','err_whatsapp','رقم الواتساب مطلوب'); ok = false; }
+        else {
+            const fmt = validatePhoneFormat(wa, getDialCode('wa'));
+            if (!fmt.valid) { fErr('whatsapp','err_whatsapp', fmt.message); ok = false; }
+        }
+
+        /* كلمة المرور */
+        const pw  = gv('password');
+        const pw2 = gv('password2');
+        if (!pw)               { fErr('password', 'err_password', 'كلمة المرور مطلوبة');          ok = false; }
+        else if (pw.length < 8){ fErr('password', 'err_password', '8 أحرف على الأقل');            ok = false; }
+        else if (!/\d/.test(pw)){ fErr('password','err_password', 'يجب أن تحتوي على رقم');        ok = false; }
+        if (pw && !pw2)         { fErr('password2','err_password2','يرجى تأكيد كلمة المرور');      ok = false; }
+        else if (pw && pw !== pw2){ fErr('password2','err_password2','كلمتا المرور غير متطابقتين'); ok = false; }
+
+        /* حقول الكافل */
+        if (selectedType === 'sponsor') {
+            const u = gv('username');
+            if (!u)           { fErr('username','err_username','اسم المستخدم مطلوب'); ok = false; }
+            else if (u.length < 4){ fErr('username','err_username','4 أحرف على الأقل'); ok = false; }
+
+            if (!gv('sponsor_country')) { fErr('country_sel','err_sponsor_country','الدولة مطلوبة'); ok = false; }
+            if (!gv('sponsor_job'))     { fErr('sponsor_job','err_sponsor_job','المهنة مطلوبة');     ok = false; }
+            if (!gv('sponsor_city'))    { fErr('sponsor_city','err_sponsor_city','المدينة مطلوبة');  ok = false; }
+            if (!document.getElementById('sponsorPhoto')?.files.length) {
+                fErr('sponsorPhotoBox','err_sponsor_photo','الصورة الشخصية مطلوبة'); ok = false;
+            }
+        } else {
+            const id = gv('id_number');
+            if (!id)                             { fErr('id_number','err_id_number','رقم الهوية مطلوب'); ok = false; }
+            else if (!/^[9847]\d{8}$/.test(id))  { fErr('id_number','err_id_number','9 أرقام تبدأ بـ 9 أو 8 أو 4 أو 7'); ok = false; }
+        }
+    }
+
+    if (step === 3) {
+        if (selectedType === 'orphan')  ok = validateOrphan()  && ok;
+        if (selectedType === 'special') ok = validateSpecial() && ok;
+        if (selectedType === 'family')  ok = validateFamily()  && ok;
+    }
+
+    if (step === 4) ok = validateDocs() && ok;
+
+    if (step === 5) {
+        if (!document.getElementById('agreeTerms')?.checked) {
+            showErr('err_agree'); shakeEl('agreeTerms'); ok = false;
+        }
+    }
+
+    /* Scroll لأول حقل فيه خطأ */
+    if (!ok) {
+        const first = document.querySelector('.is-invalid, .field-err.show');
+        if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    return ok;
+}
+
+/* ── التحقق من حقول اليتيم ── */
+function validateOrphan() {
+    let ok = true;
+    const req = [
+        'orphan_birth_date','orphan_orphan_type','orphan_health_status',
+        'orphan_education_level','orphan_school_name',
+        'orphan_current_city','orphan_current_street','orphan_current_landmark',
+        'orphan_previous_city','orphan_previous_street','orphan_previous_landmark',
+        'orphan_housing_type','orphan_housing_ownership','orphan_story',
+        'mother_first_name','mother_father_name','mother_grand_name','mother_family_name',
+        'mother_birth_date','mother_id_number','mother_health_status',
+        'mother_education_level','mother_job','mother_monthly_income',
+        'father_first_name','father_father_name','father_grand_name','father_family_name',
+        'father_birth_date','father_id_number','father_health_status',
+        'father_education_level','father_job','father_children_count',
+        'guardian_first_name','guardian_father_name','guardian_grand_name','guardian_family_name',
+        'guardian_id_number','guardian_gender','guardian_relation','guardian_job',
+        'guardian_health_status','guardian_education_level',
+        'guardian_monthly_income','guardian_dependents',
+    ];
+    req.forEach(id => { if (!gv(id)) { fErr(id, 'err_' + id, 'هذا الحقل مطلوب'); ok = false; } });
+
+    const orphanPhoto = document.getElementById('orphan_photo');
+    const orphanBox   = document.getElementById('orphan_photo_box');
+    if (!orphanPhoto?.files.length && !orphanBox?.classList.contains('has-photo')) {
+        fErr('orphan_photo_box','err_orphan_photo','صورة اليتيم مطلوبة'); ok = false;
+    }
+
+    /* أفراد الأسرة إن وُجدوا */
+    if (document.querySelectorAll('#orphanMembersContainer .member-card').length > 0) {
+        if (!validateAllMembers('orphanMembersContainer')) ok = false;
+    }
+    return ok;
+}
+
+/* ── التحقق من حقول ذوي الاحتياجات ── */
+function validateSpecial() {
+    let ok = true;
+    const req = [
+        'special_birth_date','special_health_status','special_education_level',
+        'special_current_city','special_current_street','special_current_landmark',
+        'special_housing_type','special_housing_ownership','special_case_details',
+        'special_guardian_first_name','special_guardian_father_name',
+        'special_guardian_grand_name','special_guardian_family_name',
+        'special_guardian_id_number','special_guardian_gender','special_guardian_relation',
+        'special_guardian_job','special_guardian_health_status',
+        'special_guardian_education_level',
+        'special_guardian_monthly_income','special_guardian_dependents',
+    ];
+    req.forEach(id => { if (!gv(id)) { fErr(id, 'err_' + id, 'هذا الحقل مطلوب'); ok = false; } });
+
+    const specialPhoto = document.getElementById('special_photo');
+    const specialBox   = document.getElementById('special_photo_box');
+    if (!specialPhoto?.files.length && !specialBox?.classList.contains('has-photo')) {
+        fErr('special_photo_box','err_special_photo','صورة المريض مطلوبة'); ok = false;
+    }
+    if (document.querySelectorAll('#specialMembersContainer .member-card').length > 0) {
+        if (!validateAllMembers('specialMembersContainer')) ok = false;
+    }
+    return ok;
+}
+
+/* ── التحقق من حقول الأسرة ── */
+function validateFamily() {
+    let ok = true;
+    const req = [
+        'family_first_name','family_father_name_h','family_grand_name_h','family_family_name_h',
+        'family_birth_date','family_id_number','family_gender','family_marital_status',
+        'family_health_status','family_education_level','family_job',
+        'family_current_city','family_current_street','family_current_landmark',
+        'family_housing_type','family_housing_ownership',
+        'family_members_count','family_sick_count','family_general_status',
+        'family_guardian_first_name','family_guardian_father_name',
+        'family_guardian_grand_name','family_guardian_family_name',
+        'family_guardian_id_number','family_guardian_gender','family_guardian_relation',
+        'family_guardian_job','family_guardian_health_status',
+        'family_guardian_education_level',
+        'family_guardian_monthly_income','family_guardian_dependents',
+    ];
+    req.forEach(id => { if (!gv(id)) { fErr(id, 'err_' + id, 'هذا الحقل مطلوب'); ok = false; } });
+
+    const familyPhoto = document.getElementById('family_photo');
+    const familyBox   = document.getElementById('family_photo_box');
+    if (!familyPhoto?.files.length && !familyBox?.classList.contains('has-photo')) {
+        fErr('family_photo_box','err_family_photo','الصورة الشخصية مطلوبة'); ok = false;
+    }
+    /* الزوجة عند متزوج */
+    if (gv('family_marital_status') === 'متزوج') {
+        ['wife_first_name','wife_father_name','wife_grand_name','wife_family_name',
+         'wife_birth_date','wife_id_number','wife_health_status','wife_education_level']
+            .forEach(id => { if (!gv(id)) { fErr(id,'err_'+id,'هذا الحقل مطلوب'); ok = false; } });
+    }
+
+    if (document.querySelectorAll('#familyMembersContainer .member-card').length > 0) {
+        if (!validateAllMembers('familyMembersContainer')) ok = false;
+    }
+    return ok;
+}
+
+/* ── التحقق من الوثائق ── */
+function validateDocs() {
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+    const ALLOWED_EXT   = ['jpg', 'jpeg', 'png', 'pdf'];
+    const MAX_SIZE      = 4 * 1024 * 1024; // 4MB
+
+    const req = {
+        orphan:  ['or_هوية_الوصي','or_شهادة_ميلاد_الطفل','or_شهادة_وفاة_الاب','or_حجة_وصاية'],
+        special: ['sp_هوية_المعيل','sp_هوية_الاب','sp_هوية_الام','sp_شهادة_ميلاد_الشخص','sp_التقرير_الطبي','sp_هوية_المريض'],
+        family:  ['fm_هوية_الام','fm_هوية_الاب','fm_هوية_المعيل'],
+        sponsor: [],
+    };
+
+    let ok        = true;
+    let firstBox  = null;
+    const errors  = [];
+
+    (req[selectedType] || []).forEach(docId => {
+        const inp = document.getElementById('doc_' + docId);
+        const box = document.getElementById('docbox_' + docId);
+        const err = document.getElementById('err_doc_' + docId);
+
+        const _setError = (msg) => {
+            box?.classList.add('is-invalid');
+            box?.classList.remove('has-file');
+            if (err) err.textContent = msg;
+            shakeEl('docbox_' + docId);
+            if (!firstBox) firstBox = box;
+            errors.push(msg);
+            ok = false;
+        };
+
+        const _setOk = () => {
+            box?.classList.remove('is-invalid');
+            if (err) err.textContent = '';
+        };
+
+        // لم يُرفع ملف
+        if (!inp?.files?.length) {
+            _setError('هذا المستند إلزامي');
+            return;
+        }
+
+        // تحقق من كل ملف مرفوع
+        Array.from(inp.files).forEach(file => {
+            // الحجم
+            if (file.size > MAX_SIZE) {
+                _setError(`${file.name} — الحجم يتجاوز 4MB`);
+                return;
+            }
+            // النوع
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (!ALLOWED_EXT.includes(ext)) {
+                _setError(`${file.name} — يُسمح فقط بـ JPG أو PNG أو PDF`);
+                return;
+            }
+            if (file.type && !ALLOWED_TYPES.includes(file.type)) {
+                _setError(`${file.name} — نوع الملف غير مسموح`);
+                return;
+            }
+        });
+
+        // كل شيء صحيح
+        if (ok || !errors.find(e => e.includes(inp.files[0]?.name))) {
+            _setOk();
+        }
+    });
+
+    if (!ok) {
+        // scroll لأول مستند فيه خطأ
+        if (firstBox) firstBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        showAlert('error', `يرجى رفع الوثائق الإلزامية المميّزة بـ ✳️ (${errors.length} خطأ)`);
+    }
+
+    return ok;
+}
+
+/* ══════════════════════════════════════════════════
+   الخطوة 2 — تحقق API
+══════════════════════════════════════════════════ */
+async function step2Next() {
+    if (!validateStep(2)) return;
+
+    const btn = document.getElementById('btn_step2_next');
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳</span><span>جار التحقق...</span>';
+
+    let ok = true;
+    try {
+        // ── username أو رقم الهوية ──
+        if (selectedType === 'sponsor') {
+            const uinp = document.getElementById('username');
+            if (uinp && uinp.classList.contains('is-invalid')) {
+                ok = false;
+            } else if (uinp && !uinp.classList.contains('is-valid')) {
+                const u = gv('username');
+                if (u && !(await checkUnique('username', u, 'username', 'err_username'))) ok = false;
+            }
+        } else {
+            const idinp = document.getElementById('id_number');
+            if (idinp && idinp.classList.contains('is-invalid')) {
+                ok = false;
+            } else if (idinp && !idinp.classList.contains('is-valid')) {
+                const id = gv('id_number');
+                if (id && !(await checkUnique('id_number', id, 'id_number', 'err_id_number'))) ok = false;
+            }
+        }
+
+        // ── البريد ──
+        const eminp = document.getElementById('email');
+        if (eminp && eminp.classList.contains('is-invalid')) {
+            ok = false;
+        } else if (eminp && !eminp.classList.contains('is-valid')) {
+            const em = gv('email');
+            if (em && !(await checkUnique('email', em, 'email', 'err_email'))) ok = false;
+        }
+
+        // ── الجوال الأول — bindPhoneField تكفّل بكل التحقق ──
+        const p1inp = document.getElementById('phone1');
+        if (p1inp && p1inp.classList.contains('is-invalid')) ok = false;
+
+        // ── الجوال الثاني ──
+        const p2inp = document.getElementById('phone2');
+        if (p2inp && p2inp.classList.contains('is-invalid')) {
+            ok = false;
+        } else if (p2inp && gv('phone2') && !p2inp.classList.contains('is-valid')) {
+            const p1 = gv('phone1');
+            const p2 = gv('phone2');
+            const fd = new FormData();
+            fd.append('csrfmiddlewaretoken', CSRF);
+            fd.append('field', 'phone2');
+            fd.append('value', p2);
+            fd.append('phone1_value', p1);
+            try {
+                const r    = await fetch('/api/check-unique/', { method: 'POST', body: fd });
+                const data = await r.json();
+                console.log('phone2 check:', data);
+                if (!data.unique) {
+                    const errEl = document.getElementById('err_phone2');
+                    if (errEl) {
+                        errEl.classList.add('show');
+                        const span = errEl.querySelector('span:last-child');
+                        if (span) span.textContent = data.message;
+                    }
+                    p2inp.classList.add('is-invalid');
+                    ok = false;
+                } else {
+                    p2inp.classList.remove('is-invalid');
+                    p2inp.classList.add('is-valid');
+                }
+            } catch { /* تجاهل */ }
+        }
+
+        // ── الواتساب ──
+        const wainp = document.getElementById('whatsapp');
+        if (wainp && wainp.classList.contains('is-invalid')) {
+            ok = false;
+        } else if (wainp && !wainp.classList.contains('is-valid')) {
+            const wa = gv('whatsapp');
+            if (wa) {
+                const fd = new FormData();
+                fd.append('csrfmiddlewaretoken', CSRF);
+                fd.append('field', 'whatsapp');
+                fd.append('value', wa);
+                try {
+                    const r    = await fetch('/api/check-unique/', { method: 'POST', body: fd });
+                    const data = await r.json();
+                    console.log('whatsapp check:', data);
+                    if (!data.unique) {
+                        const errEl = document.getElementById('err_whatsapp');
+                        if (errEl) {
+                            errEl.classList.add('show');
+                            const span = errEl.querySelector('span:last-child');
+                            if (span) span.textContent = data.message;
+                        }
+                        wainp.classList.add('is-invalid');
+                        ok = false;
+                    } else {
+                        wainp.classList.remove('is-invalid');
+                        wainp.classList.add('is-valid');
+                    }
+                } catch { /* تجاهل */ }
+            }
+        }
+
+    } catch (e) {
+        console.error(e);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>التالي</span><span>←</span>';
+    }
+
+    if (ok) goStep(3);
+}
+
+/* ══════════════════════════════════════════════════
+   الخطوة 3 — تحقق هويات API
+══════════════════════════════════════════════════ */
+async function step3Next() {
+    if (!validateStep(3)) return;
+
+    const btn = document.getElementById('btn_step3_next');
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳</span><span>جار التحقق...</span>';
+
+    let ok = true;
+    const idMap = {
+        orphan:  ['mother_id_number','father_id_number','guardian_id_number'],
+        special: ['special_guardian_id_number'],
+        family:  ['family_id_number','wife_id_number','family_guardian_id_number'],
+        sponsor: [],
+    };
+
+    try {
+        for (const fid of (idMap[selectedType] || [])) {
+            const v = gv(fid);
+            if (v && !(await checkUnique('id_number', v, fid, 'err_' + fid))) ok = false;
+        }
+    } catch (e) { console.error(e); }
+    finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>التالي</span><span>←</span>';
+    }
+
+    if (ok) goStep(4);
+}
+
+/* ══════════════════════════════════════════════════
+   الخطوة 4 — تحقق الوثائق
+══════════════════════════════════════════════════ */
+function step4Next() {
+    if (validateDocs()) goStep(5);
+}
+
+/* ══════════════════════════════════════════════════
+   ملخص المراجعة
+══════════════════════════════════════════════════ */
+function buildSummary() {
+    const TYPE_LBL = { sponsor:'كافل', orphan:'يتيم', family:'أسرة', special:'ذوو احتياجات' };
+    const items = [
+        ['نوع الحساب',       TYPE_LBL[selectedType] || ''],
+        ['الاسم الكامل',     [gv('first_name'),gv('father_name'),gv('grand_name'),gv('family_name')].filter(Boolean).join(' ')],
+        ['البريد الإلكتروني', gv('email')],
+        ['الجنسية',          gv('nationality')],
+        ['الجنس',            gv('gender')],
+        ['رقم الجوال',       getDialCode('p1') + ' ' + gv('phone1')],
+        ['رقم الواتساب',     getDialCode('wa') + ' ' + gv('whatsapp')],
+    ];
+    if (selectedType === 'sponsor') {
+        items.push(['اسم المستخدم', gv('username')]);
+        items.push(['الدولة',       gv('sponsor_country')]);
+        items.push(['المهنة',       gv('sponsor_job')]);
+        items.push(['المدينة',      gv('sponsor_city')]);
+    } else {
+        items.push(['رقم الهوية',   gv('id_number')]);
+    }
+
+    document.getElementById('summaryGrid').innerHTML = items
+        .filter(([, v]) => v)
+        .map(([l, v]) => `
+            <div class="col-sm-6">
+                <div class="sum-item">
+                    <div class="sum-label">${l}</div>
+                    <div class="sum-value">${v}</div>
+                </div>
+            </div>`).join('');
+}
+
+/* ══════════════════════════════════════════════════
+   إرسال النموذج
+══════════════════════════════════════════════════ */
+async function submitReg() {
+    if (!validateStep(5)) return;
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳</span><span>جار الإرسال...</span>';
+
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('user_type', selectedType);
+
+    /* الحقول المشتركة */
+    ['first_name','father_name','grand_name','family_name','email',
+     'password','password2','nationality','nationality_code','gender',
+     'phone1','phone1_country','phone2','phone2_country',
+     'whatsapp','whatsapp_country'].forEach(k => fd.append(k, gv(k)));
+
+    if (selectedType === 'sponsor') {
+        fd.append('username',  gv('username'));
+        fd.append('job',       gv('sponsor_job'));
+        fd.append('country',   gv('sponsor_country'));
+        fd.append('city',      gv('sponsor_city'));
+        _appendFile(fd, 'photo', 'sponsorPhoto');
+    } else {
+        fd.append('id_number', gv('id_number'));
+        _appendStep3Data(fd);
+        _appendDocs(fd);
+    }
+
+    try {
+        const r    = await fetch('/register/', {
+            method: 'POST', body: fd,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        const data = await r.json();
+        console.log('Server response:', JSON.stringify(data, null, 2));
+
+        if (data.status === 'pending') {
+            markClean(); /* إيقاف unsaved warning */
+            showSuccessScreen(data.name || '', data.type_label || '');
+        } else if (data.status === 'success') {
+            markClean();
+            window.location.href = data.redirect;
+        } else {
+            showAlert('error', data.message || 'حدث خطأ، يرجى المحاولة مجدداً');
+            if (data.errors) {
+                // تحديد الخطوة التي فيها الخطأ
+                const step2Fields = ['first_name','father_name','grand_name','family_name',
+                                     'email','phone1','phone2','whatsapp','username',
+                                     'id_number','password','password2','gender','nationality'];
+                const step3Fields = ['orphan_','special_','family_','mother_','father_',
+                                     'guardian_','wife_'];
+
+                let errorStep = 5;
+                const errorKeys = Object.keys(data.errors);
+
+                if (errorKeys.some(k => step2Fields.includes(k))) {
+                    errorStep = 2;
+                } else if (errorKeys.some(k => step3Fields.some(p => k.startsWith(p)))) {
+                    errorStep = 3;
+                }
+
+                Object.entries(data.errors).forEach(([k, m]) => fErr(k, 'err_' + k, m));
+
+                // الرجوع للخطوة التي فيها الخطأ
+                if (errorStep !== 5) {
+                    currentStep = 5;
+                    goStep(errorStep);
+                }
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<span>✨</span><span>إنشاء الحساب</span>';
+        }
+    } catch (e) {
+        console.error('Fetch error:', e);
+        showAlert('error', 'حدث خطأ في الاتصال: ' + e.message);
+        btn.disabled = false;
+        btn.innerHTML = '<span>✨</span><span>إنشاء الحساب</span>';
+    }
+}
+
+function _appendStep3Data(fd) {
+    const prefix = selectedType + '_';
+
+    // إظهار القسم مؤقتاً لضمان قراءة القيم
+    const section   = document.getElementById('s3_' + selectedType);
+    const wasHidden = section?.classList.contains('d-none');
+    if (wasHidden) section?.classList.remove('d-none');
+
+    // جمع كل حقول القسم بالاسم الكامل وبدون prefix
+    document.querySelectorAll(`[id^="${prefix}"]`).forEach(el => {
+        if (el.type !== 'file') {
+            fd.append(el.id, el.value || '');
+            const shortName = el.id.replace(prefix, '');
+            if (shortName !== el.id) fd.append(shortName, el.value || '');
+        }
+    });
+
+    // حقول الأم والأب والمعيل والزوجة
+    ['mother_', 'father_', 'guardian_', 'wife_'].forEach(pre => {
+        document.querySelectorAll(`[id^="${pre}"]`).forEach(el => {
+            if (el.type !== 'file' && el.id) fd.append(el.id, el.value || '');
+        });
+    });
+
+    // إعادة الإخفاء
+    if (wasHidden) section?.classList.add('d-none');
+
+    // الصورة — أرسلها بالاسمين لأن السيرفر يتوقع 'photo'
+    const photoIds = {
+        orphan:  'orphan_photo',
+        special: 'special_photo',
+        family:  'family_photo',
+    };
+    _appendFile(fd, prefix + 'photo', photoIds[selectedType]);
+    _appendFile(fd, 'photo',          photoIds[selectedType]);
+
+    if (selectedType === 'family') {
+        _appendFile(fd, 'wife_photo', 'wife_photo');
+    }
+
+    // أفراد الأسرة
+    const members = collectMembers();
+    if (members.length) fd.append('family_members_json', JSON.stringify(members));
+}
+
+function _appendDocs(fd) {
+    document.querySelectorAll('[id^="doc_"]').forEach(inp => {
+        if (inp.files?.length) {
+            Array.from(inp.files).forEach(f => fd.append(inp.name, f));
+        }
+    });
+}
+
+function _appendFile(fd, key, inputId) {
+    const inp = document.getElementById(inputId);
+    if (inp?.files?.length) fd.append(key, inp.files[0]);
+}
+
+/* ══════════════════════════════════════════════════
+   شاشة النجاح
+══════════════════════════════════════════════════ */
+function showSuccessScreen(name, typeLabel) {
+    document.getElementById('step5').innerHTML = `
+        <div class="text-center py-3">
+            <div style="width:74px;height:74px;background:linear-gradient(135deg,#1a7a4a,#2ecc71);
+                        border-radius:50%;display:flex;align-items:center;justify-content:center;
+                        font-size:2rem;margin:0 auto 16px;box-shadow:0 8px 24px rgba(26,122,74,0.35)">✅</div>
+            <h4 style="font-family:'Amiri',serif;color:#1a7a4a;font-size:1.7rem;margin-bottom:14px">
+                أهلاً ${name} 🎉
+            </h4>
+            <div style="background:rgba(26,122,74,0.07);border:1px solid rgba(26,122,74,0.15);
+                        border-radius:14px;padding:18px 24px;font-family:'Tajawal',sans-serif;
+                        font-size:0.9rem;line-height:1.9;color:var(--text,#1a1a2e);
+                        max-width:460px;margin:0 auto 20px;text-align:right">
+                تم استلام طلبك كـ <strong style="color:#1a7a4a">${typeLabel}</strong> بنجاح.<br>
+                ⏳ حسابك <strong>قيد المراجعة</strong> من قِبَل الإدارة.<br>
+                <small style="color:#9ca3af">📧 سيتم إشعارك على بريدك فور الموافقة.</small>
+            </div>
+            <a href="/login/" style="display:inline-flex;align-items:center;gap:7px;
+                background:linear-gradient(135deg,#0f5232,#2ecc71);color:#fff;
+                padding:12px 32px;border-radius:50px;font-family:'Tajawal',sans-serif;
+                font-weight:700;font-size:0.92rem;text-decoration:none;
+                box-shadow:0 6px 18px rgba(26,122,74,0.28)">
+                🔑 الانتقال لتسجيل الدخول
+            </a>
+        </div>`;
+}
+
+/* ══════════════════════════════════════════════════
+   الصور والملفات
+══════════════════════════════════════════════════ */
+function previewPhoto(input, prevId, holderId, boxId) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 4 * 1024 * 1024) {
+        showAlert('error', 'الصورة تتجاوز 4MB');
+        input.value = '';
+        return;
+    }
+    const allowedTypes = ['image/jpeg','image/png','image/jpg'];
+    if (!allowedTypes.includes(file.type)) {
+        showAlert('error', 'يُسمح فقط بصور JPG أو PNG');
+        input.value = '';
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+        const prev   = document.getElementById(prevId);
+        const holder = document.getElementById(holderId);
+        const box    = document.getElementById(boxId);
+        if (prev)   { prev.src = e.target.result; prev.style.display = 'block'; }
+        if (holder) holder.style.display = 'none';
+        if (box)    { box.classList.add('has-photo'); box.classList.remove('is-invalid'); }
+    };
+    reader.readAsDataURL(file);
+}
+
+function handleDocFile(input, docId, required) {
+    const box    = document.getElementById('docbox_' + docId);
+    const nameEl = document.getElementById('docname_' + docId);
+    const errEl  = document.getElementById('err_doc_' + docId);
+    const file   = input.files[0];
+    if (!file) return;
+
+    /* حجم الملف */
+    if (file.size > 4 * 1024 * 1024) {
+        showAlert('error', 'الملف يتجاوز 4MB');
+        input.value = '';
+        return;
+    }
+    /* نوع الملف */
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['jpg','jpeg','png','pdf'].includes(ext)) {
+        showAlert('error', 'يُسمح فقط بـ JPG أو PNG أو PDF');
+        input.value = '';
+        return;
+    }
+
+    if (box)    { box.classList.add('has-file'); box.classList.remove('is-invalid'); }
+    if (nameEl) nameEl.textContent = '📄 ' + file.name;
+    if (errEl)  errEl.textContent  = '';
+}
+
+function handleFileChange(input, fieldId, required) {
+    const box    = document.getElementById('box_' + fieldId);
+    const nameEl = document.getElementById('name_' + fieldId);
+    const errEl  = document.getElementById('err_' + fieldId);
+    const files  = input.files;
+    if (!files.length) return;
+
+    for (const file of files) {
+        if (file.size > 4 * 1024 * 1024) {
+            showAlert('error', 'أحد الملفات يتجاوز 4MB');
+            input.value = '';
+            return;
+        }
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!['jpg','jpeg','png','pdf'].includes(ext)) {
+            showAlert('error', 'يُسمح فقط بـ JPG أو PNG أو PDF');
+            input.value = '';
+            return;
+        }
+    }
+
+    if (box)    { box.classList.add('has-file'); box.classList.remove('is-invalid'); }
+    if (nameEl) nameEl.textContent = files.length > 1
+        ? `📄 ${files.length} ملفات`
+        : '📄 ' + files[0].name;
+    if (errEl)  errEl.textContent = '';
+}
+
+/* Drag & Drop للمستندات */
+function handleDocDrop(e, docId, required) {
+    e.preventDefault();
+    const box = document.getElementById('docbox_' + docId);
+    box?.classList.remove('dragover');
+    const inp = document.getElementById('doc_' + docId);
+    if (inp && e.dataTransfer.files.length) {
+        const dt = new DataTransfer();
+        Array.from(e.dataTransfer.files).forEach(f => dt.items.add(f));
+        inp.files = dt.files;
+        handleDocFile(inp, docId, required);
+    }
+}
+
+function handleFileDrop(e, fieldId, required) {
+    e.preventDefault();
+    const box = document.getElementById('box_' + fieldId);
+    box?.classList.remove('dragover');
+    const inp = document.getElementById('file_' + fieldId);
+    if (inp && e.dataTransfer.files.length) {
+        const dt = new DataTransfer();
+        Array.from(e.dataTransfer.files).forEach(f => dt.items.add(f));
+        inp.files = dt.files;
+        handleFileChange(inp, fieldId, required);
+    }
+}
+
+function initDragDrop() {
+    /* يُطبَّق على doc_field و file_upload_box */
+    document.querySelectorAll('.file-box, .file-upload-box').forEach(box => {
+        box.addEventListener('dragover',  e => { e.preventDefault(); box.classList.add('dragover'); });
+        box.addEventListener('dragleave', () => box.classList.remove('dragover'));
+    });
+}
+
+/* ══════════════════════════════════════════════════
+   الصف الدراسي
+══════════════════════════════════════════════════ */
+function getGrades(edu) {
+    if (edu === 'رياض الأطفال') return [{v:'0', l:'روضة'}];
+    if (edu === 'ابتدائي')  return [{v:'1',l:'الأول'},{v:'2',l:'الثاني'},{v:'3',l:'الثالث'},{v:'4',l:'الرابع'},{v:'5',l:'الخامس'},{v:'6',l:'السادس'}];
+    if (edu === 'إعدادي')   return [{v:'7',l:'السابع'},{v:'8',l:'الثامن'},{v:'9',l:'التاسع'}];
+    if (edu === 'ثانوي')    return [{v:'10',l:'العاشر'},{v:'11',l:'الحادي عشر'},{v:'12',l:'الثاني عشر'}];
+    return [];
+}
+
+function updateGrade(eduId, gradeId, wrapId) {
+    const grades = getGrades(gv(eduId));
+    const wrap   = document.getElementById(wrapId);
+    const sel    = document.getElementById(gradeId);
+    if (!wrap || !sel) return;
+    wrap.classList.toggle('d-none', grades.length === 0);
+    sel.innerHTML = ['<option value="">-- اختر --</option>']
+        .concat(grades.map(g => `<option value="${g.v}">${g.l}</option>`))
+        .join('');
+}
+
+/* ══════════════════════════════════════════════════
+   أفراد الأسرة الديناميكيون
+══════════════════════════════════════════════════ */
+function addMember(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    memberCount++;
+    const id  = memberCount;
+    const div = document.createElement('div');
+    div.className = 'member-card';
+    div.id = 'member_' + id;
+
+    div.innerHTML = `
+        <button class="member-remove" type="button"
+                onclick="this.closest('.member-card').remove()" title="حذف الفرد">✕</button>
+        <div style="font-family:'Tajawal',sans-serif;font-size:0.75rem;font-weight:700;color:#1a7a4a;margin-bottom:8px">
+            👤 فرد #${id}
+        </div>
+        <div class="row g-2">
+            ${_memberField(id,'first_name','الاسم الأول','text','الاسم','col-6 col-md-3')}
+            ${_memberField(id,'father_name','اسم الأب','text','اسم الأب','col-6 col-md-3')}
+            ${_memberField(id,'grand_name','اسم الجد','text','اسم الجد','col-6 col-md-3')}
+            ${_memberField(id,'family_name','اسم العائلة','text','اسم العائلة','col-6 col-md-3')}
+            ${_memberDateField(id,'birth_date','تاريخ الميلاد','col-6 col-md-3')}
+            ${_memberIdField(id)}
+            ${_memberSelect(id,'gender','الجنس','col-6 col-md-2',[['ذكر','ذكر'],['أنثى','أنثى']])}
+            ${_memberSelect(id,'health_status','الصحة','col-6 col-md-2',[['سليم','سليم'],['مرض مزمن','مرض مزمن'],['ذوو احتياجات خاصة','ذوو احتياجات'],['مصاب حرب','مصاب حرب']])}
+            ${_memberSelect(id,'marital_status','الحالة الاجتماعية','col-6 col-md-2',[['أعزب','أعزب'],['متزوج','متزوج/ـة'],['مطلق','مطلق/ـة'],['أرمل','أرمل/ـة']])}
+            ${_memberSelect(id,'relation','صلة القرابة','col-6 col-md-2',[['أخ','أخ'],['أخت','أخت'],['أم','أم'],['أب','أب'],['أخرى','أخرى']])}
+        </div>`;
+
+    container.appendChild(div);
+    div.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    /* ربط حقول النص بالتحقق الفوري */
+    ['first_name','father_name','grand_name','family_name'].forEach(field => {
+        const inp = div.querySelector(`[data-member-field="${field}"]`);
+        if (inp) inp.addEventListener('input', function () { validateMemberField(this); });
+    });
+    /* تاريخ الميلاد */
+    const dateInp = div.querySelector('[data-member-field="birth_date"]');
+    if (dateInp) {
+        dateInp.setAttribute('max', TODAY);
+        dateInp.addEventListener('change', function () { validateMemberField(this); });
+    }
+}
+
+function _memberField(id, field, label, type, ph, col) {
+    return `
+        <div class="${col}">
+            <label class="form-label" style="font-size:0.75rem">${label} <span class="req">*</span></label>
+            <div style="position:relative">
+                <input type="${type}" class="form-control" style="font-size:0.84rem;padding:8px 10px"
+                       data-member-field="${field}" placeholder="${ph}"
+                       oninput="validateMemberField(this)">
+            </div>
+            <div class="field-err" id="merr_${id}_${field}"><span>⚠️</span><span></span></div>
+        </div>`;
+}
+
+function _memberDateField(id, field, label, col) {
+    return `
+        <div class="${col}">
+            <label class="form-label" style="font-size:0.75rem">${label} <span class="req">*</span></label>
+            <input type="date" class="form-control" style="font-size:0.84rem;padding:8px 10px"
+                   data-member-field="${field}" max="${TODAY}"
+                   onchange="validateMemberField(this)">
+            <div class="field-err" id="merr_${id}_${field}"><span>⚠️</span><span></span></div>
+        </div>`;
+}
+
+function _memberIdField(id) {
+    return `
+        <div class="col-6 col-md-3">
+            <label class="form-label" style="font-size:0.75rem">رقم الهوية <span class="req">*</span></label>
+            <div style="position:relative">
+                <input type="text" class="form-control" maxlength="9"
+                       style="font-size:0.84rem;padding:8px 10px"
+                       data-member-field="id_number" placeholder="9XXXXXXXX" inputmode="numeric"
+                       oninput="validateMemberId(this,${id})">
+            </div>
+            <div class="phone-hint" id="mhint_${id}_id"></div>
+            <div class="field-err" id="merr_${id}_id_number"><span>⚠️</span><span></span></div>
+        </div>`;
+}
+
+function _memberSelect(id, field, label, col, options) {
+    const opts = options.map(([v,l]) => `<option value="${v}">${l}</option>`).join('');
+    return `
+        <div class="${col}">
+            <label class="form-label" style="font-size:0.75rem">${label} <span class="req">*</span></label>
+            <select class="form-select form-control" style="font-size:0.84rem;padding:8px 10px"
+                    data-member-field="${field}" onchange="validateMemberField(this)">
+                <option value="">اختر</option>${opts}
+            </select>
+            <div class="field-err" id="merr_${id}_${field}"><span>⚠️</span><span></span></div>
+        </div>`;
+}
+
+/* ── تحقق فوري لحقل فرد ── */
+function validateMemberField(el) {
+    const v      = el.value.trim();
+    const card   = el.closest('.member-card');
+    const mId    = card?.id?.replace('member_', '');
+    const field  = el.dataset.memberField;
+    const errEl  = document.getElementById(`merr_${mId}_${field}`);
+
+    /* تحقق تاريخ لا يتجاوز اليوم */
+    if (field === 'birth_date' && v > TODAY) {
+        el.classList.add('is-invalid'); el.classList.remove('is-valid'); el.value = '';
+        if (errEl) { errEl.classList.add('show'); errEl.querySelector('span:last-child').textContent = 'تاريخ مستقبلي غير مسموح'; }
+        return;
+    }
+
+    if (!v) {
+        el.classList.add('is-invalid'); el.classList.remove('is-valid');
+        if (errEl) { errEl.classList.add('show'); errEl.querySelector('span:last-child').textContent = 'هذا الحقل مطلوب'; }
+    } else {
+        el.classList.remove('is-invalid'); el.classList.add('is-valid');
+        if (errEl) errEl.classList.remove('show');
+    }
+}
+
+function validateMemberId(el, memberId) {
+    const v   = el.value.replace(/\D/g,'').slice(0,9);
+    el.value  = v;
+    const hint  = document.getElementById(`mhint_${memberId}_id`);
+    const errEl = document.getElementById(`merr_${memberId}_id_number`);
+
+    if (!v) {
+        if (hint) hint.textContent = '';
+        el.classList.remove('is-valid','is-invalid');
+        return;
+    }
+
+    // تحقق من الصيغة أولاً
+    if (!/^[9847]\d{8}$/.test(v)) {
+        if (hint) hint.innerHTML = '<span style="color:#e53e3e">❌ 9 أرقام تبدأ بـ 9 أو 8 أو 4 أو 7</span>';
+        el.classList.add('is-invalid');
+        el.classList.remove('is-valid');
+        return;
+    }
+
+    // الصيغة صحيحة — تحقق من التكرار عبر API
+    if (hint) hint.innerHTML = '<span style="color:#6b7280">⏳ جار التحقق...</span>';
+    el.classList.remove('is-valid','is-invalid');
+
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('field', 'id_number');
+    fd.append('value', v);
+
+    fetch('/api/check-unique/', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.unique) {
+                if (hint) hint.innerHTML = '<span style="color:#e53e3e">❌ رقم الهوية مسجّل مسبقاً في النظام</span>';
+                el.classList.add('is-invalid');
+                el.classList.remove('is-valid');
+                if (errEl) {
+                    errEl.classList.add('show');
+                    const span = errEl.querySelector('span:last-child');
+                    if (span) span.textContent = 'رقم الهوية مسجّل مسبقاً في النظام';
+                }
+            } else {
+                if (hint) hint.innerHTML = '<span style="color:#1a7a4a">✅ رقم هوية صالح ومتاح</span>';
+                el.classList.add('is-valid');
+                el.classList.remove('is-invalid');
+                if (errEl) errEl.classList.remove('show');
+            }
+        })
+        .catch(() => {
+            // فشل الـ API — نقبل الصيغة فقط
+            if (hint) hint.innerHTML = '<span style="color:#1a7a4a">✅ رقم هوية صالح</span>';
+            el.classList.add('is-valid');
+            el.classList.remove('is-invalid');
+        });
+}
+
+/* ── تحقق كل أفراد الأسرة عند الانتقال ── */
+function validateAllMembers(containerId) {
+    let ok = true;
+    const container = document.getElementById(containerId);
+    if (!container) return true;
+
+    const required = ['first_name','father_name','grand_name','family_name',
+                       'birth_date','id_number','gender','health_status','marital_status','relation'];
+
+    container.querySelectorAll('.member-card').forEach(card => {
+        const mId = card.id.replace('member_', '');
+        required.forEach(field => {
+            const el = card.querySelector(`[data-member-field="${field}"]`);
+            if (!el) return;
+            if (!el.value.trim()) {
+                el.classList.add('is-invalid');
+                const errEl = document.getElementById(`merr_${mId}_${field}`);
+                if (errEl) { errEl.classList.add('show'); errEl.querySelector('span:last-child').textContent = 'هذا الحقل مطلوب'; }
+                ok = false;
+            }
+            if (field === 'id_number' && el.value.trim() && !/^[9847]\d{8}$/.test(el.value.trim())) {
+                el.classList.add('is-invalid'); ok = false;
+            }
+        });
+    });
+
+    if (!ok) {
+        const first = container.querySelector('.is-invalid');
+        if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    return ok;
+}
+
+/* ── جمع بيانات الأفراد ── */
+function collectMembers() {
+    const members = [];
+
+    // ابحث في كل الحاويات — المرئية والمخفية
+    const containerIds = [
+        'orphanMembersContainer',
+        'specialMembersContainer',
+        'familyMembersContainer'
+    ];
+
+    // الحاوية الصحيحة حسب النوع المختار
+    const containerMap = {
+        orphan:  'orphanMembersContainer',
+        special: 'specialMembersContainer',
+        family:  'familyMembersContainer',
+    };
+
+    const containerId = containerMap[selectedType];
+    const container   = document.getElementById(containerId);
+    if (!container) return members;
+
+    container.querySelectorAll('.member-card').forEach(card => {
+        const m = {};
+        card.querySelectorAll('[data-member-field]').forEach(el => {
+            m[el.dataset.memberField] = el.value.trim() || '';
+        });
+        if (m.id_number) members.push(m);
+    });
+
+    return members;
+}
+</script>
+{% endblock %}

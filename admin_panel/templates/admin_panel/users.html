@@ -1,0 +1,192 @@
+{% extends 'admin_panel/base.html' %}
+{% block title %}المستخدمون{% endblock %}
+{% block page_title %}👥 إدارة المستخدمين{% endblock %}
+
+{% block content %}
+
+<div class="dash-alert" id="pageAlert"></div>
+
+<!-- فلاتر -->
+<div class="filter-pills mb-3">
+    <a href="?type=all"     class="filter-pill {% if user_type == 'all'     %}active{% endif %}">الكل ({{ counts.all }})</a>
+    <a href="?type=sponsor" class="filter-pill {% if user_type == 'sponsor' %}active{% endif %}">🤝 كفلاء ({{ counts.sponsor }})</a>
+    <a href="?type=orphan"  class="filter-pill {% if user_type == 'orphan'  %}active{% endif %}">👦 أيتام ({{ counts.orphan }})</a>
+    <a href="?type=family"  class="filter-pill {% if user_type == 'family'  %}active{% endif %}">👨‍👩‍👧 أسر ({{ counts.family }})</a>
+    <a href="?type=special" class="filter-pill {% if user_type == 'special' %}active{% endif %}">♿ ذوو احتياجات ({{ counts.special }})</a>
+</div>
+
+<!-- بحث -->
+<div class="dash-card mb-3 fade-in" style="padding:14px 18px">
+    <form method="get" action="">
+        <input type="hidden" name="type" value="{{ user_type }}">
+        <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" name="q" value="{{ search }}" class="form-control"
+                   placeholder="ابحث بالاسم أو الهوية أو البريد...">
+        </div>
+    </form>
+</div>
+
+<!-- الجدول -->
+<div class="dash-card fade-in">
+    {% if users %}
+    <div style="overflow-x:auto">
+        <table class="dash-table">
+            <thead>
+                <tr>
+                    <th>المستخدم</th>
+                    <th>النوع</th>
+                    <th>البريد</th>
+                    <th>الجوال</th>
+                    <th>آخر دخول</th>
+                    <th>عدد الدخول</th>
+                    <th>الحالة</th>
+                    <th style="text-align:center">إجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr id="userRow_{{ u.pk }}">
+                    <td>
+                        <div style="font-weight:700;color:var(--text,#1a1a2e)">{{ u.get_full_name }}</div>
+                        {% if u.id_number %}
+                        <div style="font-size:0.72rem;color:var(--text-muted,#9ca3af)">{{ u.id_number }}</div>
+                        {% else %}
+                        <div style="font-size:0.72rem;color:var(--text-muted,#9ca3af)">@{{ u.username }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge
+                            {% if u.user_type == 'sponsor'  %}badge-blue
+                            {% elif u.user_type == 'orphan' %}badge-green
+                            {% elif u.user_type == 'family' %}badge-orange
+                            {% else %}badge-purple{% endif %}">
+                            {{ u.get_user_type_display }}
+                        </span>
+                    </td>
+                    <td style="font-size:0.82rem">{{ u.email }}</td>
+                    <td style="font-size:0.8rem;direction:ltr;text-align:right">
+                        {{ u.phone_country }}{{ u.phone }}
+                    </td>
+                    <td style="font-size:0.78rem;color:var(--text-muted,#9ca3af)">
+                        {% if u.last_seen %}{{ u.last_seen|timesince }} مضت{% else %}—{% endif %}
+                    </td>
+                    <td style="text-align:center">
+                        <span style="font-weight:700;color:var(--adm)">{{ u.login_count }}</span>
+                    </td>
+                    <td>
+                        <span id="statusBadge_{{ u.pk }}"
+                              class="badge {% if u.is_active %}badge-green{% else %}badge-red{% endif %}">
+                            {% if u.is_active %}نشط{% else %}موقوف{% endif %}
+                        </span>
+                    </td>
+                    <td style="text-align:center">
+                        <div style="display:flex;gap:5px;justify-content:center">
+                            <button id="toggleBtn_{{ u.pk }}"
+                                    class="btn-{% if u.is_active %}danger{% else %}success{% endif %}"
+                                    style="padding:4px 10px;font-size:0.75rem"
+                                    onclick="toggleUser('{{ u.pk }}', {{ u.is_active|lower }})">
+                                {% if u.is_active %}🔴 تعطيل{% else %}🟢 تفعيل{% endif %}
+                            </button>
+                            <button class="btn-danger"
+                                    style="padding:4px 10px;font-size:0.75rem;background:rgba(229,62,62,0.1);color:#c53030;box-shadow:none"
+                                    onclick="deleteUser('{{ u.pk }}', '{{ u.get_full_name|escapejs }}')">
+                                🗑️
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">👥</div>
+        <div class="empty-text">لا يوجد مستخدمون في هذه الفئة</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal حذف -->
+<div id="deleteModal"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;
+            align-items:center;justify-content:center">
+    <div style="background:var(--bg-card,#fff);border-radius:18px;padding:28px;
+                width:90%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+        <h5 style="font-weight:700;color:#c53030;margin-bottom:8px">⚠️ تأكيد الحذف</h5>
+        <p style="font-size:0.88rem;color:var(--text-muted,#6b7280);margin-bottom:16px">
+            هل تريد حذف حساب <strong id="deleteName"></strong> نهائياً؟
+            لا يمكن التراجع عن هذا الإجراء.
+        </p>
+        <input type="hidden" id="deleteUserId">
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+            <button class="btn-sec" onclick="closeDeleteModal()">إلغاء</button>
+            <button class="btn-danger" onclick="confirmDelete()">🗑️ حذف نهائي</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function toggleUser(userId, isActive) {
+    const btn   = document.getElementById('toggleBtn_' + userId);
+    const badge = document.getElementById('statusBadge_' + userId);
+    btn.disabled = true;
+
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', getCsrf());
+    fd.append('user_id', userId);
+
+    const r    = await fetch('/admin-panel/users/toggle/', { method:'POST', body:fd });
+    const data = await r.json();
+
+    if (data.status === 'success') {
+        const active = data.is_active;
+        btn.className   = active ? 'btn-danger' : 'btn-success';
+        btn.style.cssText = 'padding:4px 10px;font-size:0.75rem';
+        btn.textContent = active ? '🔴 تعطيل' : '🟢 تفعيل';
+        badge.className = active ? 'badge badge-green' : 'badge badge-red';
+        badge.textContent = active ? 'نشط' : 'موقوف';
+        showAlert('pageAlert', 'success', data.message);
+    } else {
+        showAlert('pageAlert', 'error', data.message);
+    }
+    btn.disabled = false;
+}
+
+let pendingDeleteId = null;
+
+function deleteUser(userId, userName) {
+    pendingDeleteId = userId;
+    document.getElementById('deleteName').textContent = userName;
+    document.getElementById('deleteModal').style.display = 'flex';
+}
+
+function closeDeleteModal() {
+    pendingDeleteId = null;
+    document.getElementById('deleteModal').style.display = 'none';
+}
+
+async function confirmDelete() {
+    if (!pendingDeleteId) return;
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', getCsrf());
+    fd.append('user_id', pendingDeleteId);
+
+    const r    = await fetch('/admin-panel/users/delete/', { method:'POST', body:fd });
+    const data = await r.json();
+    closeDeleteModal();
+
+    if (data.status === 'success') {
+        const row = document.getElementById('userRow_' + pendingDeleteId);
+        if (row) { row.style.opacity = '0'; setTimeout(() => row.remove(), 400); }
+        showAlert('pageAlert', 'success', data.message);
+    } else {
+        showAlert('pageAlert', 'error', data.message);
+    }
+}
+</script>
+{% endblock %}

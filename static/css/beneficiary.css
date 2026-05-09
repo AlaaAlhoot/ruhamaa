@@ -1,0 +1,12 @@
+body { font-family: 'Cairo', sans-serif; background-color: #f4f6f9; }
+
+.sidebar .nav-link { padding: 0.5rem 0.75rem; font-size: 0.9rem; transition: background 0.2s; }
+.sidebar .nav-link:hover { background-color: rgba(255,255,255,0.1); border-radius: 8px; }
+
+.card { transition: box-shadow 0.2s; }
+.card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.07) !important; }
+
+@media (max-width: 768px) {
+    .sidebar { display: none !important; }
+    main     { padding: 1rem !important; }
+}

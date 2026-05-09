@@ -1,0 +1,762 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}رُحَمَاء{% endblock %} — جمعية نسائم فلسطين</title>
+
+    <link rel="stylesheet" href="{% static 'bootstrap/bootstrap.rtl.min.css' %}">
+    <link rel="stylesheet" href="{% static 'fonts/cairo/cairo.css' %}">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="{% static 'css/phone_picker.css' %}">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@700&display=swap" rel="stylesheet">
+<style>
+    .brand-title {
+    font-family: 'Noto Nastaliq Urdu', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #0a3d20, #1a7a4a, #2ecc71);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    background-size: 200% 200%;
+    animation: gradientShift 4s ease infinite;
+    filter: drop-shadow(0 2px 8px rgba(26,122,74,0.2));
+    line-height: 1.4;
+    letter-spacing: 2px;
+}
+body.dark-mode .brand-title {
+    background: linear-gradient(135deg, #4ade80, #2ecc71, #86efac);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+@keyframes gradientShift {
+    0%   { background-position: 0% 50%;   }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%;   }
+}
+    /* ==================== Navbar Buttons ==================== */
+    .btn-nav-login {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 18px;
+        border-radius: 30px;
+        font-family: 'Tajawal', sans-serif;
+        font-size: 0.88rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border: 1.5px solid rgba(26,122,74,0.35);
+        color: #1a7a4a;
+        background: transparent;
+        position: relative;
+        overflow: hidden;
+    }
+    body.dark-mode .btn-nav-login {
+        border-color: rgba(46,204,113,0.3);
+        color: #4ade80;
+    }
+    .btn-nav-login:hover {
+        background: rgba(26,122,74,0.08);
+        border-color: #1a7a4a;
+        color: #1a7a4a;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(26,122,74,0.12);
+    }
+    body.dark-mode .btn-nav-login:hover {
+        background: rgba(46,204,113,0.1);
+        color: #4ade80;
+        box-shadow: 0 4px 12px rgba(46,204,113,0.1);
+    }
+
+    .btn-nav-register {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 20px;
+        border-radius: 30px;
+        font-family: 'Tajawal', sans-serif;
+        font-size: 0.88rem;
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        background: linear-gradient(135deg, #0f5232, #2ecc71);
+        color: #fff !important;
+        border: none;
+        box-shadow: 0 4px 14px rgba(26,122,74,0.30);
+        position: relative;
+        overflow: hidden;
+    }
+    .btn-nav-register::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, #2ecc71, #0f5232);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    .btn-nav-register:hover::after { opacity: 1; }
+    .btn-nav-register span { position: relative; z-index: 1; }
+    .btn-nav-register:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 22px rgba(26,122,74,0.4);
+        color: #fff;
+    }
+
+    /* زر لوحة التحكم */
+    .btn-nav-dashboard {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 20px;
+        border-radius: 30px;
+        font-family: 'Tajawal', sans-serif;
+        font-size: 0.88rem;
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        background: linear-gradient(135deg, #1a3a6b, #2563eb);
+        color: #fff !important;
+        border: none;
+        box-shadow: 0 4px 14px rgba(37,99,235,0.25);
+        position: relative;
+        overflow: hidden;
+    }
+    .btn-nav-dashboard::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, #2563eb, #1a3a6b);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    .btn-nav-dashboard span { position: relative; z-index: 1; }
+    .btn-nav-dashboard:hover::after { opacity: 1; }
+    .btn-nav-dashboard:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 22px rgba(37,99,235,0.35);
+        color: #fff;
+    }
+
+    /* زر الخروج */
+    .btn-nav-logout {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 30px;
+        font-family: 'Tajawal', sans-serif;
+        font-size: 0.88rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border: 1.5px solid rgba(229,62,62,0.3);
+        color: #c53030;
+        background: transparent;
+    }
+    body.dark-mode .btn-nav-logout {
+        border-color: rgba(229,62,62,0.25);
+        color: #fc8181;
+    }
+    .btn-nav-logout:hover {
+        background: rgba(229,62,62,0.08);
+        border-color: #c53030;
+        color: #c53030;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(229,62,62,0.12);
+    }
+    body.dark-mode .btn-nav-logout:hover {
+        color: #fc8181;
+        border-color: #fc8181;
+    }
+
+    /* ==================== Dark Toggle ==================== */
+/* ==================== Dark Toggle ==================== */
+#darkToggle {
+    width: 52px;
+    height: 28px;
+    border-radius: 50px;
+    border: 1.5px solid rgba(26,122,74,0.25);
+    background: #d1fae5;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.4s ease, border-color 0.4s ease;
+    padding: 0;
+    flex-shrink: 0;
+    box-shadow: inset 0 1px 4px rgba(0,0,0,0.1);
+}
+body.dark-mode #darkToggle {
+    background: #1a3d24;
+    border-color: rgba(46,204,113,0.3);
+    box-shadow: inset 0 1px 4px rgba(0,0,0,0.3);
+}
+#darkToggle:hover {
+    box-shadow: inset 0 1px 4px rgba(0,0,0,0.1),
+                0 0 0 3px rgba(26,122,74,0.12);
+}
+body.dark-mode #darkToggle:hover {
+    box-shadow: inset 0 1px 4px rgba(0,0,0,0.3),
+                0 0 0 3px rgba(46,204,113,0.12);
+}
+
+/* الدائرة تحمل الأيقونة */
+.toggle-thumb {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1),
+                box-shadow 0.3s ease;
+    z-index: 2;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    line-height: 1;
+}
+.toggle-thumb::after {
+    content: '☀️';
+    transition: opacity 0.3s ease;
+}
+body.dark-mode .toggle-thumb {
+    transform: translateX(-24px);
+    background: #1a3d24;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+body.dark-mode .toggle-thumb::after {
+    content: '🌙';
+}
+#darkToggle:hover .toggle-thumb {
+    box-shadow: 0 3px 10px rgba(0,0,0,0.22);
+}
+    /* ==================== Footer ==================== */
+    footer {
+        background: #040a05 !important;
+        padding: 0;
+        border-top: 1px solid rgba(46,204,113,0.07);
+        font-family: 'Tajawal', sans-serif;
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* توهج خلفي زخرفي */
+    footer::before {
+        content: '';
+        position: absolute;
+        top: -120px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 600px;
+        height: 300px;
+        background: radial-gradient(ellipse, rgba(26,122,74,0.06) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+    .footer-top {
+        padding: 60px 0 44px;
+        border-bottom: 1px solid rgba(46,204,113,0.05);
+        position: relative;
+    }
+
+    .footer-brand-block { margin-bottom: 22px; }
+
+    .footer-logo {
+        filter: drop-shadow(0 4px 14px rgba(46,204,113,0.2));
+        margin-bottom: 12px;
+        transition: filter 0.3s ease;
+    }
+    .footer-logo:hover {
+        filter: drop-shadow(0 6px 20px rgba(46,204,113,0.35));
+    }
+
+    .footer-brand-name {
+        font-family: 'Amiri', serif;
+        font-size: 1.9rem;
+        color: #4ade80;
+        margin-bottom: 3px;
+        line-height: 1;
+        letter-spacing: 1px;
+    }
+    .footer-brand-sub {
+        color: #2e5c3e;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+    }
+
+    .footer-about-text {
+        color: #3d6b50;
+        font-size: 0.87rem;
+        line-height: 1.9;
+        max-width: 290px;
+        margin-bottom: 22px;
+        text-align: justify;
+    }
+
+    /* أيقونات التواصل */
+    .footer-social {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .footer-social-link {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: rgba(46,204,113,0.05);
+        border: 1px solid rgba(46,204,113,0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #3d6b50;
+        text-decoration: none;
+        transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+        position: relative;
+        overflow: hidden;
+    }
+    .footer-social-link::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: rgba(46,204,113,0.1);
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    .footer-social-link:hover::after { opacity: 1; }
+    .footer-social-link:hover {
+        border-color: rgba(46,204,113,0.35);
+        color: #4ade80;
+        transform: translateY(-4px) scale(1.05);
+        box-shadow: 0 8px 20px rgba(46,204,113,0.15);
+    }
+
+    /* عناوين أعمدة الفوتر */
+    .footer-col-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #2ecc71;
+        letter-spacing: 2.5px;
+        text-transform: uppercase;
+        margin-bottom: 20px;
+        position: relative;
+        padding-bottom: 12px;
+    }
+    .footer-col-title::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 24px;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #2ecc71);
+        border-radius: 2px;
+        transition: width 0.3s ease;
+    }
+    .footer-col-title:hover::after { width: 48px; }
+
+    /* عناصر المعلومات */
+    .footer-info-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        color: #3d6b50;
+        font-size: 0.85rem;
+        line-height: 1.75;
+        margin-bottom: 12px;
+        transition: color 0.2s;
+    }
+    .footer-info-item a {
+        color: #3d6b50;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+    .footer-info-item a:hover { color: #4ade80; }
+    .footer-info-icon {
+        font-size: 1rem;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+
+    /* جدول أوقات العمل */
+    .footer-hours-table {
+        width: 100%;
+        font-size: 0.82rem;
+        border-collapse: separate;
+        border-spacing: 0 4px;
+    }
+    .footer-hours-table tr td {
+        padding: 4px 0;
+        color: #3d6b50;
+    }
+    .footer-hours-table tr td:first-child {
+        color: #2e5c3e;
+        padding-left: 10px;
+        min-width: 80px;
+    }
+    .footer-hours-open {
+        color: #2ecc71 !important;
+        font-weight: 600;
+    }
+    .footer-hours-closed {
+        color: #6b3d3d !important;
+    }
+
+    /* الجزء السفلي */
+    .footer-bottom {
+        padding: 18px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        position: relative;
+    }
+    .footer-copy-text {
+        color: #1e3d28;
+        font-size: 0.77rem;
+        letter-spacing: 0.3px;
+    }
+    .footer-dev-credit {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.77rem;
+        color: #1e3d28;
+        flex-wrap: wrap;
+    }
+    .footer-dev-name {
+        color: #4ade80;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+    }
+    .footer-dev-heart {
+        display: inline-block;
+        animation: heartBeat 1.4s ease-in-out infinite;
+    }
+    @keyframes heartBeat {
+        0%,100% { transform: scale(1);    }
+        14%      { transform: scale(1.25); }
+        28%      { transform: scale(1);    }
+        42%      { transform: scale(1.15); }
+        56%      { transform: scale(1);    }
+    }
+
+    .footer-dev-links {
+        display: flex;
+        gap: 6px;
+    }
+    .footer-dev-link {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: rgba(46,204,113,0.04);
+        border: 1px solid rgba(46,204,113,0.08);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+        color: #2e5c3e;
+    }
+    .footer-dev-link:hover {
+        background: rgba(46,204,113,0.12);
+        border-color: rgba(46,204,113,0.25);
+        color: #4ade80;
+        transform: translateY(-3px) scale(1.1);
+        box-shadow: 0 4px 12px rgba(46,204,113,0.15);
+    }
+
+    /* ==================== Responsive ==================== */
+    @media (max-width: 768px) {
+        .footer-bottom {
+            flex-direction: column;
+            text-align: center;
+        }
+        .footer-dev-credit { justify-content: center; }
+        .footer-top { padding: 40px 0 30px; }
+        .footer-about-text { max-width: 100%; }
+        .footer-col-title::after { right: 50%; transform: translateX(50%); }
+        #darkToggle { width: 56px; height: 26px; }
+        .toggle-thumb { width: 18px; height: 18px; top: 2px; right: 2px; }
+        body.dark-mode .toggle-thumb { transform: translateX(-28px); }
+    }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body class="{% block body_class %}{% endblock %}">
+
+<!-- ==================== Navbar ==================== -->
+<nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container">
+
+<a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'main:home' %}">
+    <img src="{% static 'images/logo.png' %}" height="42" alt="رُحَمَاء">
+    <span class="brand-title">رُحَمَاء</span>
+</a>
+
+        <button class="navbar-toggler border-0"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#navMenu"
+                aria-controls="navMenu"
+                aria-expanded="false"
+                aria-label="تبديل التنقل">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navMenu">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}"
+                       href="{% url 'main:home' %}">
+                        الرئيسية
+                    </a>
+                </li>
+            </ul>
+
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+<button id="darkToggle" onclick="toggleDark()" title="تبديل الوضع">
+    <span class="toggle-thumb"></span>
+</button>
+
+                {% if user.is_authenticated %}
+                    {# زر لوحة التحكم حسب نوع المستخدم #}
+                    {% if user.is_staff or user.is_superuser %}
+                        <a href="/admin-panel/dashboard/" class="btn-nav-dashboard">
+                            <span>🛡️</span> لوحة التحكم
+                        </a>
+                    {% elif user.user_type == 'sponsor' %}
+                        <a href="/sponsor/dashboard/" class="btn-nav-dashboard">
+                            <span>🏠</span> لوحتي
+                        </a>
+                    {% else %}
+                        <a href="/beneficiary/dashboard/" class="btn-nav-dashboard">
+                            <span>🏠</span> لوحتي
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'main:logout' %}" class="btn-nav-logout">
+                        <span>🚪</span> خروج
+                    </a>
+                {% else %}
+                    <a href="{% url 'main:login' %}" class="btn-nav-login">
+                        <span>🔑</span> دخول
+                    </a>
+                    <a href="{% url 'main:register' %}" class="btn-nav-register">
+                        <span>✨</span> تسجيل
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- ==================== Messages ==================== -->
+{% if messages %}
+<div class="container mt-2">
+    {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags }} alert-dismissible fade show rounded-3" role="alert">
+        {{ msg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="إغلاق"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- ==================== Content ==================== -->
+{% block content %}{% endblock %}
+
+<!-- ==================== Footer ==================== -->
+<footer>
+    <div class="container">
+        <div class="footer-top">
+            <div class="row g-4">
+
+                <!-- العمود 1: الهوية -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="footer-brand-block">
+                        <img src="{% static 'images/logo.png' %}" height="52" alt="رُحَمَاء" class="footer-logo">
+                        <div class="footer-brand-name">رُحَمَاء</div>
+                        <div class="footer-brand-sub">جمعية نسائم فلسطين الخيرية</div>
+                    </div>
+                    <p class="footer-about-text">
+                        منصة إنسانية رقمية تُعنى بتوثيق أحوال الأيتام والأسر المحتاجة وذوي الاحتياجات الخاصة
+                        في قطاع غزة، وربطهم بالكفلاء الكرام لبناء مستقبل آمن ومستدام.
+                    </p>
+                    <div class="footer-social">
+                        <a href="https://wa.me/970567517504"
+                           target="_blank" rel="noopener"
+                           class="footer-social-link"
+                           title="واتساب الجمعية">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                            </svg>
+                        </a>
+                        <a href="https://www.facebook.com/share/1HS4cGKgsX/"
+                           target="_blank" rel="noopener"
+                           class="footer-social-link"
+                           title="فيسبوك">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                            </svg>
+                        </a>
+                        <a href="https://www.youtube.com/@%D8%AC%D9%85%D8%B9%D9%8A%D8%A9_%D8%AA%D9%86%D9%85%D9%88%D9%8A%D8%A9_%D8%AE%D9%8A%D8%B1%D9%8A%D8%A9_%D8%A7%D8%BA%D8%A7%D8%AB%D9%8A%D8%A9"
+                           target="_blank" rel="noopener"
+                           class="footer-social-link"
+                           title="يوتيوب">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- العمود 2: معلومات التواصل -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="footer-col-title">معلومات التواصل</div>
+                    {% if footer_address %}
+                    <div class="footer-info-item">
+                        <span class="footer-info-icon">📍</span>
+                        <span>{{ footer_address }}</span>
+                    </div>
+                    {% else %}
+                    <div class="footer-info-item">
+                        <span class="footer-info-icon">📍</span>
+                        <span>قطاع غزة — فلسطين</span>
+                    </div>
+                    {% endif %}
+                    <div class="footer-info-item">
+                        <span class="footer-info-icon">📱</span>
+                    <a href="https://wa.me/970567517504"
+   style="color:#4a7a5e;text-decoration:none;direction:ltr;display:inline-block;unicode-bidi:embed"
+   target="_blank">+970 567 517 504</a>
+                    </div>
+                    <div class="footer-info-item">
+                        <span class="footer-info-icon">🌐</span>
+                        <a href="https://www.nasaeem-palestine.com/"
+                           style="color:#4a7a5e;text-decoration:none"
+                           target="_blank">www.nasaeem-palestine.com</a>
+                    </div>
+                </div>
+
+                <!-- العمود 3: أوقات العمل -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="footer-col-title">أوقات العمل</div>
+                    {% if footer_hours %}
+                    <div class="footer-info-item" style="white-space:pre-line">
+                        <span class="footer-info-icon">🕐</span>
+                        <span>{{ footer_hours }}</span>
+                    </div>
+                    {% else %}
+                    <table class="footer-hours-table">
+                        <tr>
+                            <td>الأحد – الخميس</td>
+                            <td class="footer-hours-open">9:00 ص – 3:00 م</td>
+                        </tr>
+                        <tr>
+                            <td>الجمعة</td>
+                            <td style="color:#e53e3e">مغلق</td>
+                        </tr>
+                        <tr>
+                            <td>السبت</td>
+                            <td class="footer-hours-open">9:00 ص – 1:00 م</td>
+                        </tr>
+                    </table>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+            <div class="footer-copy-text">
+                © {% now "Y" %} جمعية نسائم فلسطين الخيرية. جميع الحقوق محفوظة.
+            </div>
+            <div class="footer-dev-credit">
+                <span>طُوِّر بكل</span>
+                <span>❤️</span>
+                <span>بواسطة <strong style="color:#4ade80">علاء عماد الحوت</strong></span>
+                <div class="footer-dev-links">
+                    <a href="https://wa.me/972598964850"
+                       target="_blank" rel="noopener"
+                       class="footer-dev-link"
+                       title="واتساب المطوّر">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                        </svg>
+                    </a>
+                    <a href="https://github.com/AlaaAlhoot"
+                       target="_blank" rel="noopener"
+                       class="footer-dev-link"
+                       title="GitHub">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- ==================== Scripts ==================== -->
+<script src="{% static 'bootstrap/bootstrap.bundle.min.js' %}"></script>
+<script src="https://unpkg.com/libphonenumber-js@1.11.4/bundle/libphonenumber-min.js"></script>
+<script src="{% static 'js/phone_picker.js' %}"></script>
+<script src="{% static 'js/main.js' %}"></script>
+
+{% block extra_js %}{% endblock %}
+
+<script>
+    // ==================== Dark Mode ====================
+    function toggleDark() {
+        document.body.classList.toggle('dark-mode');
+        localStorage.setItem('dark', document.body.classList.contains('dark-mode') ? '1' : '0');
+    }
+    if (localStorage.getItem('dark') === '1') {
+        document.body.classList.add('dark-mode');
+    }
+
+    // ==================== Phone Picker Init ====================
+    document.addEventListener('DOMContentLoaded', function() {
+
+        // فورم التواصل
+        if (document.getElementById('contactPhoneContainer')) {
+            PhonePicker.init({
+                containerId: 'contactPhoneContainer',
+                inputId:     'contactPhoneInput',
+                dialId:      'contactDial',
+                codeId:      'contactCode',
+                errorId:     'errContactPhone',
+                hintId:      'hintContactPhone',
+                defaultCode: 'PS',
+            });
+        }
+
+        // فورم التسجيل
+        if (document.getElementById('regPhoneContainer')) {
+            PhonePicker.init({
+                containerId: 'regPhoneContainer',
+                inputId:     'regPhoneInput',
+                dialId:      'regDial',
+                codeId:      'regCode',
+                errorId:     'errRegPhone',
+                hintId:      'hintRegPhone',
+                defaultCode: 'PS',
+            });
+        }
+
+    });
+</script>
+
+</body>
+</html>

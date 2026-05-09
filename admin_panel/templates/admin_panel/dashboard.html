@@ -1,0 +1,888 @@
+{% extends 'admin_panel/base.html' %}
+{% block title %}لوحة التحكم{% endblock %}
+{% block page_title %}📊 لوحة التحكم{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ═══════════════════════════════════
+   تغليف اللوحة
+═══════════════════════════════════ */
+.db-wrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+.db-wrapper * { box-sizing: border-box; }
+
+/* ═══════════════════════════════════
+   CSS Variables — ألوان التمييز فقط
+   (ألوان الخلفية/النص/الحدود تأتي من base.html)
+═══════════════════════════════════ */
+:root {
+  --db-green:   var(--green);
+  --db-green2:  #2d9e60;
+  --db-blue:    #3b82f6;
+  --db-purple:  #8b5cf6;
+  --db-teal:    #14b8a6;
+  --db-orange:  #f97316;
+  --db-amber:   #f59e0b;
+  --db-red:     #ef4444;
+  --db-radius:  13px;
+  --db-tr:      all .25s ease;
+}
+
+/* ═══════════════════════════════════
+   Alert Banner
+═══════════════════════════════════ */
+.db-alert {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+  background: #fef9c3; border: 1px solid #fbbf24;
+  border-radius: 10px; padding: 12px 16px;
+  margin-bottom: 18px; font-size: .85rem;
+  font-weight: 700; color: #78350f;
+  width: 100%;
+}
+body.dark-mode .db-alert {
+  background: rgba(251,191,36,.08);
+  border-color: rgba(251,191,36,.25);
+  color: #fcd34d;
+}
+.db-alert-close {
+  margin-inline-start: auto; background: none; border: none;
+  cursor: pointer; font-size: 1rem; color: inherit; opacity: .6;
+}
+
+/* ═══════════════════════════════════
+   Hero Box
+═══════════════════════════════════ */
+.db-hero {
+  background: var(--bg-c);
+  border-radius: var(--db-radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--sh-sm);
+  overflow: hidden;
+  margin-bottom: 20px;
+  width: 100%;
+}
+.db-hero-head {
+  background: linear-gradient(135deg, var(--green), #2d9e60);
+  color: #fff; padding: 12px 20px;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+  font-weight: 700; font-size: .9rem;
+}
+.db-refresh-btn {
+  margin-inline-start: auto;
+  background: rgba(255,255,255,.2); border: none; color: #fff;
+  border-radius: 8px; padding: 5px 13px; font-size: .78rem;
+  font-family: 'Cairo', sans-serif; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; gap: 5px;
+}
+.db-counter-lbl {
+  font-size: .7rem; color: rgba(255,255,255,.75);
+  background: rgba(255,255,255,.12);
+  border-radius: 20px; padding: 2px 9px;
+}
+
+.db-hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 576px) { .db-hero-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 992px) { .db-hero-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.db-hero-col {
+  padding: 20px 18px;
+  border-bottom: 1px solid var(--border);
+  border-inline-end: 1px solid var(--border);
+}
+@media (min-width: 992px) {
+  .db-hero-col:last-child { border-inline-end: none; }
+  .db-hero-col { border-bottom: none; }
+}
+
+.db-hero-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; margin-bottom: 8px;
+}
+.db-hero-val {
+  font-size: 1.8rem; font-weight: 900; line-height: 1;
+  font-family: 'Cairo', sans-serif; margin-bottom: 5px;
+}
+.db-hero-lbl {
+  font-size: .8rem; color: var(--muted); font-weight: 600; margin-bottom: 8px;
+}
+.db-sub-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.db-sub-chip {
+  font-size: .7rem; padding: 2px 8px; border-radius: 20px;
+  background: var(--bg); border: 1px solid var(--border);
+  color: var(--text); font-weight: 600;
+}
+.db-new-badge {
+  display: inline-block; font-size: .68rem; font-weight: 800;
+  background: rgba(16,185,129,.15); color: #059669;
+  padding: 2px 8px; border-radius: 20px; margin-top: 6px;
+}
+body.dark-mode .db-new-badge {
+  background: rgba(16,185,129,.12); color: #34d399;
+}
+
+/* ═══════════════════════════════════
+   Progress Bar
+═══════════════════════════════════ */
+.db-prog-wrap {
+  background: var(--border); border-radius: 99px;
+  height: 5px; overflow: hidden; margin: 8px 0 3px;
+  width: 100%;
+}
+.db-prog-fill {
+  height: 100%; border-radius: 99px;
+  transition: width 1s cubic-bezier(.4,0,.2,1);
+}
+
+/* ═══════════════════════════════════
+   Section Label
+═══════════════════════════════════ */
+.db-section-lbl {
+  font-size: .75rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: .05em;
+  color: var(--muted); margin: 15px 0 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+.db-section-lbl::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+/* ═══════════════════════════════════
+   KPI Grid
+═══════════════════════════════════ */
+.db-kpis-wrapper {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 15px;
+  margin-bottom: 25px;
+  width: 100%;
+}
+@media (min-width: 576px) { .db-kpis-wrapper { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 992px) { .db-kpis-wrapper { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1200px) { .db-kpis-wrapper { grid-template-columns: repeat(4, 1fr); } }
+
+.db-kpi {
+  background: var(--bg-c);
+  border-radius: var(--db-radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--sh-sm);
+  padding: 15px; position: relative; overflow: hidden;
+  height: 100%;
+}
+.db-kpi-stripe {
+  position: absolute; top: 0; right: 0;
+  width: 3px; height: 100%;
+  border-radius: 0 var(--db-radius) var(--db-radius) 0;
+}
+[dir="rtl"] .db-kpi-stripe { right: auto; left: 0; border-radius: var(--db-radius) 0 0 var(--db-radius); }
+
+.db-kpi-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.db-kpi-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+  flex-shrink: 0;
+}
+.db-kpi-val {
+  font-size: 1.5rem; font-weight: 900; line-height: 1.1;
+  font-family: 'Cairo', sans-serif;
+  word-break: break-word;
+}
+.db-kpi-lbl { font-size: .75rem; color: var(--muted); font-weight: 600; margin-top: 2px; }
+.db-kpi-foot { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 5px; }
+
+/* ═══════════════════════════════════
+   Badges — مع دعم كامل للوضع الليلي
+═══════════════════════════════════ */
+.db-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: .68rem; font-weight: 800;
+  padding: 2px 8px; border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* Light Mode */
+.db-g  { background: #d1fae5; color: #065f46; }
+.db-a  { background: #fef3c7; color: #92400e; }
+.db-r  { background: #fee2e2; color: #991b1b; }
+.db-b  { background: #dbeafe; color: #1e40af; }
+.db-p  { background: #ede9fe; color: #5b21b6; }
+.db-gr { background: #f3f4f6; color: #374151; }
+
+/* Dark Mode */
+body.dark-mode .db-g  { background: rgba(16,185,129,.15); color: #34d399; }
+body.dark-mode .db-a  { background: rgba(245,158,11,.15);  color: #fbbf24; }
+body.dark-mode .db-r  { background: rgba(239,68,68,.15);   color: #f87171; }
+body.dark-mode .db-b  { background: rgba(59,130,246,.15);  color: #60a5fa; }
+body.dark-mode .db-p  { background: rgba(139,92,246,.15);  color: #a78bfa; }
+body.dark-mode .db-gr { background: rgba(255,255,255,.07); color: var(--muted); }
+
+/* ═══════════════════════════════════
+   Chart Card
+═══════════════════════════════════ */
+.db-chart-card {
+  background: var(--bg-c);
+  border-radius: var(--db-radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--sh-sm);
+  padding: 15px; height: 100%;
+  width: 100%;
+}
+.db-chart-title {
+  font-size: .84rem; font-weight: 700;
+  color: var(--text); margin-bottom: 14px;
+}
+.db-chart-h {
+  position: relative; width: 100%;
+  display: flex; align-items: center; justify-content: center;
+}
+.db-chart-h canvas { max-width: 100% !important; }
+
+.db-legend {
+  display: flex; justify-content: center;
+  flex-wrap: wrap; gap: 10px; margin-top: 10px;
+}
+.db-legend span {
+  font-size: .7rem; color: var(--muted); display: flex; align-items: center; gap: 4px;
+}
+
+/* ═══════════════════════════════════
+   Tabs Wrap
+═══════════════════════════════════ */
+.db-tabs-wrap {
+  background: var(--bg-c);
+  border-radius: var(--db-radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--sh-sm);
+  overflow: hidden;
+  width: 100%;
+}
+.db-tabs-nav {
+  display: flex;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.db-tab-btn {
+  padding: 12px 15px; border: none; background: none;
+  color: var(--muted); font-size: .8rem; font-weight: 700;
+  font-family: 'Cairo', sans-serif;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  flex-grow: 1; text-align: center;
+  transition: var(--tr);
+}
+.db-tab-btn.active {
+  color: var(--green);
+  border-bottom-color: var(--green);
+  background: var(--bg-c);
+}
+.db-tab-panel { display: none; }
+.db-tab-panel.active { display: block; }
+.db-tab-head {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+}
+.db-tab-title { font-size: .85rem; font-weight: 700; color: var(--text); }
+.db-view-all {
+  font-size: .75rem; padding: 5px 12px; border-radius: 7px;
+  border: 1px solid var(--border); background: var(--bg);
+  color: var(--muted); text-decoration: none; font-weight: 700;
+  transition: var(--tr);
+}
+.db-view-all:hover { color: var(--adm); border-color: var(--adm); }
+
+/* ═══════════════════════════════════
+   Data Cards
+═══════════════════════════════════ */
+.db-data-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 15px;
+  padding: 15px;
+  background: var(--bg);
+}
+@media (min-width: 768px)  { .db-data-cards { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1200px) { .db-data-cards { grid-template-columns: repeat(3, 1fr); } }
+
+.db-data-card {
+  background: var(--bg-c);
+  border: 1px solid var(--border);
+  border-radius: var(--db-radius);
+  padding: 15px;
+  display: flex; flex-direction: column; gap: 10px;
+  box-shadow: var(--sh-sm);
+}
+.db-data-card-header {
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px;
+  border-bottom: 1px dashed var(--border); padding-bottom: 10px; margin-bottom: 5px;
+}
+.db-data-row {
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px;
+  font-size: 0.8rem;
+}
+.db-data-label { color: var(--muted); font-weight: 700; }
+.db-data-actions {
+  display: flex; gap: 10px; margin-top: auto; padding-top: 12px;
+}
+.db-data-btn {
+  flex: 1; padding: 8px; text-align: center; border-radius: 8px;
+  border: none; cursor: pointer; font-weight: bold; font-size: 0.78rem;
+  font-family: 'Cairo', sans-serif; transition: var(--tr);
+}
+
+/* Light Mode */
+.db-btn-approve { background: #d1fae5; color: #065f46; }
+.db-btn-reject  { background: #fee2e2; color: #991b1b; }
+
+/* Dark Mode */
+body.dark-mode .db-btn-approve { background: rgba(16,185,129,.15); color: #34d399; }
+body.dark-mode .db-btn-reject  { background: rgba(239,68,68,.15);  color: #f87171; }
+
+.db-empty { text-align: center; padding: 30px 20px; color: var(--muted); font-size: .85rem; }
+
+/* ═══════════════════════════════════
+   Toasts
+═══════════════════════════════════ */
+.db-toasts {
+  position: fixed; bottom: 20px; left: 20px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 7px; pointer-events: none;
+}
+[dir="rtl"] .db-toasts { left: auto; right: 20px; }
+.db-toast {
+  display: flex; align-items: center; gap: 9px;
+  background: var(--bg-c); border: 1px solid var(--border);
+  border-radius: 9px; padding: 10px 15px;
+  font-size: .8rem; font-weight: 700; color: var(--text);
+  box-shadow: var(--sh-md);
+  pointer-events: all;
+}
+.db-toast.ok  { border-inline-start: 4px solid #10b981; }
+.db-toast.err { border-inline-start: 4px solid #ef4444; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3 px-2 db-wrapper">
+
+  {% if pending_count > 0 or pending_receipts > 0 %}
+  <div class="db-alert">
+    <span>⚠️</span>
+    {% if pending_count > 0 %}<span><strong>{{ pending_count }}</strong> طلب تسجيل بانتظار الموافقة</span>{% endif %}
+    {% if pending_count > 0 and pending_receipts > 0 %}<span>|</span>{% endif %}
+    {% if pending_receipts > 0 %}<span><strong>{{ pending_receipts }}</strong> وصل مالي بانتظار المراجعة</span>{% endif %}
+    <button class="db-alert-close" onclick="this.closest('.db-alert').remove()">✕</button>
+  </div>
+  {% endif %}
+
+  <div class="db-hero">
+    <div class="db-hero-head">
+      <span>📊</span><span>نظرة عامة شاملة</span>
+      <span class="db-counter-lbl" id="dbCounterLbl">تحديث تلقائي</span>
+      <button class="db-refresh-btn" id="dbRefreshBtn" onclick="dbRefresh()">🔄 تحديث</button>
+    </div>
+
+    <div class="db-hero-grid">
+      <div class="db-hero-col">
+        <div class="db-hero-icon" style="background:rgba(59,130,246,.1)">👥</div>
+        <div class="db-hero-val" style="color:var(--db-blue)" data-stat="total_bene" data-count="{{ total_bene }}">0</div>
+        <div class="db-hero-lbl">إجمالي المستفيدين</div>
+        <div class="db-sub-row">
+          <span class="db-sub-chip">🧒 {{ total_orphans }} يتيم</span>
+          <span class="db-sub-chip">♿ {{ total_specials }} ذوي احتياجات</span>
+          <span class="db-sub-chip">👨‍👩‍👧 {{ total_families }} أسرة</span>
+        </div>
+      </div>
+
+      <div class="db-hero-col">
+        <div class="db-hero-icon" style="background:rgba(16,185,129,.1)">💚</div>
+        <div class="db-hero-val" style="color:#059669" data-stat="sponsored" data-count="{{ sponsored }}">0</div>
+        <div class="db-hero-lbl">المكفولون</div>
+        <div class="db-prog-wrap">
+          <div class="db-prog-fill" style="background:#059669;width:0%" data-stat-pct="sponsored_pct" data-width="{{ sponsored_pct }}"></div>
+        </div>
+        <div style="font-size:.7rem;color:var(--db-muted)"><span data-stat="sponsored_pct">{{ sponsored_pct }}</span>% من الإجمالي</div>
+      </div>
+
+      <div class="db-hero-col">
+        <div class="db-hero-icon" style="background:rgba(245,158,11,.1)">⏳</div>
+        <div class="db-hero-val" style="color:#d97706" data-stat="unsponsored" data-count="{{ unsponsored }}">0</div>
+        <div class="db-hero-lbl">غير المكفولين</div>
+        <div class="db-prog-wrap">
+          <div class="db-prog-fill" style="background:#f59e0b;width:0%" data-stat-pct="unsponsored_pct" data-width="{{ unsponsored_pct }}"></div>
+        </div>
+        <div style="font-size:.7rem;color:var(--db-muted)"><span data-stat="unsponsored_pct">{{ unsponsored_pct }}</span>% بحاجة إلى كافل</div>
+      </div>
+
+      <div class="db-hero-col">
+        <div class="db-hero-icon" style="background:rgba(26,107,60,.1)">🤝</div>
+        <div class="db-hero-val" style="color:var(--db-green)" data-stat="total_sponsors" data-count="{{ total_sponsors }}">0</div>
+        <div class="db-hero-lbl">الكفلاء النشطون</div>
+        {% if new_sponsors_this_month > 0 %}
+        <span class="db-new-badge">+{{ new_sponsors_this_month }} هذا الشهر</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <p class="db-section-lbl">إحصائيات تفصيلية</p>
+  <div class="db-kpis-wrapper">
+
+    <div class="db-kpi">
+      <div class="db-kpi-stripe" style="background:var(--db-blue)"></div>
+      <div class="db-kpi-top">
+        <div>
+          <div class="db-kpi-val" style="color:var(--db-blue)" data-stat="total_orphans" data-count="{{ total_orphans }}">0</div>
+          <div class="db-kpi-lbl">الأيتام</div>
+        </div>
+        <div class="db-kpi-icon" style="background:rgba(59,130,246,.1)">🧒</div>
+      </div>
+      <div class="db-kpi-foot">
+        <span class="db-badge db-g">✅ {{ orphan_sponsored }} مكفول</span>
+        <span class="db-badge db-a">⏳ {{ orphan_unsponsored }} غير مكفول</span>
+      </div>
+    </div>
+
+    <div class="db-kpi">
+      <div class="db-kpi-stripe" style="background:var(--db-purple)"></div>
+      <div class="db-kpi-top">
+        <div>
+          <div class="db-kpi-val" style="color:var(--db-purple)" data-stat="total_specials" data-count="{{ total_specials }}">0</div>
+          <div class="db-kpi-lbl">ذوو الاحتياجات</div>
+        </div>
+        <div class="db-kpi-icon" style="background:rgba(139,92,246,.1)">♿</div>
+      </div>
+      <div class="db-kpi-foot">
+        <span class="db-badge db-g">✅ {{ special_sponsored }}</span>
+        <span class="db-badge db-a">⏳ {{ special_unsponsored }}</span>
+      </div>
+    </div>
+
+    <div class="db-kpi">
+      <div class="db-kpi-stripe" style="background:var(--db-teal)"></div>
+      <div class="db-kpi-top">
+        <div>
+          <div class="db-kpi-val" style="color:var(--db-teal)" data-stat="total_families" data-count="{{ total_families }}">0</div>
+          <div class="db-kpi-lbl">الأسر</div>
+        </div>
+        <div class="db-kpi-icon" style="background:rgba(20,184,166,.1)">👨‍👩‍👧</div>
+      </div>
+      <div class="db-kpi-foot">
+        <span class="db-badge db-g">✅ {{ family_sponsored }}</span>
+        <span class="db-badge db-a">⏳ {{ family_unsponsored }}</span>
+      </div>
+    </div>
+
+    <div class="db-kpi">
+      <div class="db-kpi-stripe" style="background:var(--db-green)"></div>
+      <div class="db-kpi-top">
+        <div>
+          <div class="db-kpi-val" style="color:var(--db-green)" data-stat="total_sponsors" data-count="{{ total_sponsors }}">0</div>
+          <div class="db-kpi-lbl">الكفلاء النشطون</div>
+        </div>
+        <div class="db-kpi-icon" style="background:rgba(26,107,60,.1)">🤝</div>
+      </div>
+      <div class="db-kpi-foot">
+        <a href="{% url 'admin_panel:sponsors' %}" class="db-badge db-b">عرض الكل</a>
+      </div>
+    </div>
+
+    <div class="db-kpi">
+      <div class="db-kpi-stripe" style="background:var(--db-orange)"></div>
+      <div class="db-kpi-top">
+        <div>
+          <div class="db-kpi-val" style="color:var(--db-orange)" data-stat="total_admins" data-count="{{ total_admins }}">0</div>
+          <div class="db-kpi-lbl">المسؤولون (أدمن)</div>
+        </div>
+        <div class="db-kpi-icon" style="background:rgba(249,115,22,.1)">🛡️</div>
+      </div>
+    </div>
+
+    <div class="db-kpi">
+      <div class="db-kpi-stripe" style="background:var(--db-red)"></div>
+      <div class="db-kpi-top">
+        <div>
+          <div class="db-kpi-val" style="color:var(--db-red)" data-stat="pending_count" data-count="{{ pending_count }}">0</div>
+          <div class="db-kpi-lbl">طلبات الانتظار</div>
+        </div>
+        <div class="db-kpi-icon" style="background:rgba(239,68,68,.1)">📋</div>
+      </div>
+      <div class="db-kpi-foot">
+        <a href="{% url 'admin_panel:requests' %}" class="db-badge db-r">مراجعة الطلبات</a>
+      </div>
+    </div>
+
+    <div class="db-kpi">
+      <div class="db-kpi-stripe" style="background:var(--db-amber)"></div>
+      <div class="db-kpi-top">
+        <div>
+          <div class="db-kpi-val" style="color:#b45309" data-stat="pending_receipts" data-count="{{ pending_receipts }}">0</div>
+          <div class="db-kpi-lbl">وصولات معلّقة</div>
+        </div>
+        <div class="db-kpi-icon" style="background:rgba(245,158,11,.1)">💳</div>
+      </div>
+      <div class="db-kpi-foot">
+        <span class="db-badge db-g">✅ {{ approved_count }}</span>
+        <span class="db-badge db-r">❌ {{ rejected_receipts }}</span>
+      </div>
+    </div>
+
+    <div class="db-kpi">
+      <div class="db-kpi-stripe" style="background:var(--db-green2)"></div>
+      <div class="db-kpi-top">
+        <div>
+          <div class="db-kpi-val" style="color:var(--db-green2);font-size:1.3rem">{{ total_paid_shekel|floatformat:0 }} ₪</div>
+          <div class="db-kpi-lbl">إجمالي المدفوعات</div>
+        </div>
+        <div class="db-kpi-icon" style="background:rgba(45,158,96,.1)">💰</div>
+      </div>
+      <div class="db-kpi-foot">
+        <span class="db-badge db-g">$ {{ total_paid_dollar|floatformat:0 }}</span>
+      </div>
+    </div>
+
+    <div class="db-kpi">
+      <div class="db-kpi-stripe" style="background:var(--db-blue)"></div>
+      <div class="db-kpi-top">
+        <div>
+          <div class="db-kpi-val" style="color:var(--db-blue)" data-stat="unread_messages" data-count="{{ unread_messages }}">0</div>
+          <div class="db-kpi-lbl">رسائل غير مقروءة</div>
+        </div>
+        <div class="db-kpi-icon" style="background:rgba(59,130,246,.1)">✉️</div>
+      </div>
+    </div>
+
+    <div class="db-kpi">
+      <div class="db-kpi-stripe" style="background:var(--db-teal)"></div>
+      <div class="db-kpi-top">
+        <div>
+          <div class="db-kpi-val" style="color:var(--db-teal)" data-stat="active_announcements" data-count="{{ active_announcements }}">0</div>
+          <div class="db-kpi-lbl">إعلانات نشطة</div>
+        </div>
+        <div class="db-kpi-icon" style="background:rgba(20,184,166,.1)">📢</div>
+      </div>
+    </div>
+
+    <div class="db-kpi">
+      <div class="db-kpi-stripe" style="background:var(--db-purple)"></div>
+      <div class="db-kpi-top">
+        <div>
+          <div class="db-kpi-val" style="color:var(--db-purple)" data-stat="notif_count" data-count="{{ notif_count }}">0</div>
+          <div class="db-kpi-lbl">إشعارات غير مقروءة</div>
+        </div>
+        <div class="db-kpi-icon" style="background:rgba(139,92,246,.1)">🔔</div>
+      </div>
+    </div>
+
+    <div class="db-kpi">
+      <div class="db-kpi-stripe" style="background:var(--db-orange)"></div>
+      <div class="db-kpi-top">
+        <div>
+          <div class="db-kpi-val" style="color:var(--db-orange);font-size:1.4rem" id="dbRateVal">
+            {% if rates %}{{ rates.USD_TO_ILS }}{% else %}—{% endif %}
+          </div>
+          <div class="db-kpi-lbl">دولار / شيقل</div>
+        </div>
+        <div class="db-kpi-icon" style="background:rgba(249,115,22,.1)">💱</div>
+      </div>
+    </div>
+
+  </div><p class="db-section-lbl">التحليل البياني</p>
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-md-6 col-xl-4">
+      <div class="db-chart-card">
+        <div class="db-chart-title">🍩 توزيع المستفيدين</div>
+        <div class="db-chart-h" style="height:200px"><canvas id="chartDonut"></canvas></div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-4">
+      <div class="db-chart-card">
+        <div class="db-chart-title">🥧 حالات الوصولات</div>
+        <div class="db-chart-h" style="height:200px"><canvas id="chartPie"></canvas></div>
+      </div>
+    </div>
+    <div class="col-12 col-md-12 col-xl-4">
+      <div class="db-chart-card">
+        <div class="db-chart-title">🎯 نسبة الكفالة الإجمالية</div>
+        <div class="db-chart-h" style="height:150px"><canvas id="chartGauge"></canvas></div>
+        <div style="text-align:center;margin-top:10px">
+          <strong style="font-size:2rem;color:var(--db-green)">{{ sponsored_pct }}%</strong>
+          <div style="font-size:.75rem;color:var(--db-muted)">مكفولون من الإجمالي</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-lg-6">
+      <div class="db-chart-card">
+        <div class="db-chart-title">📊 المدفوعات الشهرية (شيقل)</div>
+        <div class="db-chart-h" style="height:220px"><canvas id="chartBar"></canvas></div>
+      </div>
+    </div>
+    <div class="col-12 col-lg-6">
+      <div class="db-chart-card">
+        <div class="db-chart-title">📈 تسجيلات الكفلاء الجدد</div>
+        <div class="db-chart-h" style="height:220px"><canvas id="chartLine"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="db-section-lbl">البيانات التفصيلية</p>
+  <div class="db-tabs-wrap">
+
+    <div class="db-tabs-nav">
+      <button class="db-tab-btn active" data-tab="requests" onclick="dbTab('requests')">
+        📋 الطلبات {% if pending_count > 0 %}({{ pending_count }}){% endif %}
+      </button>
+      <button class="db-tab-btn" data-tab="receipts" onclick="dbTab('receipts')">
+        💳 الوصولات {% if pending_receipts > 0 %}({{ pending_receipts }}){% endif %}
+      </button>
+      <button class="db-tab-btn" data-tab="logs" onclick="dbTab('logs')">📜 الأنشطة</button>
+      <button class="db-tab-btn" data-tab="messages" onclick="dbTab('messages')">✉️ الرسائل</button>
+    </div>
+
+    <div class="db-tab-panel active" data-panel="requests">
+      <div class="db-tab-head">
+        <div class="db-tab-title">📋 أحدث طلبات التسجيل</div>
+        <a href="{% url 'admin_panel:requests' %}" class="db-view-all">عرض الكل ←</a>
+      </div>
+      {% if pending_users %}
+      <div class="db-data-cards">
+        {% for u in pending_users %}
+        <div class="db-data-card">
+          <div class="db-data-card-header">
+            <strong style="color:var(--db-text)">{{ u.get_full_name }}</strong>
+            <span class="db-badge {% if u.user_type == 'sponsor' %}db-g{% else %}db-b{% endif %}">{{ u.get_user_type_display }}</span>
+          </div>
+          <div class="db-data-row">
+            <span class="db-data-label">تاريخ الطلب:</span>
+            <span style="font-weight:700">{{ u.date_joined|date:"Y/m/d" }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="db-empty">✅ لا توجد طلبات معلّقة</div>
+      {% endif %}
+    </div>
+
+    <div class="db-tab-panel" data-panel="receipts">
+      <div class="db-tab-head">
+        <div class="db-tab-title">💳 وصولات بانتظار المراجعة</div>
+        <a href="{% url 'admin_panel:receipts' %}" class="db-view-all">عرض الكل ←</a>
+      </div>
+      {% if latest_receipts %}
+      <div class="db-data-cards">
+        {% for r in latest_receipts %}
+        <div class="db-data-card" id="rec-{{ r.pk }}">
+          <div class="db-data-card-header">
+            <strong>{{ r.sponsor.user.get_short_name }}</strong>
+            <span style="font-size:0.75rem; color:var(--db-muted)">{{ r.receipt_date }}</span>
+          </div>
+          <div class="db-data-row">
+            <span class="db-data-label">المبلغ (شيقل):</span>
+            <span style="color:var(--db-green2); font-weight:800">{{ r.amount_shekel }} ₪</span>
+          </div>
+          <div class="db-data-actions">
+            <button class="db-data-btn db-btn-approve" onclick="dbAction('approve-receipt','{{ r.pk }}','rec-{{ r.pk }}',this)">✅ قبول</button>
+            <button class="db-data-btn db-btn-reject" onclick="dbAction('reject-receipt','{{ r.pk }}','rec-{{ r.pk }}',this)">❌ رفض</button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="db-empty">✅ لا توجد وصولات معلّقة</div>
+      {% endif %}
+    </div>
+
+    <div class="db-tab-panel" data-panel="logs">
+      <div class="db-tab-head">
+        <div class="db-tab-title">📜 آخر الأنشطة</div>
+        <a href="{% url 'admin_panel:logs' %}" class="db-view-all">عرض الكل ←</a>
+      </div>
+      {% if latest_logs %}
+      <div class="db-data-cards">
+        {% for log in latest_logs %}
+        <div class="db-data-card">
+          <div class="db-data-card-header">
+            <strong>{{ log.user.get_short_name|default:"زائر" }}</strong>
+            <span class="db-badge db-p">{{ log.get_action_display }}</span>
+          </div>
+          <div class="db-data-row" style="flex-direction:column; align-items:start">
+            <span style="color:var(--db-muted); font-size:0.8rem;">{{ log.description }}</span>
+            <span style="font-size:0.75rem; margin-top:5px">⏱️ {{ log.created_at|timesince }} مضت</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="db-empty">📜 لا توجد أنشطة</div>
+      {% endif %}
+    </div>
+
+    <div class="db-tab-panel" data-panel="messages">
+      <div class="db-tab-head">
+        <div class="db-tab-title">✉️ آخر الرسائل</div>
+      </div>
+      {% if latest_messages %}
+      <div class="db-data-cards">
+        {% for msg in latest_messages %}
+        <div class="db-data-card">
+          <div class="db-data-card-header">
+            <div>من: <strong>{{ msg.sender.get_short_name }}</strong></div>
+            <span class="db-badge {% if msg.is_read %}db-g{% else %}db-b{% endif %}">
+              {% if msg.is_read %}مقروءة{% else %}جديدة{% endif %}
+            </span>
+          </div>
+          <div class="db-data-row">
+            <span style="color:var(--db-muted); font-size:0.8rem;">{{ msg.message|truncatewords:15 }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="db-empty">✉️ لا توجد رسائل</div>
+      {% endif %}
+    </div>
+
+  </div></div> <div class="db-toasts" id="dbToasts"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script>
+// ── إعداد البيانات للرسوم البيانية ──
+const DB_DATA = {
+  months:        {{ chart_months|safe|default:"[]" }},
+  shekel:        {{ chart_shekel|safe|default:"[]" }},
+  regs:          {{ chart_regs_sp|safe|default:"[]" }},
+  beneDist:      {{ chart_bene_dist|safe|default:"[0,0,0]" }},
+  receiptStatus: {{ chart_receipt_status|safe|default:"[0,0,0]" }},
+  sponsoredPct:  {{ sponsored_pct|default:"0" }},
+};
+
+Chart.defaults.font.family = "'Cairo', sans-serif";
+const borderColor = getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || '#e5e7eb';
+
+// الدونات (توزيع المستفيدين)
+new Chart('chartDonut', {
+  type: 'doughnut',
+  data: {
+    labels: ['أيتام','ذوو احتياجات','أسر'],
+    datasets: [{ data: DB_DATA.beneDist, backgroundColor: ['#3b82f6','#8b5cf6','#14b8a6'] }]
+  },
+  options: { responsive: true, maintainAspectRatio: false }
+});
+
+// الفطيرة (الوصولات)
+new Chart('chartPie', {
+  type: 'pie',
+  data: {
+    labels: ['موافق','انتظار','مرفوض'],
+    datasets: [{ data: DB_DATA.receiptStatus, backgroundColor: ['#10b981','#f59e0b','#ef4444'] }]
+  },
+  options: { responsive: true, maintainAspectRatio: false }
+});
+
+// العداد (Gauge)
+new Chart('chartGauge', {
+  type: 'doughnut',
+  data: {
+    datasets: [{ data: [DB_DATA.sponsoredPct, 100 - DB_DATA.sponsoredPct], backgroundColor: [getComputedStyle(document.documentElement).getPropertyValue('--green').trim()||'#1a7a4a', borderColor], borderWidth:0 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, circumference: 180, rotation: -90, cutout: '75%' }
+});
+
+// الأعمدة
+new Chart('chartBar', {
+  type: 'bar',
+  data: {
+    labels: DB_DATA.months,
+    datasets: [{ label: 'شيقل', data: DB_DATA.shekel, backgroundColor: '#1a6b3c' }]
+  },
+  options: { responsive: true, maintainAspectRatio: false }
+});
+
+// الخطوط
+new Chart('chartLine', {
+  type: 'line',
+  data: {
+    labels: DB_DATA.months,
+    datasets: [{ label: 'كفلاء جدد', data: DB_DATA.regs, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,.1)', fill: true }]
+  },
+  options: { responsive: true, maintainAspectRatio: false }
+});
+
+// ══ تبديل التبويبات ══
+function dbTab(name) {
+  document.querySelectorAll('.db-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.db-tab-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === name));
+}
+
+// ══ تحريك الأرقام ══
+function dbCountUp(el, target) {
+  let val = 0, inc = target / 30;
+  let timer = setInterval(() => {
+    val += inc;
+    if(val >= target) { clearInterval(timer); val = target; }
+    el.textContent = Math.round(val).toLocaleString('ar-SA');
+  }, 30);
+}
+document.querySelectorAll('[data-count]').forEach(el => dbCountUp(el, +el.dataset.count));
+
+// ══ ملء الشريط ══
+setTimeout(() => {
+  document.querySelectorAll('.db-prog-fill').forEach(el => { el.style.width = el.dataset.width + '%'; });
+}, 500);
+
+// ══ الإشعارات الجانبية ══
+function dbToast(msg, type='ok') {
+  const wrap = document.getElementById('dbToasts');
+  const t = document.createElement('div');
+  t.className = `db-toast ${type}`;
+  t.innerHTML = `<span>${type === 'ok' ? '✅' : '❌'}</span><span>${msg}</span>`;
+  wrap.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ══ الأزرار (قبول / رفض) ══
+function getCsrf() {
+  return document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='))?.split('=')[1] || '';
+}
+
+async function dbAction(action, id, rowId, btn) {
+  btn.disabled = true;
+  const url = action === 'approve-receipt' ? '/admin-panel/receipts/approve/' : '/admin-panel/receipts/reject/';
+  try {
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', getCsrf());
+    fd.append('receipt_id', id);
+    const res = await fetch(url, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.status === 'success') {
+      document.getElementById(rowId).style.display = 'none';
+      dbToast('تمت العملية بنجاح', 'ok');
+    } else {
+      dbToast(data.message || 'خطأ', 'err');
+      btn.disabled = false;
+    }
+  } catch (e) {
+    dbToast('تعذر الاتصال', 'err');
+    btn.disabled = false;
+  }
+}
+
+// ══ تحديث مباشر ══
+function dbRefresh() {
+  location.reload();
+}
+</script>
+{% endblock %}

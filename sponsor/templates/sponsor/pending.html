@@ -1,0 +1,19 @@
+{% extends 'sponsor/base.html' %}
+{% block title %}قيد المراجعة{% endblock %}
+{% block page_title %}⏳ حسابك قيد المراجعة{% endblock %}
+{% block content %}
+<div class="dash-card text-center fade-in"
+     style="padding:60px 24px;max-width:500px;margin:0 auto">
+    <div style="font-size:4rem;margin-bottom:20px">⏳</div>
+    <h4 style="font-weight:700;color:var(--text,#1a1a2e);margin-bottom:12px">
+        حسابك قيد المراجعة
+    </h4>
+    <p style="color:var(--text-muted,#6b7280);font-size:0.9rem;line-height:1.8;margin-bottom:24px">
+        شكراً لتسجيلك في منصة رُحَمَاء.<br>
+        الإدارة تراجع طلبك حالياً وستصلك رسالة على
+        <strong style="color:var(--blue)">{{ request.user.email }}</strong>
+        فور الموافقة.
+    </p>
+    <a href="{% url 'main:logout' %}" class="btn-secondary">🚪 تسجيل الخروج</a>
+</div>
+{% endblock %}

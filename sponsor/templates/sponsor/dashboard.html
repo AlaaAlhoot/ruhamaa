@@ -1,0 +1,504 @@
+{% extends 'sponsor/base.html' %}
+{% block title %}الرئيسية{% endblock %}
+{% block page_title %}👋 أهلاً {{ request.user.first_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+:root{
+    --green:#1a7a4a;--green-light:#2ecc71;--green-dim:rgba(26,122,74,0.1);
+    --blue:#2b6cb0;--blue-dim:rgba(43,108,176,0.1);
+    --red:#c53030;--red-dim:rgba(229,62,62,0.1);
+    --orange:#b45309;--orange-dim:rgba(245,158,11,0.1);
+    --purple:#7c3aed;--purple-dim:rgba(124,58,237,0.1);
+    --card-bg:#fff;--card-border:rgba(26,122,74,0.1);--input-bg:#f4f9f6;
+}
+body.dark-mode{--card-bg:#0d1a12;--card-border:rgba(46,204,113,0.1);--input-bg:#111e16;}
+
+/* ══ Layout ══ */
+.db-grid { display: grid; grid-template-columns: 1fr minmax(0, 300px); gap: 16px; align-items: start; min-width: 0; }
+@media(max-width:900px){.db-grid{grid-template-columns:1fr;}}
+
+/* ══ Alert ══ */
+.late-alert{background:linear-gradient(135deg,rgba(245,158,11,0.12),rgba(245,158,11,0.05));border:1.5px solid rgba(245,158,11,0.3);border-radius:14px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.late-alert-txt{flex:1;font-size:0.84rem;font-weight:700;color:var(--orange);min-width:0;}
+.late-alert-btn{padding:6px 14px;border-radius:50px;border:1.5px solid var(--orange);background:var(--orange-dim);color:var(--orange);font-family:'Tajawal',sans-serif;font-size:0.78rem;font-weight:700;text-decoration:none;white-space:nowrap;flex-shrink:0;}
+
+/* ══ Quote ══ */
+.quote-bar{background:linear-gradient(135deg,#1a7a4a,#2ecc71);border-radius:14px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:flex-start;gap:12px;position:relative;overflow:hidden;}
+.quote-bar::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Ccircle cx='30' cy='30' r='25' fill='rgba(255,255,255,0.04)'/%3E%3C/svg%3E") center/60px;pointer-events:none;}
+.quote-icon{font-size:1.6rem;flex-shrink:0;opacity:0.9;margin-top:2px;}
+.quote-type{font-size:0.62rem;font-weight:700;color:rgba(255,255,255,0.6);margin-bottom:3px;letter-spacing:0.5px;}
+.quote-txt{font-size:0.88rem;color:#fff;line-height:1.7;font-family:'Tajawal',sans-serif;}
+.quote-src{font-size:0.7rem;color:rgba(255,255,255,0.65);margin-top:5px;}
+
+/* ══ Welcome ══ */
+.welcome-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:16px;margin-bottom:16px;display:flex;align-items:center;gap:14px;}
+.wc-photo{width:64px;height:64px;border-radius:50%;border:3px solid var(--green);object-fit:cover;flex-shrink:0;}
+.wc-avatar{width:64px;height:64px;border-radius:50%;border:3px solid var(--green);background:linear-gradient(135deg,#1a7a4a,#2ecc71);display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700;color:#fff;flex-shrink:0;}
+.wc-info{flex:1;min-width:0;}
+.wc-name{font-size:0.96rem;font-weight:900;color:var(--text,#1a1a2e);margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+body.dark-mode .wc-name{color:#e8f5ee;}
+.wc-reg{font-size:0.7rem;color:#9ca3af;}
+.wc-dates{font-size:0.68rem;color:#9ca3af;margin-top:3px;display:flex;gap:10px;flex-wrap:wrap;}
+.wc-comp-bar{background:rgba(26,122,74,0.1);border-radius:50px;height:5px;overflow:hidden;margin-top:6px;}
+.wc-comp-fill{height:100%;border-radius:50px;background:linear-gradient(90deg,#1a7a4a,#2ecc71);transition:width 1s ease;}
+.wc-comp-lbl{display:flex;justify-content:space-between;font-size:0.66rem;color:#9ca3af;margin-bottom:3px;}
+.badges-wrap{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px;}
+.badge-item{display:flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:0.66rem;font-weight:700;background:var(--green-dim);}
+body.dark-mode .badge-item{background:rgba(46,204,113,0.1);}
+
+/* ══ Stats ══ */
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;}
+@media(min-width:576px){.stats-grid{grid-template-columns:repeat(4,1fr);}}
+.stat-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:14px;padding:12px;display:flex;align-items:center;gap:10px;transition:all 0.25s;}
+.stat-card:hover{transform:translateY(-2px);box-shadow:0 5px 16px rgba(26,122,74,0.1);}
+.sc-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
+.sc-val{font-size:1.2rem;font-weight:900;font-family:'Cairo',sans-serif;line-height:1.1;}
+.sc-lbl{font-size:0.65rem;color:#9ca3af;font-weight:600;margin-top:1px;}
+.sc-sub{font-size:0.6rem;color:#9ca3af;margin-top:1px;line-height:1.4;}
+.commit-bg{background:rgba(26,122,74,0.1);border-radius:50px;height:4px;overflow:hidden;margin-top:4px;}
+.commit-fill{height:100%;border-radius:50px;background:linear-gradient(90deg,#1a7a4a,#2ecc71);}
+
+/* ══ Section Card ══ */
+.sec-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:16px;margin-bottom:14px;}
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:6px;}
+.sec-title{font-size:0.88rem;font-weight:700;color:var(--text,#1a1a2e);}
+body.dark-mode .sec-title{color:#e8f5ee;}
+.sec-link{font-size:0.74rem;color:var(--green);text-decoration:none;font-weight:600;flex-shrink:0;}
+body.dark-mode .sec-link{color:#4ade80;}
+
+/* ══ Activity ══ */
+.act-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(26,122,74,0.06);}
+.act-item:last-child{border-bottom:none;padding-bottom:0;}
+.act-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:0.95rem;flex-shrink:0;}
+.act-body{flex:1;min-width:0;}
+.act-title{font-size:0.82rem;font-weight:700;color:var(--text,#1a1a2e);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+body.dark-mode .act-title{color:#e8f5ee;}
+.act-sub{font-size:0.68rem;color:#9ca3af;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.act-val{font-size:0.8rem;font-weight:700;flex-shrink:0;}
+.sb{padding:2px 9px;border-radius:20px;font-size:0.64rem;font-weight:700;display:inline-block;white-space:nowrap;}
+.sb-ok {background:var(--green-dim);color:var(--green);}
+.sb-rej{background:var(--red-dim);color:var(--red);}
+.sb-pnd{background:var(--orange-dim);color:var(--orange);}
+body.dark-mode .sb-ok{color:#4ade80;}
+
+/* ══ Bene ══ */
+.bene-list{display:flex;flex-direction:column;gap:7px;}
+.bene-item{display:flex;align-items:center;gap:9px;padding:9px 10px;background:var(--input-bg);border-radius:11px;}
+.bi-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#1a7a4a,#2ecc71);display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;color:#fff;flex-shrink:0;}
+.bi-name{font-size:0.82rem;font-weight:700;color:var(--text,#1a1a2e);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+body.dark-mode .bi-name{color:#e8f5ee;}
+.bi-meta{font-size:0.65rem;color:#9ca3af;}
+
+/* ══ Sponsor Stats (قسم جديد) ══ */
+.sponsor-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.ss-item{background:var(--input-bg);border-radius:11px;padding:10px;text-align:center;}
+.ss-val{font-size:1.1rem;font-weight:900;font-family:'Cairo',sans-serif;}
+.ss-lbl{font-size:0.62rem;color:#9ca3af;font-weight:600;margin-top:2px;}
+
+/* ══ Receipt Status ══ */
+.rec-status-grid{display:flex;gap:8px;}
+.rs-item{flex:1;border-radius:11px;padding:10px 6px;text-align:center;}
+.rs-val{font-size:1.2rem;font-weight:900;font-family:'Cairo',sans-serif;}
+.rs-lbl{font-size:0.62rem;color:#9ca3af;margin-top:2px;}
+
+/* ══ Impact ══ */
+.impact-wrap{text-align:center;padding:6px 0;}
+.impact-val{font-size:1.8rem;font-weight:900;color:var(--green);font-family:'Cairo',sans-serif;}
+body.dark-mode .impact-val{color:#4ade80;}
+
+/* ══ DYK ══ */
+.dyk-card{background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.14);border-radius:13px;padding:13px 14px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start;}
+.dyk-txt{font-size:0.82rem;color:var(--text,#1a1a2e);line-height:1.65;}
+body.dark-mode .dyk-txt{color:#e8f5ee;}
+
+/* ══ Month Compare ══ */
+.mc-up  {color:var(--green);font-size:0.68rem;font-weight:700;}
+.mc-down{color:var(--red);font-size:0.68rem;font-weight:700;}
+
+/* ══ Quick Actions ══ */
+.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.qa-btn{display:flex;align-items:center;gap:7px;padding:9px 12px;border-radius:11px;border:1.5px solid var(--card-border);background:var(--input-bg);color:var(--text,#1a1a2e);text-decoration:none;font-family:'Tajawal',sans-serif;font-size:0.8rem;font-weight:700;transition:all 0.2s;}
+body.dark-mode .qa-btn{color:#e8f5ee;}
+.qa-btn:hover{border-color:var(--green);color:var(--green);background:var(--green-dim);}
+body.dark-mode .qa-btn:hover{color:#4ade80;}
+
+/* ══ Share ══ */
+.share-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;border-radius:11px;border:1.5px solid rgba(26,122,74,0.2);background:var(--green-dim);color:var(--green);font-family:'Tajawal',sans-serif;font-size:0.8rem;font-weight:700;cursor:pointer;width:100%;margin-top:9px;transition:all 0.2s;}
+body.dark-mode .share-btn{color:#4ade80;}
+.share-btn:hover{background:rgba(26,122,74,0.18);}
+
+/* ══ Notif ══ */
+.notif-item{display:flex;gap:9px;padding:9px 0;border-bottom:1px solid rgba(26,122,74,0.06);}
+.notif-item:last-child{border-bottom:none;}
+.notif-item.unread{background:rgba(26,122,74,0.03);border-radius:9px;padding:9px;margin:-1px -3px;}
+.ni-icon{font-size:1rem;flex-shrink:0;margin-top:1px;}
+.ni-title{font-size:0.8rem;font-weight:700;color:var(--text,#1a1a2e);}
+body.dark-mode .ni-title{color:#e8f5ee;}
+.ni-msg{font-size:0.7rem;color:#9ca3af;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ni-time{font-size:0.62rem;color:#9ca3af;margin-top:1px;}
+
+/* ══ Ann ══ */
+.ann-item{background:var(--blue-dim);border:1px solid rgba(43,108,176,0.2);border-radius:10px;padding:9px 13px;margin-bottom:7px;display:flex;align-items:flex-start;gap:8px;font-size:0.82rem;color:var(--text,#1a1a2e);}
+body.dark-mode .ann-item{color:#e8f5ee;}
+.ann-item:last-child{margin-bottom:0;}
+
+/* ══ Rates ══ */
+.rates-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:14px;padding:12px 14px;margin-bottom:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.rate-item{display:flex;align-items:center;gap:5px;flex:1;min-width:120px;}
+.rate-flag{font-size:1.1rem;}
+.rate-val{font-size:0.88rem;font-weight:700;color:var(--text,#1a1a2e);}
+body.dark-mode .rate-val{color:#e8f5ee;}
+.rate-lbl{font-size:0.66rem;color:#9ca3af;}
+
+@media(max-width:480px){
+    .stats-grid{grid-template-columns:1fr 1fr;}
+    .qa-grid{grid-template-columns:1fr 1fr;}
+    .welcome-card{flex-direction:column;text-align:center;}
+    .wc-dates{justify-content:center;}
+    .badges-wrap{justify-content:center;}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══ تنبيه المتأخرة ══ -->
+{% if has_late %}
+<div class="late-alert fade-in">
+    <span style="font-size:1.3rem;flex-shrink:0">⚠️</span>
+    <div class="late-alert-txt">لديك {{ late_count }} دفعة متأخرة — يرجى المسارعة في التسوية</div>
+    <a href="{% url 'sponsor:wallet' %}" class="late-alert-btn">💳 رفع وصل</a>
+</div>
+{% endif %}
+
+<!-- ══ اقتباس يومي ══ -->
+<div class="quote-bar fade-in">
+    <div class="quote-icon">{% if quote.type == 'quran' %}📖{% else %}🌙{% endif %}</div>
+    <div style="flex:1;min-width:0">
+        <div class="quote-type">{% if quote.type == 'quran' %}آية قرآنية{% else %}حديث شريف{% endif %}</div>
+        <div class="quote-txt">{{ quote.text }}</div>
+        <div class="quote-src">— {{ quote.source }}</div>
+    </div>
+</div>
+
+<!-- ══ الإعلانات ══ -->
+{% if announcements %}
+<div class="fade-in" style="margin-bottom:14px">
+    {% for ann in announcements %}
+    <div class="ann-item">
+        <span>📢</span>
+        <div><strong>{{ ann.title }}</strong>{% if ann.content %} — {{ ann.content|truncatewords:15 }}{% endif %}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- ══ Grid الرئيسي ══ -->
+<div class="db-grid">
+
+<!-- ══ العمود الرئيسي ══ -->
+<div>
+
+    <!-- مؤشر الترحيب -->
+    <div class="welcome-card fade-in">
+        {% if profile.photo %}
+        <img src="{{ profile.photo.url }}" class="wc-photo" alt="صورة">
+        {% elif request.user.profile_image %}
+        <img src="{{ request.user.profile_image.url }}" class="wc-photo" alt="صورة">
+        {% else %}
+        <div class="wc-avatar">{{ request.user.first_name|slice:":1" }}{{ request.user.family_name|slice:":1" }}</div>
+        {% endif %}
+        <div class="wc-info">
+            <div class="wc-name">{{ request.user.get_full_name }}</div>
+            <div class="wc-reg">📋 {{ request.user.registration_number|default:"—" }}</div>
+            <div class="wc-dates">
+                <span>📅 {{ request.user.date_joined|date:"Y/m/d" }}</span>
+                <span>🕐 {{ request.user.last_login|date:"Y/m/d"|default:"—" }}</span>
+            </div>
+            <div class="wc-comp-lbl"><span>اكتمال الملف</span><span>{{ completion }}%</span></div>
+            <div class="wc-comp-bar"><div class="wc-comp-fill" style="width:{{ completion }}%"></div></div>
+            {% if badges %}
+            <div class="badges-wrap">
+                {% for b in badges %}
+                <span class="badge-item" style="color:{{ b.color }}">{{ b.icon }} {{ b.title }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- الإحصائيات -->
+    <div class="stats-grid fade-in">
+        <div class="stat-card">
+            <div class="sc-icon" style="background:var(--green-dim)">❤️</div>
+            <div>
+                <div class="sc-val" style="color:var(--green)">{{ my_total }}</div>
+                <div class="sc-lbl">مكفوليّ</div>
+                <div class="sc-sub">{{ my_orphans }}يتيم · {{ my_specials }}احتياج · {{ my_families }}أسرة</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="sc-icon" style="background:var(--blue-dim)">💵</div>
+            <div>
+                <div class="sc-val" style="color:var(--blue);font-size:1rem">{{ total_shekel }} ₪</div>
+                <div class="sc-lbl">إجمالي المدفوع</div>
+                <div class="sc-sub">${{ total_dollar }}</div>
+                {% if month_diff_pct != 0 %}
+                <div>
+                    {% if month_diff_pct > 0 %}
+                    <span class="mc-up">▲ {{ month_diff_pct }}% عن الشهر الماضي</span>
+                    {% else %}
+                    <span class="mc-down">▼ {{ month_diff_pct|slice:"1:" }}%</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="sc-icon" style="background:var(--green-dim)">🎯</div>
+            <div>
+                <div class="sc-val" style="color:var(--green)">{{ commitment_pct }}%</div>
+                <div class="sc-lbl">نسبة الالتزام</div>
+                <div class="commit-bg"><div class="commit-fill" style="width:{{ commitment_pct }}%"></div></div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="sc-icon" style="background:var(--orange-dim)">⏳</div>
+            <div>
+                <div class="sc-val" style="color:var(--orange)">{{ rec_pending }}</div>
+                <div class="sc-lbl">وصولات معلقة</div>
+                <div class="sc-sub">✅{{ rec_approved }} ❌{{ rec_rejected }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- المخطط -->
+    <div class="sec-card fade-in">
+        <div class="sec-hdr">
+            <div class="sec-title">📈 الدفعات — آخر 6 أشهر (₪)</div>
+            <a href="{% url 'sponsor:reports' %}" class="sec-link">التقارير ←</a>
+        </div>
+        <div id="chartWrap" style="min-height:160px"></div>
+    </div>
+
+    <!-- المكفولون -->
+    <div class="sec-card fade-in">
+        <div class="sec-hdr">
+            <div class="sec-title">❤️ مكفولوي</div>
+            <a href="{% url 'sponsor:sponsored' %}" class="sec-link">عرض الكل ←</a>
+        </div>
+        {% if benes_list %}
+        <div class="bene-list">
+            {% for b in benes_list %}
+            <div class="bene-item">
+                <div class="bi-avatar">{{ b.name|slice:":1" }}</div>
+                <div style="flex:1;min-width:0">
+                    <div class="bi-name">{{ b.name }}</div>
+                    <div class="bi-meta">{{ b.type }} · {{ b.city }} · آخر دفعة: {{ b.last_pay }}</div>
+                </div>
+                {% if b.is_late %}
+                <span class="sb sb-rej">⚠️ متأخر</span>
+                {% else %}
+                <span class="sb sb-ok">✅ منتظم</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align:center;padding:20px;color:#9ca3af;font-size:0.82rem">لا يوجد مكفولون حتى الآن</div>
+        {% endif %}
+        <a href="{% url 'sponsor:orphans' %}" class="share-btn">➕ كفالة مستفيد جديد</a>
+    </div>
+
+    <!-- ══ قسم جديد: ملخص الأثر الخيري ══ -->
+    <div class="sec-card fade-in">
+        <div class="sec-hdr">
+            <div class="sec-title">🌍 أثري الخيري</div>
+        </div>
+        <div class="sponsor-stats-grid">
+            <div class="ss-item">
+                <div class="ss-val" style="color:var(--green)">{{ my_total }}</div>
+                <div class="ss-lbl">مستفيد تحت كفالتي</div>
+            </div>
+            <div class="ss-item">
+                <div class="ss-val" style="color:var(--blue)">{{ paid_count }}</div>
+                <div class="ss-lbl">دفعة مسددة</div>
+            </div>
+            <div class="ss-item">
+                <div class="ss-val" style="color:var(--orange)">{{ this_month_ils }} ₪</div>
+                <div class="ss-lbl">المدفوع هذا الشهر</div>
+            </div>
+            <div class="ss-item">
+                <div class="ss-val" style="color:var(--purple)">{{ impact_pct }}%</div>
+                <div class="ss-lbl">مقارنة بمتوسط الكفلاء</div>
+            </div>
+        </div>
+        <div style="margin-top:10px">
+            <div style="font-size:0.68rem;color:#9ca3af;margin-bottom:4px">مستوى تأثيرك</div>
+            <div class="commit-bg" style="height:8px">
+                <div class="commit-fill" style="width:{{ impact_pct|floatformat:0 }}%;{% if impact_pct > 100 %}background:linear-gradient(90deg,#b45309,#f59e0b){% endif %}"></div>
+            </div>
+        </div>
+        <button class="share-btn" onclick="shareAchievements()">🎉 مشاركة إنجازاتي</button>
+    </div>
+
+</div>
+
+<!-- ══ العمود الجانبي ══ -->
+<div>
+
+    <!-- أسعار الصرف -->
+    {% if rates %}
+    <div class="rates-card fade-in">
+        {% if rates.usd %}<div class="rate-item"><span class="rate-flag">🇺🇸</span><div><div class="rate-val">{{ rates.usd }} ₪</div><div class="rate-lbl">الدولار</div></div></div>{% endif %}
+        {% if rates.euro %}<div class="rate-item"><span class="rate-flag">🇪🇺</span><div><div class="rate-val">{{ rates.euro }} ₪</div><div class="rate-lbl">اليورو</div></div></div>{% endif %}
+        {% if rates.jod %}<div class="rate-item"><span class="rate-flag">🇯🇴</span><div><div class="rate-val">{{ rates.jod }} ₪</div><div class="rate-lbl">الدينار</div></div></div>{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- آخر الأنشطة -->
+    <div class="sec-card fade-in">
+        <div class="sec-hdr"><div class="sec-title">🕐 آخر الأنشطة</div></div>
+
+        <div class="act-item">
+            <div class="act-icon" style="background:var(--green-dim)">📤</div>
+            <div class="act-body">
+                <div class="act-title">آخر وصل مرفوع</div>
+                <div class="act-sub">{% if last_receipt %}{{ last_receipt.receipt_date|default:"—" }} · {{ last_receipt.amount_shekel }} ₪{% else %}لا يوجد{% endif %}</div>
+            </div>
+            {% if last_receipt %}<span class="sb {% if last_receipt.status == 'موافق' %}sb-ok{% elif last_receipt.status == 'مرفوض' %}sb-rej{% else %}sb-pnd{% endif %}">{{ last_receipt.status }}</span>{% endif %}
+        </div>
+
+        <div class="act-item">
+            <div class="act-icon" style="background:var(--blue-dim)">💳</div>
+            <div class="act-body">
+                <div class="act-title">آخر دفعة مسددة</div>
+                <div class="act-sub">{% if last_payment %}{{ last_payment.date }} · {{ last_payment.beneficiary.get_full_name|default:"—" }}{% else %}لا يوجد{% endif %}</div>
+            </div>
+            {% if last_payment %}<span class="act-val" style="color:var(--green)">{{ last_payment.amount_ils }} ₪</span>{% endif %}
+        </div>
+
+        <div class="act-item">
+            <div class="act-icon" style="background:var(--purple-dim)">💬</div>
+            <div class="act-body">
+                <div class="act-title">آخر رسالة من الإدارة</div>
+                <div class="act-sub">{% if last_admin_msg %}{{ last_admin_msg.message|truncatechars:35 }}{% else %}لا توجد رسائل{% endif %}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- حالة الوصولات -->
+    <div class="sec-card fade-in">
+        <div class="sec-hdr">
+            <div class="sec-title">📋 حالة طلباتي</div>
+            <a href="{% url 'sponsor:wallet' %}" class="sec-link">عرض ←</a>
+        </div>
+        <div class="rec-status-grid">
+            <div class="rs-item" style="background:var(--green-dim)">
+                <div class="rs-val" style="color:var(--green)">{{ rec_approved }}</div>
+                <div class="rs-lbl">موافقة</div>
+            </div>
+            <div class="rs-item" style="background:var(--orange-dim)">
+                <div class="rs-val" style="color:var(--orange)">{{ rec_pending }}</div>
+                <div class="rs-lbl">انتظار</div>
+            </div>
+            <div class="rs-item" style="background:var(--red-dim)">
+                <div class="rs-val" style="color:var(--red)">{{ rec_rejected }}</div>
+                <div class="rs-lbl">مرفوضة</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- الإجراءات السريعة -->
+    <div class="sec-card fade-in">
+        <div class="sec-hdr"><div class="sec-title">⚡ إجراءات سريعة</div></div>
+        <div class="qa-grid">
+            <a href="{% url 'sponsor:wallet' %}"        class="qa-btn"><span>📤</span> رفع وصل</a>
+            <a href="{% url 'sponsor:messages' %}"      class="qa-btn"><span>💬</span> التواصل</a>
+            <a href="{% url 'sponsor:orphans' %}"       class="qa-btn"><span>❤️</span> فرص الكفالة</a>
+            <a href="{% url 'sponsor:reports' %}"       class="qa-btn"><span>📊</span> التقارير</a>
+            <a href="{% url 'sponsor:profile' %}"       class="qa-btn"><span>👤</span> ملفي</a>
+            <a href="{% url 'sponsor:notifications' %}" class="qa-btn"><span>🔔</span> الإشعارات</a>
+        </div>
+    </div>
+
+    <!-- هل تعلم؟ -->
+    <div class="dyk-card fade-in">
+        <div style="font-size:1.3rem;flex-shrink:0">💡</div>
+        <div>
+            <div style="font-size:0.68rem;font-weight:700;color:var(--purple,#7c3aed);margin-bottom:3px">هل تعلم؟</div>
+            <div class="dyk-txt">{{ did_know }}</div>
+        </div>
+    </div>
+
+    <!-- الإشعارات -->
+    <div class="sec-card fade-in">
+        <div class="sec-hdr">
+            <div class="sec-title">🔔 الإشعارات</div>
+            <a href="{% url 'sponsor:notifications' %}" class="sec-link">عرض الكل ←</a>
+        </div>
+        {% if notifications %}
+        {% for n in notifications %}
+        <div class="notif-item {% if not n.is_read %}unread{% endif %}">
+            <div class="ni-icon">
+                {% if n.ntype == 'RECEIPT_OK'   %}✅
+                {% elif n.ntype == 'RECEIPT_REJ' %}❌
+                {% elif n.ntype == 'NEW_MSG'     %}💬
+                {% elif n.ntype == 'PAYMENT_DUE' %}📅
+                {% else %}🔔{% endif %}
+            </div>
+            <div style="flex:1;min-width:0">
+                <div class="ni-title">{{ n.title }}</div>
+                <div class="ni-msg">{{ n.message|truncatechars:40 }}</div>
+                <div class="ni-time">{{ n.created_at|timesince }} مضت</div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div style="text-align:center;padding:16px;color:#9ca3af;font-size:0.8rem">لا توجد إشعارات</div>
+        {% endif %}
+    </div>
+
+</div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/3.45.1/apexcharts.min.js"></script>
+<script>
+const isDark   = () => document.body.classList.contains('dark-mode');
+const labels   = {{ chart_labels|safe }};
+const chartDat = {{ chart_data|safe }};
+
+const opts = {
+    chart:      { type:'area', height:160, fontFamily:'Tajawal,sans-serif', background:'transparent', toolbar:{show:false} },
+    theme:      { mode: isDark() ? 'dark' : 'light' },
+    series:     [{ name:'المدفوع (₪)', data: chartDat }],
+    xaxis:      { categories: labels, labels:{ style:{ colors:'#9ca3af', fontFamily:'Tajawal', fontSize:'11px' } } },
+    yaxis:      { labels:{ style:{ colors:'#9ca3af' } } },
+    colors:     ['#1a7a4a'],
+    fill:       { type:'gradient', gradient:{ shadeIntensity:1, opacityFrom:0.4, opacityTo:0.04 } },
+    stroke:     { curve:'smooth', width:2.5 },
+    grid:       { borderColor: isDark() ? 'rgba(46,204,113,0.07)' : 'rgba(26,122,74,0.07)' },
+    dataLabels: { enabled:false },
+    tooltip:    { theme: isDark() ? 'dark' : 'light' },
+    noData:     { text:'لا توجد بيانات', style:{ color:'#9ca3af', fontFamily:'Tajawal' } },
+};
+
+new ApexCharts(document.getElementById('chartWrap'), opts).render();
+
+function shareAchievements() {
+    const text = `🎉 أنا كافل في منصة رُحَمَاء\n❤️ أكفل {{ my_total }} مستفيد\n💰 أنفقت {{ total_shekel }} ₪\n🎯 نسبة التزامي {{ commitment_pct }}%\n\nانضم معنا في خدمة المحتاجين!`;
+    if (navigator.share) {
+        navigator.share({ title:'إنجازاتي في رُحَمَاء', text });
+    } else {
+        navigator.clipboard.writeText(text).then(() => alert('تم نسخ النص ✅'));
+    }
+}
+document.getElementById('menuBtn').addEventListener('click', () => {
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 1);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,682 @@
+{% extends 'sponsor/base.html' %}
+{% block title %}التقارير{% endblock %}
+{% block page_title %}📊 التقارير{% endblock %}
+
+{% block extra_css %}
+<style>
+:root{
+    --green:#1a7a4a;--green-light:#2ecc71;--green-dim:rgba(26,122,74,0.1);
+    --blue:#2b6cb0;--blue-dim:rgba(43,108,176,0.1);
+    --red:#c53030;--red-dim:rgba(229,62,62,0.1);
+    --orange:#b45309;--orange-dim:rgba(245,158,11,0.1);
+    --purple:#7c3aed;--purple-dim:rgba(124,58,237,0.1);
+    --card-bg:#fff;--card-border:rgba(26,122,74,0.1);--input-bg:#f4f9f6;
+}
+body.dark-mode{--card-bg:#0d1a12;--card-border:rgba(46,204,113,0.1);--input-bg:#111e16;}
+
+/* ══ Hero ══ */
+.rep-hero{background:linear-gradient(135deg,#1a7a4a,#2ecc71);border-radius:18px;padding:22px 26px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;position:relative;overflow:hidden;}
+.rep-hero::before{content:'📊';position:absolute;font-size:8rem;opacity:0.06;left:-10px;top:-20px;transform:rotate(-10deg);pointer-events:none;}
+.rh-title{font-size:1.1rem;font-weight:900;color:#fff;margin-bottom:4px;}
+.rh-sub{font-size:0.8rem;color:rgba(255,255,255,0.7);}
+.rh-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.rh-btn{padding:8px 16px;border-radius:50px;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.12);color:#fff;font-family:'Tajawal',sans-serif;font-size:0.82rem;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:6px;}
+.rh-btn:hover{background:rgba(255,255,255,0.22);}
+
+/* ══ Period ══ */
+.period-tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;}
+.pt-btn{padding:7px 14px;border-radius:50px;border:1.5px solid rgba(26,122,74,0.2);background:transparent;color:#6b7280;font-family:'Tajawal',sans-serif;font-size:0.8rem;font-weight:600;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.pt-btn:hover{border-color:var(--green);color:var(--green);}
+.pt-btn.active{background:linear-gradient(135deg,#1a7a4a,#2ecc71);color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(26,122,74,0.25);}
+
+/* ══ Stats Grid ══ */
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px,1fr)); gap:10px; margin-bottom:20px; min-width:0; }
+@media(max-width:1024px){.stats-grid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:576px){.stats-grid{grid-template-columns:repeat(2,1fr);}}
+
+.rs-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:14px;padding:14px 12px;text-align:center;transition:all 0.3s;position:relative;overflow:hidden;cursor:default;}
+.rs-card::after{content:'';position:absolute;bottom:0;left:0;width:100%;height:3px;background:linear-gradient(90deg,var(--c1,#1a7a4a),var(--c2,#2ecc71));transform:scaleX(0.3);transition:transform 0.3s;transform-origin:right;}
+.rs-card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(26,122,74,0.1);}
+.rs-card:hover::after{transform:scaleX(1);transform-origin:left;}
+.rs-icon{font-size:1.4rem;margin-bottom:6px;line-height:1;}
+.rs-val{font-size:1.3rem;font-weight:900;line-height:1;font-family:'Cairo',sans-serif;margin-bottom:3px;}
+.rs-lbl{font-size:0.66rem;color:#9ca3af;font-weight:600;line-height:1.3;}
+.rs-sub{font-size:0.62rem;color:#9ca3af;margin-top:3px;line-height:1.4;}
+
+/* Commit */
+.commit-bg{background:rgba(26,122,74,0.1);border-radius:50px;height:4px;overflow:hidden;margin-top:5px;}
+.commit-fill{height:100%;border-radius:50px;background:linear-gradient(90deg,#1a7a4a,#2ecc71);transition:width 1s ease;}
+
+/* ══ Section Header ══ */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+.sec-title{font-size:0.9rem;font-weight:700;color:var(--text,#1a1a2e);display:flex;align-items:center;gap:6px;}
+body.dark-mode .sec-title{color:#e8f5ee;}
+
+/* ══ Charts Grid ══ */
+.charts-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%,340px),1fr)); gap:14px; margin-bottom:20px; min-width:0; }
+@media(max-width:768px){.charts-grid{grid-template-columns:1fr;}}
+.chart-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:16px;}
+.chart-card-full{grid-column:span 2;}
+@media(max-width:768px){.chart-card-full{grid-column:span 1;}}
+
+/* ══ Payment Cards ══ */
+.pays-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;}
+@media(max-width:576px){.pays-grid{grid-template-columns:1fr;}}
+.pay-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:14px;padding:14px;transition:all 0.25s;position:relative;overflow:hidden;}
+.pay-card:hover{box-shadow:0 4px 16px rgba(26,122,74,0.1);transform:translateY(-1px);}
+.pay-card-paid  {border-right:4px solid var(--green);}
+.pay-card-late  {border-right:4px solid var(--red);}
+.pay-card-pending{border-right:4px solid var(--orange);}
+.pc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.pc-bene{font-size:0.88rem;font-weight:700;color:var(--text,#1a1a2e);}
+body.dark-mode .pc-bene{color:#e8f5ee;}
+.pc-badge{font-size:0.68rem;font-weight:700;padding:3px 10px;border-radius:20px;}
+.pb-paid   {background:var(--green-dim);color:var(--green);}
+.pb-late   {background:var(--red-dim);color:var(--red);}
+.pb-pending{background:var(--orange-dim);color:var(--orange);}
+.pc-amounts{display:flex;gap:10px;margin-bottom:8px;}
+.pc-amt{flex:1;background:var(--input-bg);border-radius:10px;padding:8px;text-align:center;}
+.pc-amt-val{font-size:0.96rem;font-weight:900;color:var(--green);}
+body.dark-mode .pc-amt-val{color:#4ade80;}
+.pc-amt-lbl{font-size:0.62rem;color:#9ca3af;font-weight:600;}
+.pc-meta{display:flex;gap:8px;flex-wrap:wrap;}
+.pc-meta-item{font-size:0.7rem;color:#9ca3af;display:flex;align-items:center;gap:3px;}
+
+/* ══ Bene Summary Cards ══ */
+.bene-sum-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}
+@media(max-width:576px){.bene-sum-grid{grid-template-columns:1fr;}}
+.bene-sum-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:14px;padding:14px;transition:all 0.25s;}
+.bene-sum-card:hover{box-shadow:0 4px 16px rgba(26,122,74,0.1);}
+.bsc-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.bsc-avatar{width:38px;height:38px;border-radius:10px;background:var(--green-dim);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
+.bsc-name{font-size:0.86rem;font-weight:700;color:var(--text,#1a1a2e);}
+body.dark-mode .bsc-name{color:#e8f5ee;}
+.bsc-type{font-size:0.68rem;color:#9ca3af;font-weight:600;}
+.bsc-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;}
+.bsc-stat{background:var(--input-bg);border-radius:8px;padding:6px;text-align:center;}
+.bsc-stat-val{font-size:0.88rem;font-weight:900;color:var(--green);}
+body.dark-mode .bsc-stat-val{color:#4ade80;}
+.bsc-stat-lbl{font-size:0.6rem;color:#9ca3af;font-weight:600;}
+.bsc-footer{display:flex;justify-content:space-between;font-size:0.7rem;color:#9ca3af;}
+
+/* ══ Receipt Cards ══ */
+.rec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;}
+@media(max-width:576px){.rec-grid{grid-template-columns:1fr;}}
+.rec-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:14px;padding:14px;transition:all 0.25s;}
+.rec-card:hover{box-shadow:0 4px 16px rgba(26,122,74,0.1);}
+.rc-approved{border-right:4px solid var(--green);}
+.rc-rejected{border-right:4px solid var(--red);}
+.rc-pending {border-right:4px solid var(--orange);}
+.rec-badge-ok  {background:var(--green-dim);color:var(--green);padding:3px 10px;border-radius:20px;font-size:0.68rem;font-weight:700;}
+.rec-badge-rej {background:var(--red-dim);color:var(--red);padding:3px 10px;border-radius:20px;font-size:0.68rem;font-weight:700;}
+.rec-badge-pnd {background:var(--orange-dim);color:var(--orange);padding:3px 10px;border-radius:20px;font-size:0.68rem;font-weight:700;}
+
+/* ══ Filters ══ */
+.tf-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.tf-sel{padding:7px 12px;border-radius:50px;border:1.5px solid rgba(26,122,74,0.18);background:var(--input-bg);color:var(--text,#1a1a2e);font-family:'Tajawal',sans-serif;font-size:0.8rem;transition:all 0.2s;}
+body.dark-mode .tf-sel{color:#e8f5ee;border-color:rgba(46,204,113,0.15);}
+.tf-sel:focus{border-color:var(--green);outline:none;}
+
+/* ══ Empty ══ */
+.empty-cards{text-align:center;padding:32px;color:#9ca3af;font-family:'Tajawal',sans-serif;}
+.empty-cards .ei{font-size:2.5rem;margin-bottom:8px;}
+.empty-cards .et{font-size:0.84rem;}
+
+/* ══ Skeleton ══ */
+.skel{background:linear-gradient(90deg,rgba(26,122,74,0.06) 25%,rgba(26,122,74,0.12) 50%,rgba(26,122,74,0.06) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:8px;}
+body.dark-mode .skel{background:linear-gradient(90deg,#111e16 25%,#1a2e1e 50%,#111e16 75%);background-size:200% 100%;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ══ Tabs ══ */
+.section-tabs{display:flex;gap:4px;margin-bottom:14px;background:var(--input-bg);padding:4px;border-radius:12px;width:fit-content;border:1px solid var(--card-border);flex-wrap:wrap;}
+.st-tab{padding:7px 16px;border-radius:9px;border:none;background:transparent;font-family:'Tajawal',sans-serif;font-size:0.82rem;font-weight:700;color:#6b7280;cursor:pointer;transition:all 0.2s;}
+.st-tab.active{background:linear-gradient(135deg,#1a7a4a,#2ecc71);color:#fff;box-shadow:0 3px 10px rgba(26,122,74,0.25);}
+
+/* ══ PDF Modal ══ */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:var(--card-bg);border-radius:20px;width:100%;max-width:400px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.18);animation:mIn 0.28s cubic-bezier(0.34,1.56,0.64,1) both;}
+@keyframes mIn{from{opacity:0;transform:scale(0.93)}to{opacity:1;transform:scale(1)}}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--card-border);}
+.modal-title{font-size:0.94rem;font-weight:700;color:var(--text,#1a1a2e);}
+body.dark-mode .modal-title{color:#e8f5ee;}
+.modal-close{width:30px;height:30px;border-radius:8px;border:none;background:var(--red-dim);color:var(--red);cursor:pointer;font-size:0.85rem;display:flex;align-items:center;justify-content:center;}
+.modal-body{padding:24px;text-align:center;}
+.modal-ftr{padding:12px 18px;border-top:1px solid var(--card-border);display:flex;gap:8px;justify-content:center;}
+.btn-green{background:linear-gradient(135deg,#1a7a4a,#2ecc71);color:#fff;border:none;padding:9px 20px;border-radius:11px;font-family:'Tajawal',sans-serif;font-size:0.84rem;font-weight:700;cursor:pointer;}
+.btn-sec  {background:var(--input-bg);color:#6b7280;border:1.5px solid rgba(26,122,74,0.15);padding:9px 20px;border-radius:11px;font-family:'Tajawal',sans-serif;font-size:0.84rem;font-weight:600;cursor:pointer;}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══ Hero ══ -->
+<div class="rep-hero fade-in">
+    <div>
+        <div class="rh-title">📊 مركز التقارير الشامل</div>
+        <div class="rh-sub">تحليل كامل لنشاطك الخيري — دفعات، وصولات، مكفولون</div>
+    </div>
+    <div class="rh-actions">
+        <button class="rh-btn" onclick="exportExcel()">📊 تصدير Excel</button>
+        <button class="rh-btn" onclick="exportPdf()">📄 تصدير PDF</button>
+    </div>
+</div>
+
+<!-- ══ فلتر الفترة ══ -->
+<div class="period-tabs fade-in">
+    <button class="pt-btn" id="pt-today"        onclick="setPeriod('today')">اليوم</button>
+    <button class="pt-btn" id="pt-week"         onclick="setPeriod('week')">أسبوع</button>
+    <button class="pt-btn" id="pt-month"        onclick="setPeriod('month')">شهر</button>
+    <button class="pt-btn" id="pt-six_months"   onclick="setPeriod('six_months')">6 أشهر</button>
+    <button class="pt-btn" id="pt-year"         onclick="setPeriod('year')">سنة</button>
+    <button class="pt-btn active" id="pt-all"   onclick="setPeriod('all')">الكل</button>
+</div>
+
+<!-- ══ الإحصائيات ══ -->
+<div class="stats-grid fade-in">
+    <div class="rs-card" style="--c1:#1a7a4a;--c2:#2ecc71">
+        <div class="rs-icon">❤️</div>
+        <div class="rs-val" style="color:var(--green)" id="s-total">{{ stats.total }}</div>
+        <div class="rs-lbl">المكفولون</div>
+        <div class="rs-sub" id="s-types">{{ stats.orphans }}يتيم · {{ stats.specials }}احتياج · {{ stats.families }}أسرة</div>
+    </div>
+    <div class="rs-card" style="--c1:#2b6cb0;--c2:#60a5fa">
+        <div class="rs-icon">💵</div>
+        <div class="rs-val" style="color:var(--blue)" id="s-ils">{{ stats.total_ils }}</div>
+        <div class="rs-lbl">المدفوع (₪)</div>
+        <div class="rs-sub" id="s-usd">${{ stats.total_usd }}</div>
+    </div>
+    <div class="rs-card" style="--c1:#1a7a4a;--c2:#2ecc71">
+        <div class="rs-icon">✅</div>
+        <div class="rs-val" style="color:var(--green)" id="s-paid">{{ stats.paid_count }}</div>
+        <div class="rs-lbl">دفعات مسددة</div>
+    </div>
+    <div class="rs-card" style="--c1:#c53030;--c2:#f87171">
+        <div class="rs-icon">⚠️</div>
+        <div class="rs-val" style="color:var(--red)" id="s-late">{{ stats.late_count }}</div>
+        <div class="rs-lbl">دفعات متأخرة</div>
+    </div>
+    <div class="rs-card" style="--c1:#1a7a4a;--c2:#2ecc71">
+        <div class="rs-icon">🎯</div>
+        <div class="rs-val" id="s-commit" style="color:var(--green)">{{ stats.commitment_pct }}%</div>
+        <div class="rs-lbl">نسبة الالتزام</div>
+        <div class="commit-bg"><div class="commit-fill" id="commitBar" style="width:{{ stats.commitment_pct }}%"></div></div>
+    </div>
+    <div class="rs-card" style="--c1:#7c3aed;--c2:#a78bfa">
+        <div class="rs-icon">📋</div>
+        <div class="rs-val" style="color:var(--purple)" id="s-rec">{{ stats.rec_total }}</div>
+        <div class="rs-lbl">الوصولات</div>
+        <div class="rs-sub" id="s-rec-detail">✅{{ stats.rec_approved }} ❌{{ stats.rec_rejected }} ⏳{{ stats.rec_pending }}</div>
+    </div>
+    <div class="rs-card" style="--c1:#b45309;--c2:#fbbf24">
+        <div class="rs-icon">💰</div>
+        <div class="rs-val" style="color:var(--orange)" id="s-rec-ils">{{ stats.rec_ils }}</div>
+        <div class="rs-lbl">وصولات موافقة (₪)</div>
+        <div class="rs-sub" id="s-rec-usd">${{ stats.rec_usd }}</div>
+    </div>
+    <div class="rs-card" style="--c1:#1a7a4a;--c2:#2ecc71">
+        <div class="rs-icon">📊</div>
+        <div class="rs-val" style="color:var(--green);font-size:1rem" id="s-avg">{{ stats.avg_ils }}</div>
+        <div class="rs-lbl">متوسط الدفعة (₪)</div>
+    </div>
+    <div class="rs-card" style="--c1:#2b6cb0;--c2:#60a5fa">
+        <div class="rs-icon">🕐</div>
+        <div class="rs-val" style="color:var(--blue);font-size:0.82rem;margin-top:4px" id="s-last">{{ stats.last_pay_date }}</div>
+        <div class="rs-lbl">آخر دفعة</div>
+    </div>
+</div>
+
+<!-- ══ المخططات ══ -->
+<div class="charts-grid fade-in fade-in-d1">
+    <div class="chart-card chart-card-full">
+        <div class="sec-title">📈 الدفعات الشهرية (₪)</div>
+        <div id="chartMonthly" style="min-height:220px"></div>
+    </div>
+    <div class="chart-card">
+        <div class="sec-title">🥧 توزيع المكفولين</div>
+        <div id="chartDonut" style="min-height:200px"></div>
+    </div>
+    <div class="chart-card">
+        <div class="sec-title">📊 حالة الدفعات</div>
+        <div id="chartStatus" style="min-height:200px"></div>
+    </div>
+    <div class="chart-card">
+        <div class="sec-title">📩 الوصولات الشهرية</div>
+        <div id="chartReceipts" style="min-height:200px"></div>
+    </div>
+    <div class="chart-card">
+        <div class="sec-title">👥 الدفع لكل مستفيد (₪)</div>
+        <div id="chartBene" style="min-height:200px"></div>
+    </div>
+</div>
+
+<!-- ══ التفاصيل ══ -->
+<div class="dash-card fade-in fade-in-d2">
+    <div class="sec-hdr">
+        <div class="sec-title">📋 التفاصيل</div>
+    </div>
+
+    <div class="section-tabs">
+        <button class="st-tab active" id="tab-pays" onclick="switchSection('pays')">💳 الدفعات</button>
+        <button class="st-tab"        id="tab-recs" onclick="switchSection('recs')">📩 الوصولات</button>
+        <button class="st-tab"        id="tab-benes" onclick="switchSection('benes')">❤️ المكفولون</button>
+    </div>
+
+    <!-- فلاتر الدفعات -->
+    <div id="pays-filters" class="tf-row">
+        <select class="tf-sel" id="beneFilter" onchange="loadSection('pays')">
+            <option value="">كل المستفيدين</option>
+            {% for b in benes %}
+            <option value="{{ b.id }}">{{ b.name }} ({{ b.type }})</option>
+            {% endfor %}
+        </select>
+        <select class="tf-sel" id="statusFilter" onchange="loadSection('pays')">
+            <option value="">كل الحالات</option>
+            <option value="paid">✅ مسدّد</option>
+            <option value="late">🔴 متأخر</option>
+            <option value="pending">⏳ معلّق</option>
+        </select>
+    </div>
+
+    <!-- محتوى الدفعات -->
+    <div id="section-pays">
+        <div class="pays-grid" id="paysGrid">
+            {% for i in "1234" %}
+            <div class="skel" style="height:130px;border-radius:14px"></div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- محتوى الوصولات -->
+    <div id="section-recs" style="display:none">
+        <div class="rec-grid" id="recsGrid">
+            {% for i in "123" %}
+            <div class="skel" style="height:110px;border-radius:14px"></div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- محتوى المكفولين -->
+    <div id="section-benes" style="display:none">
+        <div class="bene-sum-grid" id="benesGrid">
+            {% for i in "123" %}
+            <div class="skel" style="height:150px;border-radius:14px"></div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- ══ مودال PDF ══ -->
+<div class="modal-overlay" id="pdfModal">
+<div class="modal-box">
+    <div class="modal-hdr">
+        <span class="modal-title" id="pdfModalTitle">📄 تجهيز الملف</span>
+        <button class="modal-close" onclick="closeModal('pdfModal')">✕</button>
+    </div>
+    <div class="modal-body">
+        <div id="pdfStateLoading">
+            <div style="width:52px;height:52px;border:4px solid rgba(26,122,74,0.12);border-top-color:#1a7a4a;border-radius:50%;animation:spin 0.9s linear infinite;margin:0 auto 14px"></div>
+            <div style="font-size:0.94rem;font-weight:700;color:var(--text,#1a1a2e);margin-bottom:5px">جاري إنشاء الملف…</div>
+            <div style="font-size:0.76rem;color:#9ca3af;margin-bottom:16px" id="pdfLoadingTxt">يرجى الانتظار</div>
+            <div style="background:rgba(26,122,74,0.08);border-radius:50px;height:5px;overflow:hidden">
+                <div id="pdfProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#1a7a4a,#2ecc71);border-radius:50px;transition:width 0.5s ease"></div>
+            </div>
+        </div>
+        <div id="pdfStateReady" style="display:none">
+            <div style="width:56px;height:56px;margin:0 auto 12px;background:var(--green-dim);border:2px solid rgba(26,122,74,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.6rem">✅</div>
+            <div style="font-size:0.94rem;font-weight:700;color:var(--text,#1a1a2e);margin-bottom:4px">الملف جاهز</div>
+            <div id="pdfFileSize" style="font-size:0.76rem;color:#9ca3af;margin-bottom:16px"></div>
+            <div style="display:flex;gap:10px;justify-content:center">
+                <button id="pdfDownloadBtn" class="btn-green">📥 تحميل</button>
+                <button onclick="closeModal('pdfModal')" class="btn-sec">إغلاق</button>
+            </div>
+        </div>
+        <div id="pdfStateError" style="display:none">
+            <div style="font-size:2.2rem;margin-bottom:10px">⚠️</div>
+            <div style="font-size:0.94rem;font-weight:700;color:#c53030;margin-bottom:5px">حدث خطأ</div>
+            <div style="font-size:0.76rem;color:#9ca3af;margin-bottom:16px" id="pdfErrorTxt">تعذّر إنشاء الملف</div>
+            <div style="display:flex;gap:10px;justify-content:center">
+                <button id="pdfRetryBtn" class="btn-green">🔄 إعادة المحاولة</button>
+                <button onclick="closeModal('pdfModal')" class="btn-sec">إغلاق</button>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/3.45.1/apexcharts.min.js"></script>
+<script>
+// ══ الحالة ══
+let currentPeriod  = 'all';
+let currentSection = 'pays';
+let _pdfBlob = null;
+let charts   = {};
+
+const isDark  = () => document.body.classList.contains('dark-mode');
+const tColor  = () => isDark() ? '#e8f5ee' : '#1a1a2e';
+const sColor  = () => isDark() ? '#7aaa8e' : '#9ca3af';
+const GREEN   = '#1a7a4a', GREEN2 = '#2ecc71', BLUE = '#2b6cb0',
+      RED     = '#c53030', ORANGE = '#b45309', PURPLE = '#7c3aed';
+
+// ══ الفترة ══
+function setPeriod(p) {
+    currentPeriod = p;
+    document.querySelectorAll('.pt-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`pt-${p}`).classList.add('active');
+    loadAll();
+}
+
+// ══ تحميل كل شيء ══
+async function loadAll() {
+    const params = new URLSearchParams({ period: currentPeriod, section: 'all',
+        bene:   document.getElementById('beneFilter')?.value  || '',
+        status: document.getElementById('statusFilter')?.value || '' });
+    try {
+        const r    = await fetch(`/sponsor/reports/data/?${params}`);
+        const data = await r.json();
+        updateStats(data.stats);
+        if (data.charts)       updateCharts(data.charts, data.stats);
+        if (data.payments)     renderPays(data.payments);
+        if (data.receipts)     renderRecs(data.receipts);
+        if (data.benes_summary) renderBenes(data.benes_summary);
+    } catch(e) { console.error(e); }
+}
+
+// ══ تحميل قسم معين ══
+async function loadSection(sec) {
+    const params = new URLSearchParams({ period: currentPeriod, section: sec,
+        bene:   document.getElementById('beneFilter')?.value  || '',
+        status: document.getElementById('statusFilter')?.value || '' });
+    const r    = await fetch(`/sponsor/reports/data/?${params}`);
+    const data = await r.json();
+    if (data.payments)      renderPays(data.payments);
+    if (data.receipts)      renderRecs(data.receipts);
+    if (data.benes_summary) renderBenes(data.benes_summary);
+}
+
+// ══ تبديل القسم ══
+function switchSection(sec) {
+    currentSection = sec;
+    ['pays','recs','benes'].forEach(s => {
+        document.getElementById(`tab-${s}`)?.classList.toggle('active', s===sec);
+        document.getElementById(`section-${s}`).style.display = s===sec ? 'block' : 'none';
+    });
+    document.getElementById('pays-filters').style.display = sec==='pays' ? 'flex' : 'none';
+}
+
+// ══ تحديث الإحصائيات ══
+function updateStats(s) {
+    const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+    animC('s-total', s.total);
+    animC('s-ils',   s.total_ils);
+    animC('s-paid',  s.paid_count);
+    animC('s-late',  s.late_count);
+    animC('s-rec',   s.rec_total);
+    set('s-usd',    `$${s.total_usd}`);
+    set('s-types',  `${s.orphans}يتيم · ${s.specials}احتياج · ${s.families}أسرة`);
+    set('s-rec-detail', `✅${s.rec_approved} ❌${s.rec_rejected} ⏳${s.rec_pending}`);
+    set('s-rec-ils', s.rec_ils);
+    set('s-rec-usd', `$${s.rec_usd}`);
+    set('s-avg',    s.avg_ils);
+    set('s-last',   s.last_pay_date);
+    const pct  = s.commitment_pct;
+    const pclr = pct>=80 ? GREEN : pct>=50 ? ORANGE : RED;
+    set('s-commit', `${pct}%`);
+    document.getElementById('s-commit').style.color = pclr;
+    const bar = document.getElementById('commitBar');
+    if (bar) { bar.style.width=`${pct}%`; bar.style.background=`linear-gradient(90deg,${pclr},${pclr}99)`; }
+}
+
+function animC(id, target) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const dur=500, t0=performance.now();
+    const cur = parseFloat(el.textContent.replace(/[^0-9.]/g,''))||0;
+    const isFloat = !Number.isInteger(target);
+    const up = now => {
+        const p = Math.min((now-t0)/dur,1), v = cur+(target-cur)*(1-Math.pow(1-p,3));
+        el.textContent = isFloat ? v.toFixed(2) : Math.round(v);
+        if(p<1) requestAnimationFrame(up);
+    };
+    requestAnimationFrame(up);
+}
+
+// ══ المخططات ══
+function cOpts() {
+    return { chart:{ fontFamily:'Tajawal, sans-serif', background:'transparent', toolbar:{show:false} }, theme:{mode:isDark()?'dark':'light'}, grid:{borderColor:isDark()?'rgba(46,204,113,0.08)':'rgba(26,122,74,0.08)'} };
+}
+
+function updateCharts(ch, stats) {
+    // مخطط الدفعات الشهرية
+    const mCats = ch.monthly.map(m=>m.month);
+    const mVals = ch.monthly.map(m=>m.total_ils);
+    const mOpts = { ...cOpts(), chart:{...cOpts().chart,type:'area',height:220},
+        series:[{name:'المدفوع (₪)',data:mVals}], xaxis:{categories:mCats,labels:{style:{colors:sColor(),fontFamily:'Tajawal'}}},
+        yaxis:{labels:{style:{colors:sColor()}}}, colors:[GREEN],
+        fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:0.4,opacityTo:0.05}},
+        stroke:{curve:'smooth',width:3}, tooltip:{theme:isDark()?'dark':'light'}, dataLabels:{enabled:false},
+        noData:{text:'لا توجد بيانات',style:{color:sColor(),fontFamily:'Tajawal'}} };
+    if (charts.monthly) charts.monthly.updateOptions(mOpts);
+    else { charts.monthly = new ApexCharts(document.getElementById('chartMonthly'),mOpts); charts.monthly.render(); }
+
+    // دائري المكفولين
+    const dOpts = { ...cOpts(), chart:{...cOpts().chart,type:'donut',height:200},
+        series:[stats.orphans,stats.specials,stats.families], labels:['أيتام','ذوو احتياجات','أسر'],
+        colors:[GREEN,RED,ORANGE], legend:{position:'bottom',fontFamily:'Tajawal',labels:{colors:tColor()}},
+        tooltip:{theme:isDark()?'dark':'light'},
+        plotOptions:{pie:{donut:{size:'65%',labels:{show:true,total:{show:true,label:'المكفولون',color:tColor(),fontFamily:'Tajawal',fontWeight:'700',fontSize:'12px'}}}}},
+        noData:{text:'لا توجد بيانات',style:{color:sColor(),fontFamily:'Tajawal'}} };
+    if (charts.donut) { charts.donut.updateOptions(dOpts); charts.donut.updateSeries([stats.orphans,stats.specials,stats.families]); }
+    else { charts.donut = new ApexCharts(document.getElementById('chartDonut'),dOpts); charts.donut.render(); }
+
+    // حالة الدفعات
+    const sOpts = { ...cOpts(), chart:{...cOpts().chart,type:'bar',height:200},
+        series:[{name:'الدفعات',data:[stats.paid_count,stats.late_count,stats.pend_count]}],
+        xaxis:{categories:['مسدّدة','متأخرة','معلّقة'],labels:{style:{colors:tColor(),fontFamily:'Tajawal'}}},
+        yaxis:{labels:{style:{colors:sColor()}}}, colors:[GREEN,RED,ORANGE],
+        plotOptions:{bar:{distributed:true,borderRadius:8,columnWidth:'50%'}},
+        legend:{show:false}, tooltip:{theme:isDark()?'dark':'light'},
+        dataLabels:{enabled:true,style:{fontFamily:'Tajawal',colors:['#fff']}},
+        noData:{text:'لا توجد بيانات',style:{color:sColor(),fontFamily:'Tajawal'}} };
+    if (charts.status) { charts.status.updateOptions(sOpts); charts.status.updateSeries([{name:'الدفعات',data:[stats.paid_count,stats.late_count,stats.pend_count]}]); }
+    else { charts.status = new ApexCharts(document.getElementById('chartStatus'),sOpts); charts.status.render(); }
+
+    // الوصولات الشهرية
+    const rCats = ch.rec_months.map(m=>m.month);
+    const rOpts = { ...cOpts(), chart:{...cOpts().chart,type:'bar',height:200,stacked:true},
+        series:[{name:'موافقة',data:ch.rec_months.map(m=>m.approved)},{name:'مرفوضة',data:ch.rec_months.map(m=>m.rejected)},{name:'انتظار',data:ch.rec_months.map(m=>m.pending)}],
+        xaxis:{categories:rCats,labels:{style:{colors:sColor(),fontFamily:'Tajawal'}}},
+        yaxis:{labels:{style:{colors:sColor()}}}, colors:[GREEN,RED,ORANGE],
+        plotOptions:{bar:{borderRadius:4,columnWidth:'60%'}}, legend:{position:'bottom',fontFamily:'Tajawal',labels:{colors:tColor()}},
+        tooltip:{theme:isDark()?'dark':'light'}, dataLabels:{enabled:false},
+        noData:{text:'لا توجد بيانات',style:{color:sColor(),fontFamily:'Tajawal'}} };
+    if (charts.receipts) { charts.receipts.updateOptions(rOpts); charts.receipts.updateSeries(rOpts.series); }
+    else { charts.receipts = new ApexCharts(document.getElementById('chartReceipts'),rOpts); charts.receipts.render(); }
+
+    // الدفع لكل مستفيد
+    const bOpts = { ...cOpts(), chart:{...cOpts().chart,type:'bar',height:200},
+        series:[{name:'المدفوع (₪)',data:ch.bene_pays.map(b=>b.total)}],
+        xaxis:{categories:ch.bene_pays.map(b=>b.name),labels:{style:{colors:sColor(),fontFamily:'Tajawal'},trim:true,maxHeight:60}},
+        yaxis:{labels:{style:{colors:sColor()}}}, colors:[BLUE],
+        plotOptions:{bar:{borderRadius:6,columnWidth:'55%'}},
+        dataLabels:{enabled:false}, tooltip:{theme:isDark()?'dark':'light'},
+        noData:{text:'لا توجد بيانات',style:{color:sColor(),fontFamily:'Tajawal'}} };
+    if (charts.bene) { charts.bene.updateOptions(bOpts); charts.bene.updateSeries([{name:'المدفوع (₪)',data:ch.bene_pays.map(b=>b.total)}]); }
+    else { charts.bene = new ApexCharts(document.getElementById('chartBene'),bOpts); charts.bene.render(); }
+}
+
+// ══ كروت الدفعات ══
+function renderPays(pays) {
+    const grid = document.getElementById('paysGrid');
+    if (!pays.length) {
+        grid.innerHTML = '<div class="empty-cards"><div class="ei">💳</div><div class="et">لا توجد دفعات في هذه الفترة</div></div>';
+        return;
+    }
+    const stClass = {paid:'pay-card-paid',late:'pay-card-late',pending:'pay-card-pending'};
+    const stBadge = {paid:'pb-paid ✅ مسدّد',late:'pb-late 🔴 متأخر',pending:'pb-pending ⏳ معلّق'};
+    grid.innerHTML = pays.map(p => {
+        const [bClass,bLabel] = [stClass[p.status]||'',stBadge[p.status]||p.status_ar];
+        const [cls,...lbl] = bLabel.split(' ');
+        return `
+        <div class="pay-card ${bClass}">
+            <div class="pc-head">
+                <div class="pc-bene">${p.bene_name}</div>
+                <span class="pc-badge ${cls}">${lbl.join(' ')}</span>
+            </div>
+            <div class="pc-amounts">
+                <div class="pc-amt"><div class="pc-amt-val">${p.amount_ils} ₪</div><div class="pc-amt-lbl">شيقل</div></div>
+                <div class="pc-amt"><div class="pc-amt-val" style="color:var(--blue)">$${p.amount_usd}</div><div class="pc-amt-lbl">دولار</div></div>
+            </div>
+            <div class="pc-meta">
+                <span class="pc-meta-item">📅 ${p.date}</span>
+                <span class="pc-meta-item">👤 ${p.paid_by}</span>
+                ${p.note ? `<span class="pc-meta-item">📝 ${p.note}</span>` : ''}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// ══ كروت الوصولات ══
+function renderRecs(recs) {
+    const grid = document.getElementById('recsGrid');
+    if (!recs.length) {
+        grid.innerHTML = '<div class="empty-cards"><div class="ei">📩</div><div class="et">لا توجد وصولات في هذه الفترة</div></div>';
+        return;
+    }
+    const stMap = {
+        'موافق':              ['rc-approved','rec-badge-ok','✅ موافق'],
+        'مرفوض':              ['rc-rejected','rec-badge-rej','❌ مرفوض'],
+        'بانتظار المراجعة':   ['rc-pending', 'rec-badge-pnd','⏳ انتظار'],
+    };
+    grid.innerHTML = recs.map(r => {
+        const [crd,bdg,lbl] = stMap[r.status] || ['rc-pending','rec-badge-pnd',r.status];
+        return `
+        <div class="rec-card ${crd}">
+            <div class="pc-head">
+                <div>
+                    <div class="pc-bene" style="font-size:0.8rem">${r.system_ref}</div>
+                    <div style="font-size:0.72rem;color:#9ca3af">${r.bene_name}</div>
+                </div>
+                <span class="${bdg}">${lbl}</span>
+            </div>
+            <div class="pc-amounts">
+                <div class="pc-amt"><div class="pc-amt-val">${r.amount_ils} ₪</div><div class="pc-amt-lbl">شيقل</div></div>
+                <div class="pc-amt"><div class="pc-amt-val" style="color:var(--blue)">$${r.amount_usd}</div><div class="pc-amt-lbl">دولار</div></div>
+                <div class="pc-amt"><div class="pc-amt-val" style="color:var(--orange);font-size:0.8rem">${r.amount_orig} ${r.currency}</div><div class="pc-amt-lbl">الأصلي</div></div>
+            </div>
+            <div class="pc-meta">
+                <span class="pc-meta-item">📅 ${r.date}</span>
+                <span class="pc-meta-item">🕐 ${r.submitted}</span>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// ══ كروت المكفولين ══
+function renderBenes(benes) {
+    const grid = document.getElementById('benesGrid');
+    if (!benes.length) {
+        grid.innerHTML = '<div class="empty-cards"><div class="ei">❤️</div><div class="et">لا يوجد مكفولون</div></div>';
+        return;
+    }
+    const typeIcon = {'يتيم':'👶','ذو احتياج':'♿','أسرة':'👨‍👩‍👧'};
+    grid.innerHTML = benes.map(b => `
+        <div class="bene-sum-card">
+            <div class="bsc-head">
+                <div class="bsc-avatar">${typeIcon[b.type]||'❤️'}</div>
+                <div><div class="bsc-name">${b.name}</div><div class="bsc-type">${b.type} · ${b.city}</div></div>
+            </div>
+            <div class="bsc-stats">
+                <div class="bsc-stat"><div class="bsc-stat-val">${b.paid_cnt}</div><div class="bsc-stat-lbl">مسدّد</div></div>
+                <div class="bsc-stat"><div class="bsc-stat-val" style="color:var(--red)">${b.late_cnt}</div><div class="bsc-stat-lbl">متأخر</div></div>
+                <div class="bsc-stat"><div class="bsc-stat-val" style="color:var(--blue)">${b.total_ils}₪</div><div class="bsc-stat-lbl">الإجمالي</div></div>
+            </div>
+            <div class="bsc-footer">
+                <span>📅 كفالة: ${b.sp_date}</span>
+                <span>🕐 آخر دفعة: ${b.last_date}</span>
+            </div>
+        </div>`).join('');
+}
+
+// ══ تصدير Excel ══
+function exportExcel() {
+    window.location.href = `/sponsor/reports/export-excel/?period=${currentPeriod}`;
+}
+
+// ══ تصدير PDF ══
+async function exportPdf() {
+    _pdfBlob = null;
+    document.getElementById('pdfStateLoading').style.display = 'block';
+    document.getElementById('pdfStateReady').style.display   = 'none';
+    document.getElementById('pdfStateError').style.display   = 'none';
+    document.getElementById('pdfProgressBar').style.width    = '0%';
+    document.getElementById('pdfLoadingTxt').textContent     = 'يرجى الانتظار';
+    document.getElementById('pdfModalTitle').textContent     = '📄 تجهيز الملف';
+    openModal('pdfModal');
+
+    const steps = [
+        {pct:20,d:300,t:'جاري تجهيز البيانات…'},
+        {pct:50,d:900,t:'جاري إنشاء الملف…'},
+        {pct:80,d:1700,t:'جاري التنسيق…'},
+        {pct:93,d:2500,t:'اقتربنا…'},
+    ];
+    const timers = steps.map(s => setTimeout(()=>{
+        document.getElementById('pdfProgressBar').style.width = s.pct+'%';
+        document.getElementById('pdfLoadingTxt').textContent  = s.t;
+    }, s.d));
+
+    try {
+        const resp = await fetch(`/sponsor/reports/export-pdf-blob/?period=${currentPeriod}`, {
+            credentials: 'same-origin',
+            headers: {'X-Requested-With':'XMLHttpRequest'},
+        });
+        timers.forEach(t => clearTimeout(t));
+        if (!resp.ok) throw new Error(`فشل الطلب (${resp.status})`);
+        const blob = await resp.blob();
+        _pdfBlob = blob;
+
+        document.getElementById('pdfProgressBar').style.width = '100%';
+        document.getElementById('pdfFileSize').textContent    = `📦 ${(blob.size/1024).toFixed(1)} KB`;
+
+        document.getElementById('pdfDownloadBtn').onclick = () => {
+            const url = URL.createObjectURL(_pdfBlob);
+            const a = document.createElement('a');
+            a.href=url; a.download=`تقرير_كافل_${currentPeriod}.pdf`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(()=>URL.revokeObjectURL(url),5000);
+            setTimeout(()=>closeModal('pdfModal'),2000);
+        };
+        document.getElementById('pdfRetryBtn').onclick = exportPdf;
+
+        setTimeout(()=>{
+            document.getElementById('pdfStateLoading').style.display = 'none';
+            document.getElementById('pdfStateReady').style.display   = 'block';
+            document.getElementById('pdfModalTitle').textContent     = '✅ الملف جاهز';
+        }, 400);
+
+    } catch(err) {
+        timers.forEach(t => clearTimeout(t));
+        document.getElementById('pdfErrorTxt').textContent       = err.message || 'تعذّر إنشاء الملف';
+        document.getElementById('pdfRetryBtn').onclick           = exportPdf;
+        document.getElementById('pdfStateLoading').style.display = 'none';
+        document.getElementById('pdfStateError').style.display   = 'block';
+        document.getElementById('pdfModalTitle').textContent     = '⚠️ حدث خطأ';
+    }
+}
+
+// ══ Modal ══
+function openModal(id)  { document.getElementById(id).classList.add('show'); document.body.style.overflow='hidden'; }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); document.body.style.overflow=''; }
+function csrf() { return document.cookie.split(';').find(c=>c.trim().startsWith('csrftoken='))?.split('=')[1]||''; }
+
+// ══ التحميل الأولي ══
+window.addEventListener('load', () => loadAll());
+document.getElementById('menuBtn').addEventListener('click', () => {
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 10);
+});
+</script>
+{% endblock %}
